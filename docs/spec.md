@@ -1,12 +1,12 @@
 # Spec / PRD — CreateYourPizza pizza catalog
 
-**Status:** DRAFT — revised 2026-09-17 (Spec/PRD Revise c — pagination / PDF / keys); awaiting Spec gate (Approve / Revise / Park)
+**Status:** APPROVED 2026-09-17 (owner HIFL Approve: Spec). Spec gate passed. **Approved — Design on hold until owner says go.**
 
 **Upstream:** [Intent](intent.md) (**APPROVED** 2026-09-17) · Spec revise [internal/spec-revise-2026-09-17-c.md](../internal/spec-revise-2026-09-17-c.md) · Prior Spec revise [internal/spec-revise-2026-09-17.md](../internal/spec-revise-2026-09-17.md) · Intent revise [internal/intent-revise-2026-09-17-b.md](../internal/intent-revise-2026-09-17-b.md) · Prior revise [internal/intent-revise-2026-09-17.md](../internal/intent-revise-2026-09-17.md) · Owner brief [internal/product-idea.md](../internal/product-idea.md)
 
 **Related:** [Project context](project-context.md) · [HIFL playbook](hifl-playbook.md)
 
-**Not in this stage:** full OpenAPI YAML, SQL DDL, Spring Boot scaffold, or Design/TRD — those follow Spec Approve (scaffold/deps at Build).
+**Not in this stage:** full OpenAPI YAML, SQL DDL, or Spring Boot scaffold — those follow Design Approve (scaffold/deps at Build).
 
 ---
 
@@ -548,12 +548,8 @@ When Build starts (after Design + Build plan Approve):
 
 ---
 
-## 12. Gate ask
+## 12. Approved — Design on hold until owner says go
 
-**Intent is APPROVED** (2026-09-17). Spec is **DRAFT — revised** (2026-09-17-c: pagination / PDF / keys); please review this Spec / PRD and reply with one of:
+Spec is **APPROVED** (2026-09-17, owner HIFL Approve). Product decisions in this document are locked. Do **not** reopen Spec scope without a new owner HIFL Spec **Revise** gate.
 
-- **Approve** — accept Spec; proceed to Design / TRD draft
-- **Revise: …** — tell us what to change in this document
-- **Park** — pause Spec work
-
-See the [gate checklist](hifl-playbook.md#gate-review-checklist-for-the-human) in the HIFL playbook.
+**Approved — Design on hold until owner says go.** Do not draft `design.md` / TRD until the owner explicitly says to start Design.

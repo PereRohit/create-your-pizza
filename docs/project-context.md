@@ -109,7 +109,7 @@ Former Intent mention of a distinct CUSTOMER principal for PDF access is **super
 
 Also locked for runtime: **Postgres** (incl. version+bytea PDF, option entities, **minimal** status table, user/roles, **DB-only JWT public keys**), **Redis** (catalog cache + current PDF key — **not** JWT key material), **JWT** (local verify from DB public keys; binding claims + scopes; **no JWKS refresh interval**), **OpenAPI/Swagger**, **tests**, async PDF behavior, **Docker Compose** full-stack bring-up with volumes and sample data. Paginated JSON uses envelope + **`pagination` sibling**; public GET PDF = **raw binary**.
 
-Do not start application code until Design and Build plan are approved. Design/TRD must not be drafted until Spec is Approved.
+Do not start application code until Design and Build plan are approved. Spec is **APPROVED**; Design/TRD is **on hold** until the owner says go — do not draft `design.md` yet.
 
 ## Decision log
 
@@ -159,7 +159,8 @@ Do not start application code until Design and Build plan are approved. Design/T
 | 2026-09-17 | **Spec Revise c:** **DTOs determined during coding** — Spec locks wire JSON only | Locked (HIFL Spec Revise c) |
 | 2026-09-17 | **Spec Revise c:** JWT public-key store = **DB only** (supersedes Redis and/or DB); **no JWKS refresh interval**; private keys on auth; local verify preserved | Locked (HIFL Spec Revise c; supersedes Redis/DB key-store language) |
 | 2026-09-17 | **Spec Revise c:** GET PDF HTTP = **raw binary** `application/pdf` only (not JSON envelope); Redis/DB storage shapes preserved | Locked (HIFL Spec Revise c) |
-| 2026-09-17 | Spec remains **DRAFT — revised** (c); awaiting Spec gate (Approve / Revise / Park); Intent stays **APPROVED**; **do not write design.md yet** | Locked (process) |
+| 2026-09-17 | Spec remains **DRAFT — revised** (c); awaiting Spec gate (Approve / Revise / Park); Intent stays **APPROVED**; **do not write design.md yet** | Locked (process) — **superseded** by Spec Approve below |
+| 2026-09-17 | **Spec APPROVED** (owner HIFL Approve); Spec gate passed; Design/TRD **on hold** until owner says go; **do not write design.md** | Locked (process) |
 
 ## Document map
 
@@ -167,13 +168,13 @@ Do not start application code until Design and Build plan are approved. Design/T
 |-----|------|
 | [hifl-playbook.md](hifl-playbook.md) | Process: stages, gates, handoffs |
 | [intent.md](intent.md) | Stage 1 Intent — **APPROVED** 2026-09-17 |
-| [spec.md](spec.md) | Stage 2 Spec / PRD — DRAFT revised (c); awaiting Spec gate |
+| [spec.md](spec.md) | Stage 2 Spec / PRD — **APPROVED** 2026-09-17; Design on hold |
 | [internal/spec-revise-2026-09-17-c.md](../internal/spec-revise-2026-09-17-c.md) | Owner HIFL Spec/PRD Revise c source |
 | [internal/spec-revise-2026-09-17.md](../internal/spec-revise-2026-09-17.md) | Prior owner HIFL Spec/PRD Revise source |
 | [internal/intent-revise-2026-09-17-b.md](../internal/intent-revise-2026-09-17-b.md) | Prior owner HIFL Intent Revise |
 | [internal/intent-revise-2026-09-17.md](../internal/intent-revise-2026-09-17.md) | Prior owner HIFL Revise |
 | [internal/product-idea.md](../internal/product-idea.md) | Original owner product brief |
 | This file | Durable decisions and decision log |
-| `design.md` | Stage 3 — **do not write until Spec Approve** |
+| `design.md` | Stage 3 — **on hold** until owner says go (not started) |
 | `AGENTS.md` | Build-stage delivery artifact (not created yet) |
-<!-- local-sync-stamp: 2026-09-17-spec-revise-c -->
+<!-- local-sync-stamp: 2026-09-17-spec-approved -->
