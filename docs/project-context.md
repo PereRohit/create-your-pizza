@@ -119,15 +119,16 @@ Do not start application code until Design and Build plan are approved. Design/T
 | 2026-09-17 | **Revise (2nd):** JWT claims = identity (`sub`/`client_id`; admin user id) + **scope/permissions**; API key/secret → JWT for trusted systems; secrets out of JWT; Spec records industry-practice suggestion | Locked (HIFL Revise b) |
 | 2026-09-17 | **Revise (2nd):** Consumer API default page size **10**; types **simple / combo / pizza-base / pizza-spec**; group by type + creation order; **filter takes precedence** | Locked (HIFL Revise b) |
 | 2026-09-17 | **Revise (2nd):** Veg/non-veg applies to **Simple, Combo, and Pizza** | Locked (HIFL Revise b; supersedes “Pizza-only or Design”) |
-| 2026-09-17 | Intent + Spec remain **DRAFT** after second Revise; Intent awaiting Intent gate; Spec awaiting Spec gate after Intent; **do not write design.md yet** | Locked (process) |
+| 2026-09-17 | Intent + Spec remain **DRAFT** after second Revise; Intent awaiting Intent gate; Spec awaiting Spec gate after Intent; **do not write design.md yet** | Locked (process) — **superseded** by Intent Approve below |
+| 2026-09-17 | **Intent APPROVED** (owner HIFL Approve); Intent gate passed; **Spec** is next (Spec remains DRAFT, awaiting Spec gate); **do not write design.md yet** | Locked (process) |
 
 ## Document map
 
 | Doc | Role |
 |-----|------|
 | [hifl-playbook.md](hifl-playbook.md) | Process: stages, gates, handoffs |
-| [intent.md](intent.md) | Stage 1 Intent (revised — HIFL Revise 2026-09-17 b) |
-| [spec.md](spec.md) | Stage 2 Spec / PRD (revised — HIFL Revise 2026-09-17 b) |
+| [intent.md](intent.md) | Stage 1 Intent — **APPROVED** 2026-09-17 |
+| [spec.md](spec.md) | Stage 2 Spec / PRD — DRAFT; Intent Approved; awaiting Spec gate |
 | [internal/intent-revise-2026-09-17-b.md](../internal/intent-revise-2026-09-17-b.md) | Owner HIFL Revise source for this update |
 | [internal/intent-revise-2026-09-17.md](../internal/intent-revise-2026-09-17.md) | Prior owner HIFL Revise |
 | [internal/product-idea.md](../internal/product-idea.md) | Original owner product brief |

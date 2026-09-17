@@ -1,6 +1,6 @@
 # Intent — CreateYourPizza pizza catalog
 
-**Status:** DRAFT — revised after owner HIFL Revise (2026-09-17, second); awaiting Intent gate
+**Status:** APPROVED — 2026-09-17 (owner HIFL Approve). Intent gate passed; next stage is Spec.
 
 **Source of truth for this revision:** [internal/intent-revise-2026-09-17-b.md](../internal/intent-revise-2026-09-17-b.md) (owner HIFL Revise, second). Prior revise: [internal/intent-revise-2026-09-17.md](../internal/intent-revise-2026-09-17.md). Prior brief: [internal/product-idea.md](../internal/product-idea.md).
 
@@ -105,12 +105,6 @@ Incorporated from the owner brief and HIFL Revises (first + second):
 - Consumer API dual type model (admin Pizza vs consumer pizza-base / pizza-spec) needs clear Design mapping
 - Sample data + full dockerize must stay aligned with product types and seed expectations
 
-## Gate ask
+## Approved — do not edit without new Revise gate
 
-Please review this Intent and reply with one of:
-
-- **Approve** — accept Intent; Spec draft may proceed to Spec gate (Spec already revised in parallel for review after Intent Approve)
-- **Revise: …** — tell us what to change in this document
-- **Park** — pause Intent work
-
-See the [gate checklist](hifl-playbook.md#gate-review-checklist-for-the-human) in the HIFL playbook.
+Intent is **APPROVED** (2026-09-17). Do **not** edit this document without a new owner HIFL **Revise** gate. Next stage: **Spec** ([spec.md](spec.md)).

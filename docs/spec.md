@@ -1,6 +1,6 @@
 # Spec / PRD — CreateYourPizza pizza catalog
 
-**Status:** DRAFT — revised after owner HIFL Revise (2026-09-17, second); awaiting Spec gate (depends on Intent Approve)
+**Status:** DRAFT — Intent Approved (2026-09-17); awaiting Spec gate
 
 **Upstream:** [Intent](intent.md) · Revise [internal/intent-revise-2026-09-17-b.md](../internal/intent-revise-2026-09-17-b.md) · Prior revise [internal/intent-revise-2026-09-17.md](../internal/intent-revise-2026-09-17.md) · Owner brief [internal/product-idea.md](../internal/product-idea.md)
 
@@ -367,12 +367,10 @@ When Build starts (after Design + Build plan Approve):
 
 ## 12. Gate ask
 
-Please review this Spec / PRD and reply with one of:
+**Intent is APPROVED** (2026-09-17). Please review this Spec / PRD and reply with one of:
 
 - **Approve** — accept Spec; proceed to Design / TRD draft
 - **Revise: …** — tell us what to change in this document
 - **Park** — pause Spec work
-
-Prerequisite: Intent should be **Approve**d (or explicitly co-approved) before Spec is treated as accepted.
 
 See the [gate checklist](hifl-playbook.md#gate-review-checklist-for-the-human) in the HIFL playbook.
