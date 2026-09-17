@@ -1,79 +1,93 @@
 # Intent — ThinkWithMe pizza catalog
 
-**Status:** DRAFT — awaiting Intent gate
+**Status:** DRAFT — revised after owner product brief; awaiting Intent gate
 
-**Related:** [HIFL playbook](hifl-playbook.md) · [Project context](project-context.md)
+**Source of truth for this revision:** [internal/product-idea.md](../internal/product-idea.md) (owner brief, Aidev Tool10, 2026-09-17)
+
+**Related:** [HIFL playbook](hifl-playbook.md) · [Project context](project-context.md) · [Spec (draft)](spec.md)
 
 ---
 
 ## Problem
 
-Pizza store operators need a reliable product catalog: staff can maintain items, customers can see a clean printable menu, and partner/external systems can read the catalog securely. Without a shared catalog and clear auth boundaries, menus drift, PDF exports are ad hoc, and integrations are unsafe or manual.
+A pizza delivery store needs one maintained product catalog that covers simple items, combos, and customizable pizzas (veg / non-veg). Staff must keep prices and offerings current; customers need an open printable PDF menu; trusted integrated systems need filtered, paginated catalog APIs. Without clear product-type rules, public vs authenticated boundaries, and a read-heavy cache/PDF strategy, menus drift and integrations stay unsafe or ad hoc.
 
 ## Who it's for
 
 | Who | Need |
 |-----|------|
-| **Admin** | Create, edit, and delete catalog items so the menu stays current |
-| **Customer** | View items presented as a PDF menu card suitable for reading/printing |
-| **External system** | Machine-to-machine read access to the catalog using an API key |
+| **Admin (staff)** | Maintain the catalog: prices, simple products, combos, and pizzas |
+| **Public customer** | Open the menu card as PDF **without** authentication |
+| **Trusted registered system** | Consume catalog REST APIs (with filters and pagination) after authenticating via central auth |
 
 ## Desired outcomes / success criteria
 
-- Admins can fully manage catalog items (create / edit / delete) under ADMIN auth.
-- Customers can obtain a PDF menu card reflecting current catalog items.
-- An authorized external caller with a valid API key can access catalog data (EXTERNAL / M2M).
-- Unauthorized callers cannot perform admin writes or external catalog access.
-- v1 stays limited to catalog + PDF + external read API (no orders/payments/delivery/franchising).
-- Decisions and scope are captured in Context docs so later Spec/Design can proceed without rediscovering Intent.
+- Admins can create, update, and delete catalog entries for **Simple**, **Combo**, and **Pizza** products under admin authorization.
+- Product rules are honored: Simple = fixed-price sellable items; Combo = combination of simple products; Pizza = veg/non-veg with predefined crust, crust size, and toppings count, customizable to taste (detail in Spec).
+- Anyone can download/view the **public PDF menu card** with no login.
+- A **registered trusted system** can query the catalog via REST with filters: veg/non-veg, product type (simple / combo / pizza), price under Rs. X, and page size / pagination.
+- Callers authenticate via a **central auth service** that issues a **JWT with 30-minute TTL** for subsequent API calls; live-session invalidation is out of scope.
+- Catalog data lives in **Postgres**; **Redis** serves as the read-heavy cache layer (and may support JWT validation patterns decided in Design).
+- PDF generation runs **asynchronously every 5 minutes**, and **only when the catalog is dirty** (add / update / delete).
+- Deliverables include **OpenAPI (Swagger)** suitable for Postman/import and **automated tests** for the system and APIs.
+- v1 stays catalog + public PDF + secured admin/catalog APIs (no orders, payments, or delivery).
 
 ## In scope for v1
 
-- Product catalog for a pizza store (items with fields to be detailed in Spec)
-- Admin CRUD for catalog items
-- Customer-facing PDF menu card generation/view
-- External catalog access via API key (authorized M2M)
-- Auth with multiple levels: at least **ADMIN**, **CUSTOMER**, **EXTERNAL**
-- REST-oriented API surface (shape finalized in Spec/Design)
-- Documentation under HIFL (this Intent → Spec → Design → Build plan → Build → Verify)
+Incorporated from the owner brief (former vague “open ideas” now promoted):
+
+- Catalog of three product types: **Simple**, **Combo**, **Pizza**
+- Pizza categories: **vegetarian** and **non-vegetarian**; pizzas defined with crust, crust size, toppings (customizable)
+- Admin maintenance of products, prices, and combos
+- Public, unauthenticated **PDF menu card**
+- Central auth + **JWT (30m TTL)** for admin and trusted-system API access
+- Trusted-system catalog queries: veg/non-veg, type, price under Rs. X, pagination
+- **Postgres** primary store + **Redis** cache (read-heavy)
+- Async PDF job: **5-minute interval**, dirty-flag / only-when-updated
+- **OpenAPI** spec and **test cases** for system/APIs
+- HIFL documentation path: Intent → Spec → Design → Build plan → Build → Verify
 
 ## Out of scope / non-goals
 
-- Orders, carts, or checkout
+- Orders, carts, checkout
 - Payments or invoicing
-- Delivery tracking or logistics
+- Delivery tracking / logistics
 - Multi-store / franchising
-- Full marketing site, loyalty, or POS integration (unless later promoted from Open ideas)
-- Implementing the Spring Boot application before Design + Build plan approval
+- **Invalidating live user sessions / JWT revocation** at this stage
+- Full marketing site, loyalty, or POS integration
+- Application / Spring Boot implementation before Design + Build plan approval
 
 ## Constraints
 
-- **Auth levels:** at least ADMIN, CUSTOMER, EXTERNAL
-- **External access:** API key for authorized M2M catalog access
-- **Customer delivery format:** PDF menu card
+- **Auth:** central auth service; JWT TTL **30 minutes**; session invalidation out of scope
+- **Public surface:** PDF menu card requires **no** authentication
+- **Protected surfaces:** admin catalog writes and trusted-system catalog APIs require valid JWT at the appropriate level
+- **Storage:** Postgres (products + user information) and Redis (cache; JWT validation approach open for Design)
+- **PDF:** async, fixed **5-minute** cadence, only when catalog actually changed
+- **Quality bar:** OpenAPI + automated tests are success criteria, not optional extras
 - **Process:** HIFL gates; no application code before Design and Build plan are approved
-- **Stack (future Build decision, not this stage):** Java Spring Boot 3, Spring Security, JPA, OpenPDF, REST — provisional until Design / Build-plan gates ([project-context](project-context.md))
+- **Stack:** provisional for later Design / Build-plan gates (see [project-context](project-context.md)); not locked by this Intent
 
-## Open ideas (pending owner input)
+## Open ideas (truly unresolved only)
 
-> Owner indicated more ideas will be shared once setup is done. Capture them here; do not treat as in-scope until promoted and Intent/Spec are revised and re-gated.
-
-- _(empty — awaiting owner input)_
+- Exact pizza customization persistence model (how crust / size / toppings options are stored and exposed) — Spec outlines; Design decides schema
+- JWT validation via Redis vs standard JWT signature verify (+ optional denylist later) — Design decision
+- PDF layout / branding expectations beyond “menu card reflecting catalog”
+- Whether Combo pricing is fixed list price vs derived sum of simples — Design/Spec open question
 
 ## Risks / unknowns
 
-- Exact catalog item schema (sizes, toppings, prices, allergens, images) not yet specified
-- Whether CUSTOMER PDF access is public, account-gated, or otherwise
-- API key lifecycle (issuance, rotation, revocation, scoping to read-only)
-- Single-store assumption vs future multi-location (franchising is out of v1)
-- PDF layout/branding expectations for the menu card
-- Open ideas may expand or reshape v1 after owner input — Intent may need Revise
+- Pizza customization complexity can expand API and data model if under-specified
+- Dirty-flag / PDF job race conditions if catalog updates are frequent near the 5-minute boundary
+- Cache invalidation strategy on admin writes must stay consistent with Redis + PDF dirty flag
+- Trusted-system registration / client onboarding flow details not fully specified in the brief
+- Stack remains provisional until Design / Build-plan gates
 
 ## Gate ask
 
 Please review this Intent and reply with one of:
 
-- **Approve** — accept Intent; proceed to Spec draft
+- **Approve** — accept Intent; Spec draft may proceed to Spec gate (Spec already drafted in parallel for review after Intent Approve)
 - **Revise: …** — tell us what to change in this document
 - **Park** — pause Intent work
 

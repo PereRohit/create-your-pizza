@@ -23,8 +23,11 @@ This project follows a **Human-in-the-Feedback-Loop (HIFL)** process: the agent 
 | [docs/hifl-playbook.md](docs/hifl-playbook.md) | Stages, gates, hard rules |
 | [docs/project-context.md](docs/project-context.md) | Locked product decisions |
 | [docs/intent.md](docs/intent.md) | Stage 1 Intent |
+| [docs/spec.md](docs/spec.md) | Stage 2 Spec / PRD |
 
 **Intent status:** DRAFT — awaiting the Intent gate. Do not treat Intent as accepted until the owner replies **Approve**.
+
+**Spec / PRD:** DRAFT exists in `docs/spec.md` (synced from the owner brief). Still gated — do not treat Spec as accepted until the owner replies **Approve**.
 
 **Hard rule:** no application code until **Design** and **Build plan** are both approved.
 
