@@ -1,0 +1,91 @@
+# Compiled / packaged
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+hs_err_pid*
+replay_pid*
+
+# Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+gradle-app.setting
+.gradletasknamecache
+
+# Spring Boot
+spring-boot-*.log
+*.pid
+
+# Logs / temp
+*.log
+logs/
+tmp/
+temp/
+*.tmp
+*.swp
+*~
+
+# IDE — IntelliJ / IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# IDE — Eclipse / STS
+.classpath
+.project
+.settings/
+bin/
+.factorypath
+.springBeans
+.sts4-cache/
+
+# IDE — VS Code / Cursor (local)
+.vscode/
+!.vscode/extensions.json
+.cursor/
+!.cursor/rules/
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Env / secrets (local)
+.env
+.env.*
+!.env.example
+*.pem
+*.p12
+*.jks
+application-local.yml
+application-local.properties
+application-secret.yml
+application-secret.properties
+
+# Test / coverage
+.coverage
+coverage/
+*.exec
+.jacoco/
+test-output/
+
+# Node (if tooling added later)
+node_modules/
