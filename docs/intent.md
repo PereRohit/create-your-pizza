@@ -2,9 +2,9 @@
 
 **Status:** APPROVED — 2026-09-17 (owner HIFL Approve). Intent gate passed; next stage is Spec.
 
-**Source of truth for this revision:** [internal/intent-revise-2026-09-17-b.md](../internal/intent-revise-2026-09-17-b.md) (owner HIFL Revise, second). Prior revise: [internal/intent-revise-2026-09-17.md](../internal/intent-revise-2026-09-17.md). Prior brief: [internal/product-idea.md](../internal/product-idea.md).
+**Status note:** Intent is APPROVED. Product decisions live in this file, [spec.md](spec.md), and [project-context.md](project-context.md).
 
-**Related:** [HIFL playbook](hifl-playbook.md) · [Project context](project-context.md) · [Spec (draft — revised)](spec.md) · Spec revise [internal/spec-revise-2026-09-17.md](../internal/spec-revise-2026-09-17.md)
+**Related:** [HIFL playbook](hifl-playbook.md) · [Project context](project-context.md) · [Spec (APPROVED)](spec.md) · [Handoff](handoff.md)
 
 ---
 
@@ -104,4 +104,4 @@ Product decisions formerly listed here (option entities; JWT claim/scope vocabul
 
 ## Approved — do not edit without new Revise gate
 
-Intent is **APPROVED** (2026-09-17). Status unchanged. Light consistency edits allowed only when a Spec Revise requires alignment (flat-array presentation, pointers to Spec locks). Do **not** reopen Intent scope without a new owner HIFL Intent **Revise** gate. Spec is **DRAFT — revised**; awaiting Spec gate ([spec.md](spec.md)).
+Intent is **APPROVED** (2026-09-17). Status unchanged. Light consistency edits allowed only when a Spec Revise requires alignment (flat-array presentation, pointers to Spec locks). Do **not** reopen Intent scope without a new owner HIFL Intent **Revise** gate. Spec is **APPROVED** (2026-09-17); next stage is Design ([design.md](design.md)).

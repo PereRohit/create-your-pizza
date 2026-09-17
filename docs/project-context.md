@@ -2,7 +2,7 @@
 
 Durable product decisions for the CreateYourPizza pizza store catalog. Update this file when the owner locks a decision; do not treat chat alone as source of truth.
 
-**Related:** [HIFL playbook](hifl-playbook.md) · [Intent](intent.md) · [Spec](spec.md) · Spec revise [internal/spec-revise-2026-09-17-c.md](../internal/spec-revise-2026-09-17-c.md) · Prior Spec revise [internal/spec-revise-2026-09-17.md](../internal/spec-revise-2026-09-17.md) · Intent revise [internal/intent-revise-2026-09-17-b.md](../internal/intent-revise-2026-09-17-b.md) · Prior revise [internal/intent-revise-2026-09-17.md](../internal/intent-revise-2026-09-17.md) · Owner brief [internal/product-idea.md](../internal/product-idea.md)
+**Related:** [HIFL playbook](hifl-playbook.md) · [Intent](intent.md) · [Spec](spec.md) · [Handoff](handoff.md)
 
 ## Project name
 
@@ -111,6 +111,8 @@ Also locked for runtime: **Postgres** (incl. version+bytea PDF, option entities,
 
 Do not start application code until Design and Build plan are approved. Spec is **APPROVED**; Design/TRD is **on hold** until the owner says go — do not draft `design.md` yet.
 
+**Process (agent resume):** after every stage **Approve**, update [`handoff.md`](handoff.md): **compress** completed stages into past memory, then refresh next-stage checklist/steps — do not wipe and fully rewrite. Repo docs (playbook + handoff) are the durable memory — not Cursor rules. **Do not git-commit** unless the owner confirms; preferred doc branch when committing: `cursor/sync-spec-prd-revise-efa1`.
+
 ## Decision log
 
 | Date | Decision | Status |
@@ -126,7 +128,7 @@ Do not start application code until Design and Build plan are approved. Spec is 
 | 2026-09-17 | OpenAPI + tests are success criteria | Locked (owner brief) |
 | 2026-09-17 | v1 excludes orders, payments, delivery, franchising | Locked |
 | 2026-09-17 | HIFL Stages 1–6; no code before Design + Build plan | Locked (process) |
-| 2026-09-17 | Owner brief captured in `internal/product-idea.md`; Intent + Spec revised from brief | Locked (process) |
+| 2026-09-17 | Owner product brief captured; Intent + Spec revised and APPROVED | Locked (process) |
 | 2026-09-17 | Former “open ideas awaiting owner input” promoted into Intent/Spec scope | Locked |
 | 2026-09-17 | **Revise:** Central auth is **generic + extensible**; customer auth **provisioned**, not built in v1 | Locked (HIFL Revise) |
 | 2026-09-17 | **Revise:** PDF header **Create Your Pizza**; rows = **name + base price** only | Locked (HIFL Revise) |
@@ -161,20 +163,19 @@ Do not start application code until Design and Build plan are approved. Spec is 
 | 2026-09-17 | **Spec Revise c:** GET PDF HTTP = **raw binary** `application/pdf` only (not JSON envelope); Redis/DB storage shapes preserved | Locked (HIFL Spec Revise c) |
 | 2026-09-17 | Spec remains **DRAFT — revised** (c); awaiting Spec gate (Approve / Revise / Park); Intent stays **APPROVED**; **do not write design.md yet** | Locked (process) — **superseded** by Spec Approve below |
 | 2026-09-17 | **Spec APPROVED** (owner HIFL Approve); Spec gate passed; Design/TRD **on hold** until owner says go; **do not write design.md** | Locked (process) |
+| 2026-09-17 | **Process:** after every stage **Approve**, update `docs/handoff.md` — compress past stages + refresh next-stage handoff (no blank rewrite; no Cursor rule for HIFL handoff) | Locked (owner) |
+| 2026-09-17 | **Process:** do **not** git-commit unless owner confirms; preferred doc branch when committing: `cursor/sync-spec-prd-revise-efa1` | Locked (owner) |
 
 ## Document map
 
 | Doc | Role |
 |-----|------|
-| [hifl-playbook.md](hifl-playbook.md) | Process: stages, gates, handoffs |
+| [hifl-playbook.md](hifl-playbook.md) | Process: stages, gates, stage-end handoff hard rules |
+| [README.md](README.md) | Docs index + how to resume |
 | [intent.md](intent.md) | Stage 1 Intent — **APPROVED** 2026-09-17 |
 | [spec.md](spec.md) | Stage 2 Spec / PRD — **APPROVED** 2026-09-17; Design on hold |
-| [internal/spec-revise-2026-09-17-c.md](../internal/spec-revise-2026-09-17-c.md) | Owner HIFL Spec/PRD Revise c source |
-| [internal/spec-revise-2026-09-17.md](../internal/spec-revise-2026-09-17.md) | Prior owner HIFL Spec/PRD Revise source |
-| [internal/intent-revise-2026-09-17-b.md](../internal/intent-revise-2026-09-17-b.md) | Prior owner HIFL Intent Revise |
-| [internal/intent-revise-2026-09-17.md](../internal/intent-revise-2026-09-17.md) | Prior owner HIFL Revise |
-| [internal/product-idea.md](../internal/product-idea.md) | Original owner product brief |
+| [handoff.md](handoff.md) | Living resume — compressed past stages + next-stage handoff |
 | This file | Durable decisions and decision log |
 | `design.md` | Stage 3 — **on hold** until owner says go (not started) |
 | `AGENTS.md` | Build-stage delivery artifact (not created yet) |
-<!-- local-sync-stamp: 2026-09-17-spec-approved -->
+<!-- local-sync-stamp: 2026-09-17-handoff-process -->

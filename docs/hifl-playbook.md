@@ -33,9 +33,9 @@ The agent does not invent locked product decisions past what the owner has state
 1. **Agent drafts** the artifact at the path above (or updates it after Revise).
 2. **Human reviews** using the gate checklist below.
 3. **Human responds** with gate language: **Approve**, **Revise: …**, or **Park**.
-4. On **Approve**, status in the artifact becomes accepted; the next stage may start.
+4. On **Approve**, status in the artifact becomes accepted; the agent **updates** [`docs/handoff.md`](handoff.md) for the **next** stage (see [Stage-end handoff](#stage-end-handoff--required)); then the next stage may start (subject to any owner hold, e.g. Design).
 5. On **Revise**, feedback returns to the **owning stage**; agent updates that artifact only (not the next stage).
-6. On **Park**, work on that stage pauses; no later stage starts.
+6. On **Park**, work on that stage pauses; no later stage starts; leave current `handoff.md` accurate for resume.
 
 ## Gate language
 
@@ -54,7 +54,9 @@ Ambiguous replies (“looks ok but…”) should be clarified by the agent as Ap
 3. **No application code before Design and Build plan are both approved.**
 4. **Build (Stage 5) starts only after the Build-plan gate** is Approve.
 5. Stack choices (e.g. Spring Boot 3) stay provisional until Design (and Build plan) lock them.
-6. Artifacts live in **Context `docs/`**; process status lives in **`notes.md`** (coordinator). Do not scatter decisions only in chat.
+6. Artifacts live in **`docs/`**; stage status is tracked with the project coordinator. Do not scatter decisions only in chat.
+7. **Stage-end handoff required:** after every stage **Approve**, update [`docs/handoff.md`](handoff.md) before drafting the next stage: **compress** completed stages into a short past-memory section, then refresh next-stage checklist/steps. Do **not** wipe and fully rewrite from scratch. That file is the durable resume memory for the next agent — not chat, not Cursor rules.
+8. **No git commit unless the owner confirms.** After doc or code changes, the agent **asks** whether to commit (and on which branch/message). Preferred branch when committing docs: `cursor/sync-spec-prd-revise-efa1` — do not create new branches for doc syncs. Never assume commit.
 
 ## Gate review checklist (for the human)
 
@@ -75,21 +77,63 @@ For Spec/Design/Build-plan gates, also check consistency with the accepted prior
 
 | What | Where |
 |------|--------|
-| Process + product docs | Context store `docs/` (this playbook, `project-context.md`, `intent.md`, later `spec.md`, etc.) |
-| Stage status / checklist | Context `notes.md` (coordinator-owned) |
-| Internal agent working notes | Context `internal/` (not user-facing product truth) |
+| Process + product docs | `docs/` (this playbook, `project-context.md`, `intent.md`, `spec.md`, `handoff.md`, etc.) |
+| **Resume memory for next agent** | [`docs/handoff.md`](handoff.md) — living file; **compress + update** after every stage Approve |
+| Stage status / checklist | Also mirrored in `handoff.md` status table; coordinator may track separately |
 | Application code | Workspace repo — **only after** Design + Build plan Approve |
 
-### Typical handoff flow
+### Stage-end handoff (required)
+
+**When:** immediately after owner **Approve** for Intent, Spec, Design, Build plan, Build (ready for Verify), or Verify.
+
+**What:** update the living [`docs/handoff.md`](handoff.md) (single path — do not invent `handoff-design.md` variants unless the owner asks). **Do not fully rewrite from a blank slate.**
+
+**How (compress then update):**
+
+1. If `handoff.md` already exists, **summarize** prior completed-stage material into a compact **Past stages (compressed)** section (bullets / short paragraphs — not a dump of Intent/Spec).
+2. Fold the just-approved stage into that compressed memory (what was decided + pointer to the APPROVED artifact).
+3. Refresh **current state**, **owner preferences**, **next-agent checklist**, **next-stage steps**, and **What NOT to do** for the upcoming stage only.
+4. Keep a short **locked highlights** list (or fold into past memory) so product locks stay visible without re-reading full Spec.
+
+**Intent:** the handoff carries **compressed memory of past stages** plus **actionable handoff for the next stage** — history stays, verbosity drops.
+
+**Minimum structure:**
+
+- Audience, as-of date, repo root
+- Stage status table (Intent → Verify) with links
+- **Past stages (compressed)** — accumulated summaries of APPROVED stages
+- Owner preferences still in force (incl. ask-before-commit; Design hold if any)
+- Checklist for the **next** agent only
+- Steps for the next stage(s)
+- Locked product highlights (short) and/or folded into past memory
+- What NOT to do
+
+**Stage → next handoff focus:**
+
+| After Approve of | Compress that stage into past memory; focus next section on |
+|------------------|--------------------------------------------------------------|
+| Intent | Spec |
+| Spec | Design |
+| Design | Build plan |
+| Build plan | Build |
+| Build (ready for Verify) | Verify |
+| Verify | Closeout / residual notes |
+
+**Agent resume flow (typical):** read this playbook → read current [`handoff.md`](handoff.md) (past memory + next checklist) → open linked APPROVED artifacts only as needed → continue. Repo docs are the memory; do not rely on Cursor rules for HIFL handoff.
+
+### Typical gate + handoff flow
 
 1. Agent writes or updates a stage artifact under `docs/`.
-2. Agent reports paths and a short summary; gate ask is clear (Approve / Revise / Park).
+2. Agent reports paths and a short summary; gate ask is clear (Approve / Revise / Park). **Ask before any git commit.**
 3. Owner replies with gate language.
-4. On Approve: agent (or coordinator) marks the stage accepted and starts the next draft.
+4. On Approve: agent marks the stage accepted; **compresses past stages + updates `handoff.md` for the next stage**; asks about commit; then starts the next draft (unless owner hold applies).
 5. On Revise: agent edits the same artifact and re-asks the gate.
-6. On Park: stop; leave status visible in `notes.md`.
+6. On Park: stop; leave `handoff.md` accurate for resume.
 
 ## Related docs
 
 - [Project context](project-context.md) — durable product decisions
-- [Intent (Stage 1)](intent.md) — current Intent draft
+- [Intent (Stage 1)](intent.md) — APPROVED
+- [Spec (Stage 2)](spec.md) — APPROVED
+- [Handoff](handoff.md) — living resume: compressed past + next-stage handoff
+- [Docs index](README.md) — how to pick up mid-process

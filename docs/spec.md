@@ -2,9 +2,9 @@
 
 **Status:** APPROVED 2026-09-17 (owner HIFL Approve: Spec). Spec gate passed. **Approved — Design on hold until owner says go.**
 
-**Upstream:** [Intent](intent.md) (**APPROVED** 2026-09-17) · Spec revise [internal/spec-revise-2026-09-17-c.md](../internal/spec-revise-2026-09-17-c.md) · Prior Spec revise [internal/spec-revise-2026-09-17.md](../internal/spec-revise-2026-09-17.md) · Intent revise [internal/intent-revise-2026-09-17-b.md](../internal/intent-revise-2026-09-17-b.md) · Prior revise [internal/intent-revise-2026-09-17.md](../internal/intent-revise-2026-09-17.md) · Owner brief [internal/product-idea.md](../internal/product-idea.md)
+**Upstream:** [Intent](intent.md) (**APPROVED** 2026-09-17)
 
-**Related:** [Project context](project-context.md) · [HIFL playbook](hifl-playbook.md)
+**Related:** [Project context](project-context.md) · [HIFL playbook](hifl-playbook.md) · [Handoff](handoff.md)
 
 **Not in this stage:** full OpenAPI YAML, SQL DDL, or Spring Boot scaffold — those follow Design Approve (scaffold/deps at Build).
 
