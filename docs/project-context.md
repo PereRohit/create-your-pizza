@@ -111,7 +111,7 @@ Also locked for runtime: **Postgres** (incl. version+bytea PDF, option entities,
 
 Do not start application code until Design and Build plan are approved. Spec is **APPROVED**; Design/TRD is **on hold** until the owner says go — do not draft `design.md` yet.
 
-**Process (agent resume):** after every stage **Approve**, update [`handoff.md`](handoff.md): **compress** completed stages into past memory, then refresh next-stage checklist/steps — do not wipe and fully rewrite. Repo docs (playbook + handoff) are the durable memory — not Cursor rules. **Do not git-commit** unless the owner confirms; preferred doc branch when committing: `cursor/sync-spec-prd-revise-efa1`.
+**Process (agent resume):** [hifl-playbook.md](hifl-playbook.md) is the **generic** HIFL Agentic SDLC process (reusable across projects). After every stage **Approve**, update [`handoff.md`](handoff.md): **compress** completed stages into past memory, then refresh next-stage checklist/steps — do not wipe and fully rewrite. Repo docs (playbook + handoff + this file) are the durable memory — not editor-specific rules. **Do not git-commit** unless the owner confirms. **This repo’s** preferred doc commit branch: `cursor/sync-spec-prd-revise-efa1` (do not create new branches for doc syncs).
 
 ## Decision log
 
@@ -165,17 +165,18 @@ Do not start application code until Design and Build plan are approved. Spec is 
 | 2026-09-17 | **Spec APPROVED** (owner HIFL Approve); Spec gate passed; Design/TRD **on hold** until owner says go; **do not write design.md** | Locked (process) |
 | 2026-09-17 | **Process:** after every stage **Approve**, update `docs/handoff.md` — compress past stages + refresh next-stage handoff (no blank rewrite; no Cursor rule for HIFL handoff) | Locked (owner) |
 | 2026-09-17 | **Process:** do **not** git-commit unless owner confirms; preferred doc branch when committing: `cursor/sync-spec-prd-revise-efa1` | Locked (owner) |
+| 2026-09-17 | **Process:** `docs/hifl-playbook.md` is **generic HIFL Agentic SDLC** (project-agnostic); product status and git branch prefs live in project-context / handoff | Locked (owner) |
 
 ## Document map
 
 | Doc | Role |
 |-----|------|
-| [hifl-playbook.md](hifl-playbook.md) | Process: stages, gates, stage-end handoff hard rules |
+| [hifl-playbook.md](hifl-playbook.md) | Generic HIFL Agentic SDLC process (stages, gates, handoff rules) |
 | [README.md](README.md) | Docs index + how to resume |
 | [intent.md](intent.md) | Stage 1 Intent — **APPROVED** 2026-09-17 |
 | [spec.md](spec.md) | Stage 2 Spec / PRD — **APPROVED** 2026-09-17; Design on hold |
 | [handoff.md](handoff.md) | Living resume — compressed past stages + next-stage handoff |
-| This file | Durable decisions and decision log |
+| This file | Durable decisions, decision log, **this repo’s** owner prefs |
 | `design.md` | Stage 3 — **on hold** until owner says go (not started) |
 | `AGENTS.md` | Build-stage delivery artifact (not created yet) |
-<!-- local-sync-stamp: 2026-09-17-handoff-process -->
+<!-- local-sync-stamp: 2026-09-17-generic-playbook -->
