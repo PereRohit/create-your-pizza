@@ -4,7 +4,7 @@
 
 **Source of truth for this revision:** [internal/intent-revise-2026-09-17-b.md](../internal/intent-revise-2026-09-17-b.md) (owner HIFL Revise, second). Prior revise: [internal/intent-revise-2026-09-17.md](../internal/intent-revise-2026-09-17.md). Prior brief: [internal/product-idea.md](../internal/product-idea.md).
 
-**Related:** [HIFL playbook](hifl-playbook.md) · [Project context](project-context.md) · [Spec (draft)](spec.md)
+**Related:** [HIFL playbook](hifl-playbook.md) · [Project context](project-context.md) · [Spec (draft — revised)](spec.md) · Spec revise [internal/spec-revise-2026-09-17.md](../internal/spec-revise-2026-09-17.md)
 
 ---
 
@@ -31,7 +31,7 @@ A pizza delivery store needs one maintained product catalog that covers simple i
   - **Veg / non-veg** applies to **Simple, Combo, and Pizza** (all three types)
 - Anyone can download/view the **public PDF menu card** with no login. PDF is basic: header **Create Your Pizza**; table rows of **item name + base price** only.
 - PDF artifacts are stored **in the database with versioning**. On generation/update, the current menu is also written to **Redis** so customers can fetch the current menu efficiently. Dirty/5-min job + concurrency rules from the prior revise remain in force.
-- A **registered trusted system** can query the catalog via REST with filters: veg/non-veg, product type, price under Rs. X, and pagination (**default page size 10**). Consumer listing product types: **simple**, **combo**, **pizza-base**, **pizza-spec**. Default presentation: results **grouped by type**, sorted in **creation order** within groups; if a **filter is specified, the filter takes precedence** over default grouping/presentation.
+- A **registered trusted system** (and **Admin** on the same query APIs) can query the catalog via REST with filters: veg/non-veg, product type, price under Rs. X, and pagination (**default page size 10**). Consumer listing product types: **simple**, **combo**, **pizza-base**, **pizza-spec**. Wire format: products as a **flat array** (Spec); sorted in **creation order** by default; if a **filter is specified, the filter takes precedence**.
 - Callers authenticate via a **generic, extensible central auth service** that issues a **JWT with 30-minute TTL**. Claims carry **user/system identity** and **scope/permissions**. Admin JWTs include **admin user id**. External/trusted systems may authenticate with API key + API secret exchanged for a JWT (identity maps to claims such as `sub` / `client_id` — industry practice detailed in Spec). Customer auth is **provisioned for later**, not implemented in v1. Live-session invalidation is out of scope.
 - Catalog APIs validate JWTs via **industry-standard local signature verification** (and expiry/claims checks) so the catalog service does **not** call auth just to validate tokens. **Redis** remains the **catalog read cache** (and current-menu PDF fetch path), not a required token store.
 - Catalog data lives in **Postgres**; **Redis** serves as the read-heavy catalog cache (including current PDF).
@@ -48,15 +48,15 @@ Incorporated from the owner brief and HIFL Revises (first + second):
 - Catalog of three admin product types: **Simple**, **Combo**, **Pizza**
 - **Veg / non-veg** on **Simple, Combo, and Pizza**
 - Consumer API listing types: **simple**, **combo**, **pizza-base**, **pizza-spec** (pizza base products vs specification/option catalog items as distinct types)
-- **Pizza option catalog** (documented in Spec; not only PDF): crust sizes (10 / 12 / 15 inch), crust types (thin base, cheese burst, deep dish), toppings (chicken, mushrooms, pepperoni, **olive base**), free-text **non-chargeable** customisations
-- Admin maintenance of products, prices, and combos; **combo price = admin-defined**, not derived sum
+- **Pizza option catalog** as **option entities** (Spec): crust sizes (10 / 12 / 15 inch), crust types (thin base, cheese burst, deep dish), toppings (chicken, mushrooms, pepperoni, **olive base**), free-text **non-chargeable** customisations
+- Admin maintenance of products, prices, and combos; **combo price = admin-defined**, not derived sum; Admin may use **same** catalog query APIs as Trusted
 - Public, unauthenticated **PDF menu card** — header **Create Your Pizza**; tabular **name + base price**
-- PDF **stored in DB with versioning**; on generate/update also refresh **Redis** for efficient current-menu fetch; dirty/5-min + lock/skip concurrency preserved
-- **Generic extensible central auth** + **JWT (30m TTL)** with identity + scope/permissions claims; admin user id on admin tokens; trusted systems may use key+secret → JWT; customer auth **provisioned**, not built now
-- Trusted-system catalog queries: veg/non-veg, type, price under Rs. X, pagination (default **10** per page); default **group by type** + creation order; **filter overrides** default presentation
+- PDF **stored in DB with versioning**; on generate/update also refresh **Redis** for efficient current-menu fetch; dirty/5-min + lock/skip concurrency preserved (details in Spec)
+- **Generic extensible central auth** (same user table + roles) + **JWT (30m TTL)** with identity + scope claims (binding names/scopes in Spec); trusted systems may use key+secret → JWT; customer auth **provisioned**, not built now
+- Catalog queries: veg/non-veg, type, price under Rs. X, pagination (default **10** per page); **flat array** response; **filter overrides** default presentation
 - **Postgres** primary store (including versioned PDF) + **Redis** catalog cache / current PDF fetch
-- JWT: **local signature verification** preferred (standards over Redis-as-token-store)
-- Async PDF job: **5-minute** interval, dirty-flag / only-when-updated, with **DB lock / skip** concurrency rules
+- JWT: **local signature verification** preferred (standards over Redis-as-token-store); verify-key material per Spec
+- Async PDF job: **5-minute** interval, dirty-flag / only-when-updated, with concurrency rules in Spec
 - **Java Spring Boot + Maven**; Initializr by owner; dependency suggestions at Build
 - **Docker Compose**: Postgres + Redis volumes + sample data (Simple, Combo, Pizza); full stack one-command bring-up
 - **OpenAPI / Swagger**, **AGENTS.md**, and **test cases** as delivery artifacts
@@ -82,7 +82,7 @@ Incorporated from the owner brief and HIFL Revises (first + second):
 - **Protected surfaces:** admin catalog writes and trusted-system catalog APIs require valid JWT at the appropriate level
 - **Storage:** Postgres (products + user information + **versioned PDF**) and Redis (**catalog** cache + **current menu PDF** fetch path)
 - **PDF:** async, fixed **5-minute** cadence, only when catalog actually changed; store in DB with versioning and update Redis on generate; concurrency per Spec product decision (DB lock → 503; skip if save in progress)
-- **Consumer API:** default page size **10**; types **simple / combo / pizza-base / pizza-spec**; group by type + creation order unless filter takes precedence
+- **Consumer API:** default page size **10**; types **simple / combo / pizza-base / pizza-spec**; **flat array** wire format + creation order unless filter takes precedence (Spec)
 - **Veg/non-veg:** required concept on **all** product types (Simple, Combo, Pizza)
 - **Stack:** **Java Spring Boot with Maven** (locked); owner creates project via Spring Initializr
 - **Ops:** entire system dockerized for clone + `docker compose up`-style bring-up; Postgres/Redis volumes + sample data for each product type
@@ -91,10 +91,7 @@ Incorporated from the owner brief and HIFL Revises (first + second):
 
 ## Open ideas (truly unresolved only)
 
-- Exact pizza option persistence / API shape (entities vs config) — Spec lists options; Design decides schema
-- Exact JWT claim names / scope vocabulary beyond industry-practice suggestion in Spec — Design
-- DB lock mechanics (advisory vs row vs status table) and 503 retry headers — Design
-- How catalog obtains auth signing public key/secret at runtime — Design
+Product decisions formerly listed here (option entities; JWT claim/scope vocabulary; status-table lock + 503 envelope; central public verify-key store) are **locked in Spec** (2026-09-17 Spec Revise). Remaining Design-only details: pagination max, DTO mapping pizza-base vs pizza-spec, JWKS refresh/`kid` rotation, optional `Retry-After` header, PDF binary vs JSON metadata sibling.
 
 ## Risks / unknowns
 
@@ -107,4 +104,4 @@ Incorporated from the owner brief and HIFL Revises (first + second):
 
 ## Approved — do not edit without new Revise gate
 
-Intent is **APPROVED** (2026-09-17). Do **not** edit this document without a new owner HIFL **Revise** gate. Next stage: **Spec** ([spec.md](spec.md)).
+Intent is **APPROVED** (2026-09-17). Status unchanged. Light consistency edits allowed only when a Spec Revise requires alignment (flat-array presentation, pointers to Spec locks). Do **not** reopen Intent scope without a new owner HIFL Intent **Revise** gate. Spec is **DRAFT — revised**; awaiting Spec gate ([spec.md](spec.md)).
