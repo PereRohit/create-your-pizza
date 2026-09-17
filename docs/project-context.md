@@ -2,7 +2,7 @@
 
 Durable product decisions for the CreateYourPizza pizza store catalog. Update this file when the owner locks a decision; do not treat chat alone as source of truth.
 
-**Related:** [HIFL playbook](hifl-playbook.md) · [Intent](intent.md) · [Spec](spec.md) · Spec revise [internal/spec-revise-2026-09-17.md](../internal/spec-revise-2026-09-17.md) · Intent revise [internal/intent-revise-2026-09-17-b.md](../internal/intent-revise-2026-09-17-b.md) · Prior revise [internal/intent-revise-2026-09-17.md](../internal/intent-revise-2026-09-17.md) · Owner brief [internal/product-idea.md](../internal/product-idea.md)
+**Related:** [HIFL playbook](hifl-playbook.md) · [Intent](intent.md) · [Spec](spec.md) · Spec revise [internal/spec-revise-2026-09-17-c.md](../internal/spec-revise-2026-09-17-c.md) · Prior Spec revise [internal/spec-revise-2026-09-17.md](../internal/spec-revise-2026-09-17.md) · Intent revise [internal/intent-revise-2026-09-17-b.md](../internal/intent-revise-2026-09-17-b.md) · Prior revise [internal/intent-revise-2026-09-17.md](../internal/intent-revise-2026-09-17.md) · Owner brief [internal/product-idea.md](../internal/product-idea.md)
 
 ## Project name
 
@@ -10,7 +10,7 @@ Durable product decisions for the CreateYourPizza pizza store catalog. Update th
 
 ## Problem statement
 
-A pizza delivery store needs one catalog of **Simple**, **Combo**, and **Pizza** products that admins maintain; customers open a **public unauthenticated PDF** menu card; and **trusted registered systems** (and **admins** on the same query APIs) consume filtered, paginated catalog REST APIs after central-auth JWT login — without orders, payments, delivery, or live-session revocation in v1. Auth stays **generic and extensible** (same user table + roles) for future customer login when order flow arrives. Veg/non-veg applies to all product types; pizza options are **option entities**; consumer listing is a **flat array** (pizza-base vs pizza-spec types); PDF is **version + bytea** with Redis key/JSON locked in Spec.
+A pizza delivery store needs one catalog of **Simple**, **Combo**, and **Pizza** products that admins maintain; customers open a **public unauthenticated PDF** menu card (**raw binary** HTTP); and **trusted registered systems** (and **admins** on the same query APIs) consume filtered, paginated catalog REST APIs after central-auth JWT login — without orders, payments, delivery, or live-session revocation in v1. Auth stays **generic and extensible** (same user table + roles) for future customer login when order flow arrives. Veg/non-veg applies to all product types; pizza options are **option entities**; consumer listing is a **flat `data` array** with **`pagination` sibling**; PDF is **version + bytea** with Redis key/JSON locked in Spec; JWT public keys are **DB only**.
 
 ## Actors and capabilities
 
@@ -70,10 +70,20 @@ A pizza delivery store needs one catalog of **Simple**, **Combo**, and **Pizza**
 | JWT claims | **Binding** names: `sub`, `iss`, `aud`, `exp`, `iat`, `scope`, `roles`, `client_id` (optional `jti`) |
 | Admin queries | Admin **may** call the **same** catalog list/query APIs as Trusted |
 | PDF schema | **Version column + bytea**; job writes **both** Redis and DB; **Redis-first / DB fallback**; key `create-your-pizza/menu`; JSON `{pdf: base64, version, updatedAt}` UTC |
-| Consumer list | Always **flat array** over HTTP; standard envelope `{status, message, error, data}`; success `error` = `""` |
-| Lock / 503 | **Status table** for busy; 503 envelope **without `data`**: message `please try after sometime`, error `system busy` |
-| Verify keys | **Central store** (Redis/DB) for **public** verify material; JWKS industry suggestion; private keys only on auth |
+| Consumer list | Always **flat array** over HTTP; standard envelope `{status, message, error, data}`; success `error` = `""` — **extended** by Spec Revise c (`pagination` sibling) |
+| Lock / 503 | **Status table** for busy; 503 envelope **without `data`**: message `please try after sometime`, error `system busy` — **extended** by Spec Revise c (minimal schema; also omit `pagination`) |
+| Verify keys | **Central store** (Redis/DB) for **public** verify material; JWKS industry suggestion; private keys only on auth — **superseded** by Spec Revise c (**DB only**; no JWKS refresh) |
 | Scopes | **Binding** OAuth2-style: `catalog:read`, `catalog:write`, `menu:read` + role→scope map |
+
+### From owner HIFL Spec/PRD Revise c (2026-09-17 — pagination / PDF / keys)
+
+| Fact | Detail |
+|------|--------|
+| Envelope + pagination | Paginated JSON APIs include **`pagination` sibling to `data`**: `current`, `next` (−1 if none), `total` = **total products**; `data` = flat product array; 503 omits `data` and `pagination` |
+| Status table | **Extremely simple / minimal** — only fields to lock the other process (e.g. lock name/key + busy/holder + `updated_at`) |
+| DTOs | **Determined during coding**; Spec does not prescribe DTO class designs beyond wire JSON examples |
+| JWT key material | **DB only** for public verify keys — **not Redis**; **no JWKS refresh interval**; private signing keys on auth only; local verify preserved |
+| GET PDF | HTTP response = **raw binary PDF** (`application/pdf`) only — **not** JSON envelope; Redis/DB internal storage shapes unchanged |
 
 ## Auth principals (v1)
 
@@ -97,7 +107,7 @@ Former Intent mention of a distinct CUSTOMER principal for PDF access is **super
 
 **Locked:** **Java Spring Boot** with **Maven**. Owner creates the initial project via **Spring Initializr**. Agent supplies suggested Initializr dependencies as a **Build-stage** task — **do not scaffold now**.
 
-Also locked for runtime: **Postgres** (incl. version+bytea PDF, option entities, status table, user/roles), **Redis** (catalog cache + current PDF key + optional public JWKS cache), **JWT** (local verify from central public keys; binding claims + scopes), **OpenAPI/Swagger**, **tests**, async PDF behavior, **Docker Compose** full-stack bring-up with volumes and sample data.
+Also locked for runtime: **Postgres** (incl. version+bytea PDF, option entities, **minimal** status table, user/roles, **DB-only JWT public keys**), **Redis** (catalog cache + current PDF key — **not** JWT key material), **JWT** (local verify from DB public keys; binding claims + scopes; **no JWKS refresh interval**), **OpenAPI/Swagger**, **tests**, async PDF behavior, **Docker Compose** full-stack bring-up with volumes and sample data. Paginated JSON uses envelope + **`pagination` sibling**; public GET PDF = **raw binary**.
 
 Do not start application code until Design and Build plan are approved. Design/TRD must not be drafted until Spec is Approved.
 
@@ -143,7 +153,13 @@ Do not start application code until Design and Build plan are approved. Design/T
 | 2026-09-17 | **Spec Revise:** Concurrency lock via **status table**; 503 message `please try after sometime`, error `system busy` | Locked (HIFL Spec Revise) |
 | 2026-09-17 | **Spec Revise:** JWT verify keys in **central store** (public only); JWKS industry suggestion; private keys on auth only | Locked (HIFL Spec Revise) |
 | 2026-09-17 | **Spec Revise:** Binding scopes `catalog:read`, `catalog:write`, `menu:read` + ADMIN/TRUSTED_SYSTEM/(future) CUSTOMER mapping | Locked (HIFL Spec Revise) |
-| 2026-09-17 | Spec remains **DRAFT — revised**; awaiting Spec gate (Approve / Revise / Park); Intent stays **APPROVED**; **do not write design.md yet** | Locked (process) |
+| 2026-09-17 | Spec remains **DRAFT — revised**; awaiting Spec gate (Approve / Revise / Park); Intent stays **APPROVED**; **do not write design.md yet** | Locked (process) — **superseded** in detail by Spec Revise c below (status still DRAFT awaiting gate) |
+| 2026-09-17 | **Spec Revise c:** Paginated JSON envelope adds **`pagination` sibling** (`current`, `next`/−1, `total` = total products); `data` = flat product array; 503 omits `data` + `pagination` | Locked (HIFL Spec Revise c) |
+| 2026-09-17 | **Spec Revise c:** Status table must be **extremely simple / minimal** (lock key + busy/holder + `updated_at` sketch) | Locked (HIFL Spec Revise c) |
+| 2026-09-17 | **Spec Revise c:** **DTOs determined during coding** — Spec locks wire JSON only | Locked (HIFL Spec Revise c) |
+| 2026-09-17 | **Spec Revise c:** JWT public-key store = **DB only** (supersedes Redis and/or DB); **no JWKS refresh interval**; private keys on auth; local verify preserved | Locked (HIFL Spec Revise c; supersedes Redis/DB key-store language) |
+| 2026-09-17 | **Spec Revise c:** GET PDF HTTP = **raw binary** `application/pdf` only (not JSON envelope); Redis/DB storage shapes preserved | Locked (HIFL Spec Revise c) |
+| 2026-09-17 | Spec remains **DRAFT — revised** (c); awaiting Spec gate (Approve / Revise / Park); Intent stays **APPROVED**; **do not write design.md yet** | Locked (process) |
 
 ## Document map
 
@@ -151,12 +167,13 @@ Do not start application code until Design and Build plan are approved. Design/T
 |-----|------|
 | [hifl-playbook.md](hifl-playbook.md) | Process: stages, gates, handoffs |
 | [intent.md](intent.md) | Stage 1 Intent — **APPROVED** 2026-09-17 |
-| [spec.md](spec.md) | Stage 2 Spec / PRD — DRAFT revised; awaiting Spec gate |
-| [internal/spec-revise-2026-09-17.md](../internal/spec-revise-2026-09-17.md) | Owner HIFL Spec/PRD Revise source |
+| [spec.md](spec.md) | Stage 2 Spec / PRD — DRAFT revised (c); awaiting Spec gate |
+| [internal/spec-revise-2026-09-17-c.md](../internal/spec-revise-2026-09-17-c.md) | Owner HIFL Spec/PRD Revise c source |
+| [internal/spec-revise-2026-09-17.md](../internal/spec-revise-2026-09-17.md) | Prior owner HIFL Spec/PRD Revise source |
 | [internal/intent-revise-2026-09-17-b.md](../internal/intent-revise-2026-09-17-b.md) | Prior owner HIFL Intent Revise |
 | [internal/intent-revise-2026-09-17.md](../internal/intent-revise-2026-09-17.md) | Prior owner HIFL Revise |
 | [internal/product-idea.md](../internal/product-idea.md) | Original owner product brief |
 | This file | Durable decisions and decision log |
 | `design.md` | Stage 3 — **do not write until Spec Approve** |
 | `AGENTS.md` | Build-stage delivery artifact (not created yet) |
-<!-- local-sync-stamp: 2026-09-17-spec-revise-8 -->
+<!-- local-sync-stamp: 2026-09-17-spec-revise-c -->
