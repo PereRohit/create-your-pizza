@@ -4,11 +4,11 @@ Local workspace for the **CreateYourPizza** pizza store product catalog.
 
 ## Resume (next agent)
 
-1. [docs/hifl-playbook.md](docs/hifl-playbook.md) — stages, gates, **stage-end handoff** hard rules  
-2. [docs/handoff.md](docs/handoff.md) — **living resume** (compressed past stages + next-stage handoff; update after each Approve)  
-3. Linked APPROVED artifacts from the handoff status table  
+1. [docs/hifl-playbook.md](docs/hifl-playbook.md) — **generic** HIFL Agentic SDLC (stages, gates, stage-end handoff)  
+2. [docs/handoff.md](docs/handoff.md) — **living resume** (compressed past stages + next-stage handoff; this repo’s prefs)  
+3. [docs/project-context.md](docs/project-context.md) / linked APPROVED artifacts as needed  
 
-Repo docs are the memory — do not rely on chat or Cursor rules for HIFL handoff. **Do not git-commit** unless the owner confirms.
+Repo docs are the memory — do not rely on chat or editor-specific rules for HIFL handoff. **Do not git-commit** unless the owner confirms.
 
 ## HIFL status (summary)
 

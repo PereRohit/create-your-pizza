@@ -5,7 +5,7 @@
 **As of:** 2026-09-17  
 **Repo root:** local `create-your-pizza` (all links below are relative to that root)
 
-**How to resume:** read [docs/hifl-playbook.md](hifl-playbook.md) → this file (past memory + next checklist) → open linked APPROVED artifacts only as needed. After every stage **Approve**: **compress** completed stages here, then refresh next-stage handoff items — do **not** wipe and fully rewrite. Living resume memory — not Cursor rules / chat.
+**How to resume:** read [docs/hifl-playbook.md](hifl-playbook.md) (generic HIFL process) → this file (past memory + next checklist + **this repo’s** prefs) → [docs/project-context.md](project-context.md) as needed → open linked APPROVED artifacts only as needed. After every stage **Approve**: **compress** completed stages here, then refresh next-stage handoff items — do **not** wipe and fully rewrite. Living resume memory — not editor-specific rules / chat.
 
 ## Current state
 
@@ -39,8 +39,8 @@ Process: [docs/hifl-playbook.md](docs/hifl-playbook.md) · Decisions: [docs/proj
 ## Owner preferences (must follow)
 
 1. **Design/TRD:** Do **not** start until owner explicitly says to start (e.g. “start Design” / “draft TRD”).
-2. **Git commits:** Do **not** commit unless the owner **confirms**. After changes, **ask** whether to include a git commit. Preferred branch when committing docs: **`cursor/sync-spec-prd-revise-efa1`** only — no new branches for doc syncs.
-3. **Stage-end handoff:** On every stage **Approve**, **compress** that stage into **Past stages** above and refresh next-agent sections — do not blank-rewrite this file (see playbook).
+2. **Git commits:** Do **not** commit unless the owner **confirms**. After changes, **ask** whether to include a git commit. Preferred branch when committing docs (**this repo**, recorded in project-context): **`cursor/sync-spec-prd-revise-efa1`** only — no new branches for doc syncs. (Playbook does not hard-code branch names.)
+3. **Stage-end handoff:** On every stage **Approve**, **compress** that stage into **Past stages** above and refresh next-agent sections — do not blank-rewrite this file (see generic playbook).
 4. **Stack:** Java Spring Boot + Maven; owner Initializr; Initializr deps suggested at **Build** only.
 5. **Gate language:** Approve / Revise: … / Park — no silent skips.
 
@@ -96,6 +96,6 @@ Process: [docs/hifl-playbook.md](docs/hifl-playbook.md) · Decisions: [docs/proj
 - Do not git-commit unless the owner confirms
 - Do not create new git branches for doc syncs
 - Do not blank-rewrite this handoff — compress past stages, then update next-stage items
-- Do not add Cursor rules for HIFL handoff
+- Do not add editor-specific rules for HIFL handoff — keep resume memory in this file + playbook + project-context
 - Do not call auth service per-request to validate JWTs
 - Do not put API secrets in JWT claims
