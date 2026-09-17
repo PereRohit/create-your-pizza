@@ -1,12 +1,12 @@
-# Project context — ThinkWithMe
+# Project context — CreateYourPizza
 
-Durable product decisions for the ThinkWithMe pizza store catalog. Update this file when the owner locks a decision; do not treat chat alone as source of truth.
+Durable product decisions for the CreateYourPizza pizza store catalog. Update this file when the owner locks a decision; do not treat chat alone as source of truth.
 
 **Related:** [HIFL playbook](hifl-playbook.md) · [Intent](intent.md) · [Spec](spec.md) · Owner brief [internal/product-idea.md](../internal/product-idea.md)
 
 ## Project name
 
-**ThinkWithMe** — pizza store product catalog (create-your-pizza / catalog + public PDF + trusted APIs).
+**CreateYourPizza** — pizza store product catalog (create-your-pizza / catalog + public PDF + trusted APIs).
 
 ## Problem statement
 
@@ -58,7 +58,7 @@ Do not start application code until Design and Build plan are approved. Design/T
 
 | Date | Decision | Status |
 |------|----------|--------|
-| 2026-09-17 | Product is a pizza store product catalog (ThinkWithMe) | Locked |
+| 2026-09-17 | Product is a pizza store product catalog (CreateYourPizza) | Locked |
 | 2026-09-17 | Product types: Simple, Combo, Pizza (veg/non-veg; crust, size, toppings customizable) | Locked (owner brief) |
 | 2026-09-17 | Admin maintains catalog (prices, combos, products) | Locked |
 | 2026-09-17 | PDF menu card is **public / unauthenticated** | Locked (owner brief; supersedes ambiguous CUSTOMER PDF auth) |

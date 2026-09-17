@@ -1,6 +1,6 @@
-# HIFL Playbook — ThinkWithMe
+# HIFL Playbook — CreateYourPizza
 
-Human-in-the-Feedback-Loop (HIFL) process for the ThinkWithMe pizza store catalog.
+Human-in-the-Feedback-Loop (HIFL) process for the CreateYourPizza pizza store catalog.
 
 ## Purpose
 

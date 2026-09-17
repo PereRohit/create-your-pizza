@@ -1,6 +1,6 @@
-# create-your-pizza (ThinkWithMe)
+# create-your-pizza (CreateYourPizza)
 
-Local workspace for the **ThinkWithMe** pizza store product catalog — also known as **create-your-pizza**.
+Local workspace for the **CreateYourPizza** pizza store product catalog — also known as **create-your-pizza**.
 
 ## What this product is
 

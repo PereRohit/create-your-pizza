@@ -1,4 +1,4 @@
-# Spec / PRD — ThinkWithMe pizza catalog
+# Spec / PRD — CreateYourPizza pizza catalog
 
 **Status:** DRAFT — awaiting Spec gate (depends on Intent Approve)
 
@@ -14,7 +14,7 @@
 
 ### Product
 
-ThinkWithMe is a **pizza delivery store product catalog** service. Administrators maintain Simple products, Combos, and Pizzas. The public can download a PDF menu card without logging in. Trusted registered systems authenticate via a central auth service and consume filtered, paginated catalog REST APIs.
+CreateYourPizza is a **pizza delivery store product catalog** service. Administrators maintain Simple products, Combos, and Pizzas. The public can download a PDF menu card without logging in. Trusted registered systems authenticate via a central auth service and consume filtered, paginated catalog REST APIs.
 
 ### Goals (v1)
 

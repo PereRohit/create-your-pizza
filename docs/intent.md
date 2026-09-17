@@ -1,4 +1,4 @@
-# Intent — ThinkWithMe pizza catalog
+# Intent — CreateYourPizza pizza catalog
 
 **Status:** DRAFT — revised after owner product brief; awaiting Intent gate
 
