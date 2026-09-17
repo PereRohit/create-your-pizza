@@ -1,8 +1,8 @@
 # Spec / PRD — CreateYourPizza pizza catalog
 
-**Status:** DRAFT — revised 2026-09-17 (Spec/PRD Revise); awaiting Spec gate (Approve / Revise / Park)
+**Status:** DRAFT — revised 2026-09-17 (Spec/PRD Revise c — pagination / PDF / keys); awaiting Spec gate (Approve / Revise / Park)
 
-**Upstream:** [Intent](intent.md) (**APPROVED** 2026-09-17) · Spec revise [internal/spec-revise-2026-09-17.md](../internal/spec-revise-2026-09-17.md) · Intent revise [internal/intent-revise-2026-09-17-b.md](../internal/intent-revise-2026-09-17-b.md) · Prior revise [internal/intent-revise-2026-09-17.md](../internal/intent-revise-2026-09-17.md) · Owner brief [internal/product-idea.md](../internal/product-idea.md)
+**Upstream:** [Intent](intent.md) (**APPROVED** 2026-09-17) · Spec revise [internal/spec-revise-2026-09-17-c.md](../internal/spec-revise-2026-09-17-c.md) · Prior Spec revise [internal/spec-revise-2026-09-17.md](../internal/spec-revise-2026-09-17.md) · Intent revise [internal/intent-revise-2026-09-17-b.md](../internal/intent-revise-2026-09-17-b.md) · Prior revise [internal/intent-revise-2026-09-17.md](../internal/intent-revise-2026-09-17.md) · Owner brief [internal/product-idea.md](../internal/product-idea.md)
 
 **Related:** [Project context](project-context.md) · [HIFL playbook](hifl-playbook.md)
 
@@ -82,8 +82,8 @@ Separate section of catalog product rules (admin/API/data concepts). PDF does **
 | **FR-9** | Queries support filter by **product type**. Consumer listing types: **simple**, **combo**, **pizza-base**, **pizza-spec**. Each product in the response includes **product type** and other product details. |
 | **FR-10** | Queries support filter by **price under Rs. X**. |
 | **FR-11** | Queries support **pagination**. **Default page size = 10** products per page. Max limits may still be set in Design. |
-| **FR-11a** | **HTTP response products are always a flat array** to external systems (never nested-by-type groups in the JSON body). SQL/internal logic may group for ordering/pagination, but the wire format is a **flat** `data` array (or array inside the standard envelope). Default **sort: creation order** (and type-aware ordering may be applied internally). **If a filter is specified, the filter takes precedence** over default presentation/ordering rules. |
-| **FR-11b** | **All API responses** use the **standard JSON envelope** (see [§4 locked envelope](#locked-product-decision--standard-json-envelope)). |
+| **FR-11a** | **HTTP response products are always a flat array** to external systems (never nested-by-type groups in the JSON body). SQL/internal logic may group for ordering/pagination, but the wire format is a **flat** `data` array inside the standard envelope. Default **sort: creation order** (and type-aware ordering may be applied internally). **If a filter is specified, the filter takes precedence** over default presentation/ordering rules. |
+| **FR-11b** | **JSON API responses** use the **standard JSON envelope** (see [§4 locked envelope](#locked-product-decision--standard-json-envelope)). Paginated catalog/list responses include a **`pagination` object sibling to `data`**. Exception: public **GET PDF** returns **raw binary** (`application/pdf`) — not the JSON envelope. |
 | **FR-12** | Unauthenticated callers **cannot** access protected catalog query or admin write APIs. |
 
 ### PDF menu
@@ -98,6 +98,7 @@ Separate section of catalog product rules (admin/API/data concepts). PDF does **
 | **FR-16b** | **Product decision — concurrency:** While the PDF job is generating, enforce lock via a **status table** so catalog updates do not proceed; admin/catalog write APIs return **HTTP 503** with the [busy envelope](#locked-product-decision--status-table-lock--503-envelope) so clients **retry later**. |
 | **FR-16c** | **Product decision — concurrency:** If a **catalog save is in progress** when the 5-minute job fires, the job **skips** generation for that cycle and picks up on a later cycle with updated data. |
 | **FR-16d** | **PDF storage:** Postgres row(s) with a **version column** and **bytea** PDF payload. On generation, the job writes **directly to both Redis and DB**. Public fetch is **Redis-first** with **DB fallback**. See [§4 PDF Redis shape](#locked-product-decision--pdf-storage-version--bytea--redis). |
+| **FR-16e** | **GET PDF HTTP response:** the public menu/PDF endpoint returns **raw binary PDF bytes only** (`Content-Type: application/pdf`). It does **not** use the JSON envelope. Internal Redis/DB storage shapes remain as locked; only the **HTTP response to clients** is raw bytes. |
 
 ### Auth
 
@@ -106,7 +107,7 @@ Separate section of catalog product rules (admin/API/data concepts). PDF does **
 | **FR-17** | A **generic, extensible central auth service** allows principals to **register and authenticate**. v1 uses it for **Admin** and **trusted-system** principals on a **single user table with roles**. It must be **extensible** so **customers** can register/authenticate when order flow is integrated later — **customer auth need not be implemented in v1**, but must be **provisioned for**. Future **CUSTOMER** profile fields (when implemented later): **phone**, **name**, **email**. **User orders / order flows**, if needed later, are **created separately** (out of v1). |
 | **FR-18** | On successful auth, the service issues a **JWT with 30-minute TTL** for subsequent API calls. |
 | **FR-18a** | JWTs use **exact industry-standard claim names** locked in [§4 JWT claims](#locked-product-decision--jwt-claim-names-binding). Claims carry identity + **binding OAuth2-style scopes** ([§4 scopes](#locked-product-decision--oauth2-style-scope-vocabulary-binding)). **API secrets must not appear in the JWT** — used only at token issuance. |
-| **FR-19** | Protected APIs validate the JWT **locally** using **industry-standard signature verification** (plus expiry/claims/scope checks) before authorizing the requested action. The **catalog service must not call the auth service solely to validate** a presented token. Verification key material comes from a **central store** (Redis and/or DB) per [§4 key material](#locked-product-decision--jwt-verification-key-material). |
+| **FR-19** | Protected APIs validate the JWT **locally** using **industry-standard signature verification** (plus expiry/claims/scope checks) before authorizing the requested action. The **catalog service must not call the auth service solely to validate** a presented token. Verification **public-key** material comes from a **central DB-only store** per [§4 key material](#locked-product-decision--jwt-verification-key-material). **No JWKS refresh-interval** implementation. |
 | **FR-20** | **Invalidating live sessions / revoking outstanding JWTs** is **out of scope** for v1. |
 
 ### Delivery quality & ops
@@ -135,8 +136,8 @@ Separate section of catalog product rules (admin/API/data concepts). PDF does **
 | **NFR-8** | **Stack:** **Java Spring Boot** with **Maven**. Owner creates the initial project via **Spring Initializr**. Suggested Spring dependencies for Initializr packaging are a **Build-stage development task** (document in Build plan when Build starts; **do not scaffold application code now**). |
 | **NFR-9** | **Ops:** Docker Compose (or equivalent) one-command bring-up with persistent volumes and seeded sample catalog data. |
 | **NFR-10** | **AGENTS.md** ships with the built repo for agent-assisted setup/dev (see FR-23). |
-| **NFR-11** | Consumer list default **page size = 10**; HTTP body products = **flat array** in standard envelope; filters override default presentation/ordering. |
-| **NFR-12** | All success and error API responses use the **standard envelope**; 503 busy responses omit `data`. |
+| **NFR-11** | Consumer list default **page size = 10**; HTTP body products = **flat array** in `data` with **`pagination` sibling**; filters override default presentation/ordering. |
+| **NFR-12** | All success and error **JSON** API responses use the **standard envelope**; paginated lists include `pagination`; 503 busy responses omit `data` and `pagination`. Public GET PDF is **raw binary**, not the envelope. |
 
 ### Locked product decision — JWT validation (rationale)
 
@@ -146,7 +147,7 @@ Separate section of catalog product rules (admin/API/data concepts). PDF does **
 
 - Local verification is the common industry pattern for short-lived JWTs and avoids coupling catalog availability to an auth round-trip on every call.
 - Owner suggestion of Redis as a token comparison store is **not** chosen as the primary validation mechanism; **standards take precedence**.
-- **Redis remains** for **catalog caching**, **current menu PDF**, and (with DB) **central public verification key material** — not for comparing opaque session tokens.
+- **Redis remains** for **catalog caching** and **current menu PDF** — **not** for JWT public-key material and **not** for comparing opaque session tokens.
 - Live revocation / denylist remains **out of scope** for v1 (JWT expiry is the control). Design may note a future denylist hook without making Redis the token store now.
 
 ### Locked product decision — JWT claim names (binding)
@@ -195,14 +196,15 @@ Design/Build must use these strings unchanged unless a later Spec Revise changes
 
 ### Locked product decision — JWT verification key material
 
-**Decision (product):** Do **not** duplicate auth signing public key/secret across many config copies. Prefer a **central store**: **Redis and/or Postgres**.
+**Decision (product — binding):** Do **not** duplicate auth signing public key/secret across many config copies. The **central store for public verification key material is Postgres (DB) only** — **not Redis**.
 
-**Industry best-practice suggestion (document for Design/Build):**
+**Rules:**
 
-1. **Primary industry pattern:** Auth exposes a **JWKS** endpoint (`/.well-known/jwks.json` or equivalent). Resource servers fetch and cache JWKS periodically and verify with the matching `kid`.
-2. **Owner preference honored:** Maintain a **central store** of **public verification material only** (JWK/JWKS JSON or PEM public key) in **Redis and/or DB**, with **rotation metadata** (e.g. `kid`, `alg`, `not_before`, `expires_at`, `updated_at`).
-3. **Private signing keys stay only on the auth service** — never copied into catalog config or Redis as signing secrets.
-4. Catalog service **reads public key / JWKS from the central cache**, refreshes on a schedule (and on unknown `kid`), and verifies locally — **no per-request auth call**.
+1. Maintain a **DB-only** central store of **public verification material only** (JWK/JWKS JSON or PEM public key) with **rotation metadata** as Design needs (e.g. `kid`, `alg`, `updated_at`).
+2. **Private signing keys stay only on the auth service** — never copied into catalog config or Redis as signing secrets.
+3. Catalog service **reads public key material from the DB central store** and verifies locally — **no per-request auth call**.
+4. **No JWKS refresh-interval** implementation in v1 (do not schedule periodic JWKS endpoint refreshes as a product requirement).
+5. Redis is **not** used for JWT key material (Redis remains catalog cache + current menu PDF only).
 
 ### Locked product decision — PDF storage (version + bytea + Redis)
 
@@ -244,7 +246,16 @@ Design/Build must use these strings unchanged unless a later Spec Revise changes
 **Decision (product):**
 
 - Lock/busy state is coordinated with a **status table** (not left open between advisory lock vs row lock vs status table).
-- **503** responses use the **same standard envelope**, **without** the `data` field:
+- **Schema must be extremely simple and minimal** — only fields required to lock the other process. Sketch (Design may rename columns; do not over-model):
+
+| Column (sketch) | Purpose |
+|-----------------|---------|
+| `lock_name` / key | Which lock (e.g. `pdf_generation` / `catalog_write`) |
+| `busy` flag **or** `holder` | Whether busy / who holds the lock |
+| `updated_at` | Last change timestamp |
+
+- Do **not** add extra workflow, history, or multi-state machine columns unless a later Spec Revise requires them.
+- **503** responses use the **same standard envelope**, **without** `data` and **without** `pagination`:
 
 ```json
 {
@@ -256,14 +267,45 @@ Design/Build must use these strings unchanged unless a later Spec Revise changes
 
 ### Locked product decision — Standard JSON envelope
 
-**Decision (product — binding for coding):** All API responses use:
+**Decision (product — binding for coding):** JSON API responses use:
 
 ```json
 {
   "status": 200,
   "message": "success",
   "error": "",
-  "data": {}
+  "data": {},
+  "pagination": {
+    "current": 1,
+    "next": 2,
+    "total": 10
+  }
+}
+```
+
+**Paginated catalog/list example** (`data` = flat array of products; `pagination` sibling):
+
+```json
+{
+  "status": 200,
+  "message": "success",
+  "error": "",
+  "data": [
+    {
+      "productName": "",
+      "productId": "uuid",
+      "productType": "simple",
+      "productPrice": 233.44,
+      "productCategory": "non-veg",
+      "productCreatedAt": "UTC",
+      "productUpdatedAt": "UTC"
+    }
+  ],
+  "pagination": {
+    "current": 1,
+    "next": 2,
+    "total": 10
+  }
 }
 ```
 
@@ -272,20 +314,37 @@ Design/Build must use these strings unchanged unless a later Spec Revise changes
 | `status` | HTTP status code (number) |
 | `message` | Human-readable success/info |
 | `error` | Error detail when applicable; on **success**, use empty string `""` (not null) |
-| `data` | Object or array (payload). **Omitted** on 503 busy responses per above. |
+| `data` | Payload. For catalog/list: **array of products** (flat). Other JSON APIs may use object or array as appropriate. **Omitted** on 503 busy responses. |
+| `pagination` | **Sibling to `data`** when the response is paginated. **Omitted** on 503 busy (prefer omit both `data` and `pagination`). Not required on non-paginated JSON responses. |
+
+**Pagination field rules:**
+
+| Field | Meaning |
+|-------|---------|
+| `pagination.current` | Current page number |
+| `pagination.next` | Next page number, or **-1** if no more pages |
+| `pagination.total` | **Total products** (not total pages) |
+
+Product fields as exemplified (`productName`, `productId`, `productType`, `productPrice`, `productCategory`, `productCreatedAt`, `productUpdatedAt`); Design/coding may add further product fields (`...`). `productType` values remain **simple / combo / pizza-base / pizza-spec**.
+
+**DTOs:** Concrete DTO / class designs are **determined during coding** — Spec does **not** freeze DTO class shapes beyond these **wire JSON** examples.
+
+**Exception — GET PDF:** public menu/PDF returns **raw binary** (`application/pdf`), **not** this envelope.
 
 ### Locked product decision — Consumer API listing presentation
 
 **Decision (product):**
 
 1. Default page size: **10** products per page.
-2. Each product includes **product type** and other details.
+2. Each product includes **product type** and other details (wire fields as in envelope example; additional fields allowed at Design/coding).
 3. Listing types: **simple**, **combo**, **pizza-base**, **pizza-spec**.
-4. **Wire format:** products always returned as a **flat array** in `data` (or as `data` when `data` itself is the array). Never nested-by-type groups over HTTP.
-5. Internal SQL may group for ordering/pagination logic; external systems always see a flat list.
-6. Default ordering: **creation order** (Design may apply stable type-aware internal ordering before flattening).
-7. **If a filter is specified, filter takes precedence** over default presentation/ordering.
-8. **Admin** may call the **same** list/query APIs as Trusted systems.
+4. **Wire format:** products always returned as a **flat array** in `data`. Never nested-by-type groups over HTTP.
+5. **Pagination:** include `pagination` object **sibling to `data`** with `current`, `next` (−1 if none), `total` = total products.
+6. Internal SQL may group for ordering/pagination logic; external systems always see a flat list.
+7. Default ordering: **creation order** (Design may apply stable type-aware internal ordering before flattening).
+8. **If a filter is specified, filter takes precedence** over default presentation/ordering.
+9. **Admin** may call the **same** list/query APIs as Trusted systems.
+10. **DTOs** for request/response mapping are left to coding — Spec locks wire JSON only.
 
 ### Locked product decision — Option entities
 
@@ -322,7 +381,7 @@ Notes:
 - Claim names and scope strings in §4 are **binding**.
 - v1 does **not** implement customer register/login or orders, but must not hard-block adding that principal later.
 - Session/JWT **revocation** is out of scope; expiry at 30m is the control.
-- Validation is **local signature verify** using **central-stored public** key/JWKS material (see §4).
+- Validation is **local signature verify** using **DB-only central-stored public** key material (see §4); **no JWKS refresh interval**.
 - Trusted systems may present API key + API secret to auth; issued JWT carries `sub` / `client_id` / `roles` / `scope` — **not** the secret.
 
 ---
@@ -368,9 +427,10 @@ Admin writes during PDF generation lock (status table busy) → **503** busy env
 
 **Response presentation:**
 
-- Standard envelope; `data` is a **flat array** of products (or an object whose product list field is a flat array — Design picks one shape but **must not nest by type**).
-- Each item includes **product type** and other product details.
+- Standard envelope; `data` is a **flat array** of products; **`pagination`** object is a **sibling** to `data` (`current`, `next` = next page or **-1**, `total` = **total products**).
+- Each item includes **product type** and other product details (wire example fields in §4; coding may add more).
 - **Filter takes precedence** over default ordering/presentation when specified.
+- **DTOs** are coding-time; Spec locks wire JSON only.
 
 ### Menu PDF (public)
 
@@ -378,7 +438,9 @@ Admin writes during PDF generation lock (status table busy) → **503** busy env
 |----------------------------|------|---------|
 | `GET /api/menu.pdf` (or `/public/menu`) | **None** | Download/view current menu PDF (**Redis-first**; **DB fallback**; key `create-your-pizza/menu`) |
 
-Path names are illustrative; Design may rename while preserving the capability matrix and envelope rules (PDF binary download may stream bytes; if wrapped in JSON for metadata endpoints, still use the standard envelope).
+**HTTP response:** **raw binary PDF** only (`Content-Type: application/pdf`). **Not** the JSON envelope. Internal Redis JSON / DB bytea storage shapes stay as locked for job/storage; clients receive raw bytes.
+
+Path names are illustrative; Design may rename while preserving the capability matrix. JSON APIs use the standard envelope (+ `pagination` when paginating); PDF GET is the binary exception.
 
 ---
 
@@ -397,12 +459,12 @@ Not full SQL DDL — Design owns schema detail. Conceptual entities:
 | **OptionEntity (pizza-spec)** | First-class entities for crust sizes (10/12/15), crust types (thin / cheese burst / deep dish), toppings (chicken, mushrooms, pepperoni, olive base) — **not** free-form-string-only catalog |
 | **CatalogVersion / DirtyFlag** | Marker updated on any catalog mutation; PDF job checks this (or a `lastCatalogChangeAt` vs `lastPdfGeneratedAt`) |
 | **MenuPdfArtifact** | **version column + bytea** in Postgres; generation timestamp; content = header **Create Your Pizza** + name/price table; **current** copy also in Redis at `create-your-pizza/menu` |
-| **SystemStatus / lock status table** | Status-table row(s) for PDF-generation / catalog-write busy state (FR-16b / FR-16c) |
-| **VerificationKeyMaterial** | Central Redis/DB store of **public** JWKS/JWK (or PEM) + rotation metadata for local JWT verify |
+| **SystemStatus / lock status table** | **Extremely simple / minimal** status-table row(s) for PDF-generation / catalog-write busy state — e.g. lock name/key + busy flag or holder + `updated_at` only (FR-16b / FR-16c). Do not over-model. |
+| **VerificationKeyMaterial** | **DB-only** central store of **public** JWK/JWKS (or PEM) + rotation metadata for local JWT verify — **not Redis**; **no JWKS refresh-interval** product requirement |
 
-**PDF job (product behavior):** On Admin write → set `catalog_dirty = true` (or bump `catalog_version`). Every 5 minutes: if a catalog save is in progress (status table) → **skip** cycle; else if dirty (or version > last PDF version) → mark busy in **status table** → regenerate PDF (header + name/price table) → **write version+bytea to DB and Redis JSON** (`create-your-pizza/menu`) → clear dirty / record version → clear busy. Concurrent admin writes while busy → **HTTP 503** busy envelope. If not dirty and no skip condition, no-op.
+**PDF job (product behavior):** On Admin write → set `catalog_dirty = true` (or bump `catalog_version`). Every 5 minutes: if a catalog save is in progress (status table) → **skip** cycle; else if dirty (or version > last PDF version) → mark busy in **status table** → regenerate PDF (header + name/price table) → **write version+bytea to DB and Redis JSON** (`create-your-pizza/menu`) → clear dirty / record version → clear busy. Concurrent admin writes while busy → **HTTP 503** busy envelope (omit `data` and `pagination`). If not dirty and no skip condition, no-op.
 
-**Cache:** Redis caches product list/detail responses and the **current menu PDF**. Invalidate or bump cache keys on Admin writes / PDF regen. Redis is **not** the primary JWT validation store (it may hold **public** verify keys / JWKS cache).
+**Cache:** Redis caches product list/detail responses and the **current menu PDF**. Invalidate or bump cache keys on Admin writes / PDF regen. Redis is **not** the JWT validation store and **not** the public-key store (keys are **DB only**).
 
 **Seed / sample data:** Dockerized Postgres must include sample rows for **Simple**, **Combo**, and **Pizza** product types and **option entities**, each with veg/non-veg as applicable.
 
@@ -413,11 +475,11 @@ Not full SQL DDL — Design owns schema detail. Conceptual entities:
 | Area | Acceptance |
 |------|------------|
 | **FR-1–4 / 4a–4f Product types & option entities** | Admin can persist and retrieve Simple, Combo, Pizza, and **option entities**; Combo price is admin-set (not sum); **veg/non-veg on all three types**; Pizza supports documented crust size/type/toppings as entities + non-chargeable free-text customisations; consumer listing distinguishes **pizza-base** vs **pizza-spec**. |
-| **FR-5 Admin CRUD** | With valid Admin JWT (`sub` + `catalog:write`), create/update/delete succeed; without JWT or with Trusted-only JWT, writes return 401/403; during PDF busy (status table), writes return **503** busy envelope (no `data`). |
+| **FR-5 Admin CRUD** | With valid Admin JWT (`sub` + `catalog:write`), create/update/delete succeed; without JWT or with Trusted-only JWT, writes return 401/403; during PDF busy (status table), writes return **503** busy envelope (no `data`, no `pagination`). |
 | **FR-6 Dirty flag** | Any successful catalog mutation sets dirty/version so PDF job will regenerate within one successful 5-minute cycle (accounting for skip rules). |
-| **FR-7–11 / 7a / 11a–11b Queries** | Trusted **and Admin** JWT with `catalog:read` can filter by veg/non-veg, type (`simple`/`combo`/`pizza-base`/`pizza-spec`), maxPrice, and paginate (default size **10**); response uses **standard envelope** with products as a **flat array**; filter overrides default ordering; each item includes type + details; unauthenticated → 401. |
-| **FR-13–16 / 16a–16d PDF** | Unauthenticated GET returns PDF with header **Create Your Pizza** and name+base-price table; dirty-driven async regen; **version + bytea** in DB; Redis key `create-your-pizza/menu` with Base64 `pdf` + `version` + UTC `updatedAt`; Redis-first / DB fallback; job writes both; status-table busy → 503 envelope. |
-| **FR-17–20 / 18a Auth** | Same user table + roles; register/login (and trusted key+secret exchange) yields JWT with locked claims (`sub`,`iss`,`aud`,`exp`,`iat`,`scope`,`roles`,…); scopes per binding vocabulary; local signature verify using **central public** key store (JWKS-style practice); secrets not in JWT; CUSTOMER phone/name/email and orders not required in v1; no revoke API required. |
+| **FR-7–11 / 7a / 11a–11b Queries** | Trusted **and Admin** JWT with `catalog:read` can filter by veg/non-veg, type (`simple`/`combo`/`pizza-base`/`pizza-spec`), maxPrice, and paginate (default size **10**); response uses **standard envelope** with **flat** `data` array + **`pagination` sibling** (`current` / `next`/−1 / `total` products); filter overrides default ordering; each item includes type + details; unauthenticated → 401. |
+| **FR-13–16 / 16a–16e PDF** | Unauthenticated GET returns **raw binary** PDF (`application/pdf`, not JSON envelope) with header **Create Your Pizza** and name+base-price table; dirty-driven async regen; **version + bytea** in DB; Redis key `create-your-pizza/menu` with Base64 `pdf` + `version` + UTC `updatedAt`; Redis-first / DB fallback; job writes both; status-table busy → 503 envelope on write APIs. |
+| **FR-17–20 / 18a Auth** | Same user table + roles; register/login (and trusted key+secret exchange) yields JWT with locked claims (`sub`,`iss`,`aud`,`exp`,`iat`,`scope`,`roles`,…); scopes per binding vocabulary; local signature verify using **DB-only central public** key store; **no JWKS refresh interval**; secrets not in JWT; CUSTOMER phone/name/email and orders not required in v1; no revoke API required. |
 | **FR-21–25 Quality & ops** | OpenAPI/Swagger imports into Postman; tests cover auth matrix, CRUD, filters/flat pagination, public PDF, concurrency/503 where practical; AGENTS.md present at Build delivery; Docker Compose brings up app + Postgres + Redis with volumes and sample data. |
 
 ---
@@ -432,6 +494,8 @@ Not full SQL DDL — Design owns schema detail. Conceptual entities:
 - Real-time PDF regeneration on every write (v1 is dirty + 5-minute async)
 - Putting API secrets into JWT claims
 - Duplicating private signing keys into catalog service config
+- **JWKS refresh-interval** implementation; Redis as JWT public-key store
+- Prescribing concrete DTO class designs in Spec (wire JSON examples only; DTOs at coding)
 - Full OpenAPI/SQL as part of *this* Spec gate (sketch only here)
 - Spring Initializr dependency packaging / application scaffold before Build
 - Creating AGENTS.md before Build (planned artifact only until then)
@@ -443,19 +507,21 @@ Not full SQL DDL — Design owns schema detail. Conceptual entities:
 
 Resolved by Spec Revises (see §4 and decision log in project-context) — **not** open:
 
-- JWT validation approach → **local signature verification**; Redis = catalog cache (+ current PDF) + optional **public** verify-key central store
+- JWT validation approach → **local signature verification**; Redis = catalog cache (+ current PDF) only — **not** key store
 - Combo pricing → **admin-set**, not sum
 - PDF layout minimum → header **Create Your Pizza**; name + base price table
-- PDF/catalog concurrency → **status table** busy / 503 envelope; skip if save in progress
+- PDF/catalog concurrency → **status table** (minimal columns) busy / 503 envelope; skip if save in progress
 - PDF storage → **version column + bytea**; Redis key `create-your-pizza/menu`; JSON with Base64 `pdf`, `version`, UTC `updatedAt`; job writes both; Redis-first / DB fallback
+- **GET PDF HTTP** → **raw binary** `application/pdf` (not JSON envelope)
 - JWT claim names → **binding** table in §4 (`sub`, `iss`, `aud`, `exp`, `iat`, `scope`, `roles`, `client_id`, optional `jti`)
 - Scope vocabulary → **binding** OAuth2-style strings + role mapping in §4
-- Consumer pagination default → **10**; **flat array** wire format; filter precedence; **Admin same query APIs**
+- Consumer pagination default → **10**; **flat `data` array** + **`pagination` sibling** (`current` / `next`/−1 / `total` products); filter precedence; **Admin same query APIs**
 - Consumer listing types → **simple / combo / pizza-base / pizza-spec**
 - Pizza options → **option entities** (not free-form-string-only catalog)
 - User model → **same user table with roles**; future CUSTOMER phone/name/email; orders separate later
-- Standard API envelope → locked (success `error: ""`; 503 omits `data`)
-- Key material → **central store** of **public** verify material; JWKS industry suggestion in §4
+- Standard API envelope → locked (success `error: ""`; 503 omits `data` and `pagination`; pagination sibling when paginating)
+- Key material → **DB-only** central store of **public** verify material; **no JWKS refresh interval**; private keys on auth only
+- DTOs → **determined during coding**; Spec locks wire JSON examples only
 - Veg/non-veg → **all types** (Simple, Combo, Pizza)
 - Stack → **Java Spring Boot + Maven**; Initializr by owner; deps at Build
 - Dockerize + volumes + sample data → required
@@ -463,11 +529,11 @@ Resolved by Spec Revises (see §4 and decision log in project-context) — **not
 
 Still for Design (implementation detail only):
 
-1. **Pagination max** (beyond default 10) and exact `data` object vs bare-array-in-`data` field naming (must remain flat products).
-2. Exact status-table schema (column names) and whether 503 includes `Retry-After` header (body text is locked).
-3. Mapping details of admin Pizza / option-entity tables → consumer **pizza-base** vs **pizza-spec** read DTOs.
-4. JWKS refresh interval, `kid` rotation procedure, and Redis vs DB priority for the central public-key store.
-5. Whether binary PDF GET streams raw `application/pdf` or also offers a JSON metadata sibling (envelope rules still apply to JSON APIs).
+1. **Pagination max** (beyond default 10).
+2. Exact status-table **column names** within the minimal sketch (lock key + busy/holder + `updated_at`) and whether 503 includes `Retry-After` header (body text is locked).
+3. Mapping details of admin Pizza / option-entity tables → consumer **pizza-base** vs **pizza-spec** read shapes (wire fields; DTO classes at coding).
+4. `kid` / rotation procedure for the **DB** public-key store (no JWKS refresh-interval product requirement).
+5. Optional future JSON metadata sibling for menu (if ever added) would use the standard envelope; **v1 public GET PDF is raw binary only**.
 
 ---
 
@@ -484,7 +550,7 @@ When Build starts (after Design + Build plan Approve):
 
 ## 12. Gate ask
 
-**Intent is APPROVED** (2026-09-17). Spec is **DRAFT — revised**; please review this Spec / PRD and reply with one of:
+**Intent is APPROVED** (2026-09-17). Spec is **DRAFT — revised** (2026-09-17-c: pagination / PDF / keys); please review this Spec / PRD and reply with one of:
 
 - **Approve** — accept Spec; proceed to Design / TRD draft
 - **Revise: …** — tell us what to change in this document
