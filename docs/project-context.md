@@ -130,7 +130,7 @@ Former Intent mention of a distinct CUSTOMER principal for PDF access is **super
 
 Also locked for runtime: **PostgreSQL** engines named **`auth-db`** and **`catalog-db`** (PDF **history** version+bytea, option entities, user/roles/status, **DB-only JWT public keys**), **Redis** (catalog cache **TTL 3 min** + **latest** PDF — **not** JWT keys, **not** historical PDF), **JWT** (local verify via Resource Server + JWKS; admin login vs trusted token), **OpenAPI/Swagger**, **tests** (mock ports), Docker Compose. Paginated JSON uses envelope + **`pagination` sibling**; public GET PDF = **raw binary** (optional `version`).
 
-Do not start application code until Design and Build plan are approved **and** `docs/stories/` exists. Spec, Design, and Build plan are **APPROVED**. Next story: `01-compose-config.md`. **One Postgres per service**; catalog verifies JWT via **JWKS**, not auth DB and not `/validate`.
+Do not start application code until Design and Build plan are approved **and** `docs/stories/` exists. Spec, Design, and Build plan are **APPROVED**. Next: **01** Compose and **02** owner Initializr (parallel). **One Postgres per service**; catalog verifies JWT via **JWKS**, not auth DB and not `/validate`.
 
 **Process (agent resume):** after every stage **Approve**, update [`handoff.md`](handoff.md): **compress** completed stages into past memory, then refresh next-stage checklist/steps — do not wipe and fully rewrite. Repo docs (playbook + handoff) are the durable memory — not Cursor rules. **Do not git-commit** unless the owner confirms. Build stories: one branch each `feat/<story-id>-<max-5-word-summary>`. HIFL docs-only syncs: preferred branch `cursor/sync-spec-prd-revise-efa1`.
 
@@ -190,7 +190,8 @@ Do not start application code until Design and Build plan are approved **and** `
 | 2026-09-18 | **Design Revise:** options **pizzas only**; shared catalog + pizza **`optionsEnabled`**; PDF pizza note **options available**; options section stays separate | Locked (HIFL Design Revise) |
 | 2026-09-18 | **Design APPROVED** (owner HIFL Approve); Design gate passed; **Build plan on hold** until owner says start; **do not write build-plan.md** | Locked (process) — **superseded** by Build-plan start below |
 | 2026-09-18 | **Build plan started** (owner go-ahead); [build-plan.md](build-plan.md) **DRAFT**; no git commit for this start; no stories/code until Approve | Locked (process) |
-| 2026-09-18 | **Build plan APPROVED** (owner HIFL Approve); stories `01`–`14` under `docs/stories/`; next implement `01-compose-config.md`; owner Initializr before `02`/`06` | Locked (process) |
+| 2026-09-18 | **Build plan APPROVED** (owner HIFL Approve); stories under `docs/stories/`; owner Initializr before coding auth/catalog schema | Locked (process) |
+| 2026-09-18 | **Stories:** `{id}-OWNER-{slug}.md` when the owner must act; enabler `02-OWNER-maven-initializr`; tasks on parent story; Definition of Ready is not a story; graph **01–15** | Locked (HIFL Revise) |
 | 2026-09-18 | **Playbook Revise:** each Build story on its own branch `feat/<story-id>-<max-5-word-summary>`; branch contains **only** that story’s changes; still ask before commit | Locked (HIFL Revise) |
 
 ## Document map

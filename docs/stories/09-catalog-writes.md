@@ -1,7 +1,7 @@
-# 08 — Catalog admin writes
+# 09 — Catalog admin writes
 
 **Status:** ready  
-**Depends on:** `07-catalog-jwt-jwks.md`  
+**Depends on:** `08-catalog-jwt-jwks.md`  
 **Links:** [Intent](../intent.md) · [Spec](../spec.md) · [Design](../design.md) · [Build plan](../build-plan.md)
 
 ## Story
@@ -25,4 +25,4 @@ As an admin, I want CRUD for products and pizza option entities so that the menu
 
 ## Notes
 
-Unblocks **09** and **11**.
+Unblocks **10** and **12**.

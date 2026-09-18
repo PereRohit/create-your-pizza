@@ -1,7 +1,7 @@
-# 04 — Auth login, trusted register, token exchange
+# 05 — Auth login, trusted register, token exchange
 
 **Status:** ready  
-**Depends on:** `03-auth-jwks-jwt.md`  
+**Depends on:** `04-auth-jwks-jwt.md`  
 **Links:** [Intent](../intent.md) · [Spec](../spec.md) · [Design](../design.md) · [Build plan](../build-plan.md)
 
 ## Story
@@ -26,4 +26,4 @@ As an admin I want username/password login, and as a trusted system I want publi
 
 ## Notes
 
-Approve/deny/revoke are story **05**.
+Approve/deny/revoke are story **06**.

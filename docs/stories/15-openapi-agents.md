@@ -1,7 +1,7 @@
-# 14 — OpenAPI and AGENTS.md
+# 15 — OpenAPI and AGENTS.md
 
 **Status:** ready  
-**Depends on:** `05-auth-admin-users.md`, `12-public-pdf.md`, `13-test-pdf-trigger.md`  
+**Depends on:** `06-auth-admin-users.md`, `13-public-pdf.md`, `14-test-pdf-trigger.md`  
 **Links:** [Intent](../intent.md) · [Spec](../spec.md) · [Design](../design.md) · [Build plan](../build-plan.md)
 
 ## Story

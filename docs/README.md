@@ -12,6 +12,6 @@
 | [design.md](design.md) | Stage 3 Design / TRD — **APPROVED** 2026-09-18 |
 | [build-plan.md](build-plan.md) | Stage 4 — **APPROVED** 2026-09-18 |
 | `verify.md` | Stage 6 — after Build |
-| [stories/README.md](stories/README.md) | Build-stage user stories **01–14** |
+| [stories/README.md](stories/README.md) | Build-stage user stories **01–15** |
 
 **Git:** do not commit unless the owner confirms.

@@ -53,7 +53,7 @@ Process: [docs/hifl-playbook.md](hifl-playbook.md) · Decisions: [docs/project-c
 
 - Stack: Spring Boot **4.1.1**, Maven JAR, Java **26** (Initializr **25** then pin POM), `.properties`, Lombok both apps.
 - Independent siblings: `groupId` **`com.createyourpizza`**; artifacts **`auth-service`**, **`catalog-service`**; packages `com.createyourpizza.auth` / `com.createyourpizza.catalog`.
-- Catalog: OAuth2 Resource Server + JWKS URL. Tests: mock ports. One root Compose. Graph of stories **01–14**.
+- Catalog: OAuth2 Resource Server + JWKS URL. Tests: mock ports. One root Compose. Graph of stories **01–15** (enabler **02** = owner Initializr).
 - Detail: [docs/build-plan.md](docs/build-plan.md) §6
 
 ## Owner preferences (must follow)
@@ -64,27 +64,28 @@ Process: [docs/hifl-playbook.md](hifl-playbook.md) · Decisions: [docs/project-c
 4. **Gate language:** Approve / Revise: … / Park — no silent skips.
 5. **Build:** one story at a time; follow [build-plan.md](build-plan.md) §6 graph; rename to `DONE-` when finished.
 6. **Story git branches:** `feat/<story-id>-<max-5-word-summary>` (example `feat/01-compose-and-config`); **only** that story’s changes on the branch; still ask before commit.
+7. **Owner stories:** filename `{id}-OWNER-{slug}.md` when the owner must act; task lines prefixed **`Owner:`**.
 
 ## Checklist for the next agent
 
-- [x] Build plan **APPROVED**; stories `01`–`14` written under `docs/stories/`
-- **Picked stories (Build):** none in progress — **next** [`01-compose-config.md`](stories/01-compose-config.md)
-- [ ] Owner Initializr: unzip into `auth-service/` and `catalog-service/` (Java 25 on site, then `<java.version>26</java.version>`) before stories **02** / **06**
-- [ ] Implement **01**, then follow graph; tests >80% LoC + behaviour on coding stories
+- [x] Build plan **APPROVED**; stories `01`–`15` under `docs/stories/` (enabler **02** = owner Initializr)
+- **Picked stories (Build):** none in progress — **next** [`01-compose-config.md`](stories/01-compose-config.md) and/or [`02-OWNER-maven-initializr.md`](stories/02-OWNER-maven-initializr.md) (parallel)
+- [ ] Owner completes **02** (`02-OWNER-maven-initializr.md`) on `feat/02-maven-initializr`
+- [ ] Implement **01** on `feat/01-compose-and-config`; then graph; tests on coding stories
 - [ ] After all stories `DONE-`: draft [docs/verify.md](verify.md)
 
 ## Steps (detail) — next stage focus: Build
 
 ### A. Now
 
-1. Create/switch to `feat/01-compose-and-config` (playbook: one branch per story). Implement [`docs/stories/01-compose-config.md`](stories/01-compose-config.md). Record this filename here as in progress.
+1. **01** and **02** may proceed in parallel. **02** is owner Initializr (`02-OWNER-maven-initializr.md`, branch `feat/02-maven-initializr`). **01** is Compose (`feat/01-compose-and-config`).
 2. **Ask** before git commit.
-3. Owner runs Initializr (checklist in [build-plan.md](build-plan.md) §4) into sibling folders.
+3. Do not start **03** / **07** until **01** and **02** are `DONE-`.
 
-### B. After 01 is `DONE-`
+### B. After 01 and 02 are `DONE-`
 
-1. **02** (auth Initializr required) and **06** (catalog Initializr required) may proceed independently.
-2. Then **03→04→05** on auth; **07** after **03** and **06**; never start **08** before **07**.
+1. **03** (auth) and **07** (catalog schema) may proceed independently.
+2. Then **04→05→06** on auth; **08** after **04** and **07**; never start **09** before **08**.
 
 ### C. After Build ready for Verify
 

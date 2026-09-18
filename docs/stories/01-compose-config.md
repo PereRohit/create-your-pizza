@@ -1,7 +1,8 @@
 # 01 — Compose and config
 
 **Status:** ready  
-**Depends on:** —  
+**Type:** enabler  
+**Depends on:** — (may run in parallel with `02-OWNER-maven-initializr.md`)  
 **Links:** [Intent](../intent.md) · [Spec](../spec.md) · [Design](../design.md) · [Build plan](../build-plan.md)
 
 ## Story
@@ -23,6 +24,13 @@ As an operator, I want one root Docker Compose file and locked config properties
 - Environment/setup story: no Java behaviour tests required until app stubs exist
 - If any Compose helper scripts are added, cover their behaviour
 
+## Tasks
+
+- [ ] Add root `docker-compose.yml` (`auth-db`, `catalog-db`, `redis`, both app services)
+- [ ] Volumes for both DBs and Redis
+- [ ] MUST properties with locked defaults; `.properties` not YAML
+- [ ] App services may stay stubs until **02** is `DONE-`
+
 ## Notes
 
-Graph: first node. Unblocks **02** (needs Initializr auth) and **06** (needs Initializr catalog).
+Graph: first enabler, parallel with **02**. Unblocks **03** and **07** together with **02**.

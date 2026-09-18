@@ -1,7 +1,7 @@
-# 06 — Catalog schema and seed
+# 07 — Catalog schema and seed
 
 **Status:** ready  
-**Depends on:** `01-compose-config.md` + owner Initializr `catalog-service`  
+**Depends on:** `01-compose-config.md`, `02-OWNER-maven-initializr.md`  
 **Links:** [Intent](../intent.md) · [Spec](../spec.md) · [Design](../design.md) · [Build plan](../build-plan.md)
 
 ## Story
@@ -25,4 +25,4 @@ As an operator, I want `catalog-db` schema and sample Simple/Combo/Pizza plus op
 
 ## Notes
 
-Unblocks **07** (with 03) and **11** (with 08).
+Unblocks **08** (with 04) and **12** (with 09).

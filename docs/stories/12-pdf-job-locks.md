@@ -1,7 +1,7 @@
-# 11 — PDF job and Redis locks
+# 12 — PDF job and Redis locks
 
 **Status:** ready  
-**Depends on:** `08-catalog-writes.md`, `06-catalog-schema-seed.md`  
+**Depends on:** `09-catalog-writes.md`, `07-catalog-schema-seed.md`  
 **Links:** [Intent](../intent.md) · [Spec](../spec.md) · [Design](../design.md) · [Build plan](../build-plan.md)
 
 ## Story
@@ -26,6 +26,12 @@ As the store, I want a dirty-driven PDF job with Redis locks so that menus versi
 - Unit tests with **>80% LoC** coverage of code added/changed for this story
 - Full **behaviour** coverage: skip on write lock; skip if not dirty; version only on generate; content notes; fake renderer + fake locks
 
+## Tasks
+
+- [ ] Add OpenPDF to `catalog-service/pom.xml`
+- [ ] Job algorithm + Redis PDF lock per Design §6
+- [ ] Fake renderer in tests
+
 ## Notes
 
-Unblocks **12** and **13**.
+Unblocks **13** and **14**.

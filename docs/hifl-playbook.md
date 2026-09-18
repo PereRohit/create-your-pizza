@@ -53,17 +53,26 @@ After Design **and** Build-plan **Approve**, do **not** start implementation by 
 
 **Rules:**
 
-1. One markdown file per story. Sort filenames so **dependencies and priority** are obvious (e.g. `01-env-compose.md`, `02-auth-bootstrap.md`).
+1. One markdown file per story. Sort filenames so **dependencies and priority** are obvious (e.g. `01-env-compose.md`, `02-OWNER-maven-initializr.md`).
+   - If the story **cannot** be `DONE-` without the human owner, insert the token **`OWNER`** after the numeric id: `{id}-OWNER-{slug}.md`.
+   - When complete: `DONE-{id}-OWNER-{slug}.md` (or `DONE-{id}-{slug}.md` if there is no `OWNER` token).
+   - Use `OWNER` only for owner-blocking work (e.g. Spring Initializr). Not for “ask before commit”, HIFL gates, or Definition of Ready.
+   - Owner-blocking tasks inside the file are prefixed **`Owner:`** on the checklist line.
 2. Format: **As a [type of user], I want [goal] so that [reason].** Include **acceptance criteria**, and excerpts/links to Intent / Spec / Design (and ADRs if any).
 3. Every story that involves **coding** MUST include **unit tests**: **>80% LoC coverage** and **full behaviour coverage** of that story. Environment/setup work may be its own story.
-4. [`docs/handoff.md`](handoff.md) records **which story file(s) are in progress**. When a story is done, **rename** the file with a `DONE-` prefix (e.g. `DONE-01-env-compose.md`) so later agents skip it.
+4. [`docs/handoff.md`](handoff.md) records **which story file(s) are in progress**. When a story is done, **rename** the file with a `DONE-` prefix (e.g. `DONE-01-env-compose.md` or `DONE-02-OWNER-maven-initializr.md`) so later agents skip it.
 5. Pick the next non-`DONE-` story in sort order unless the owner says otherwise.
 6. **One git branch per story.** Before implementing a story, create/switch to a branch that contains **only** that story’s changes. Do not mix another story, unrelated refactors, or HIFL paperwork from a different stage onto that branch.
    - Format: `feat/<story-id>-<max-5-word-summary>`
-   - `<story-id>` is the numeric prefix from the story filename (`01` from `01-compose-config.md`).
+   - `<story-id>` is the **numeric prefix only** (`02` from `02-OWNER-maven-initializr.md`). `OWNER` is a filename token, not part of the branch name.
    - `<max-5-word-summary>` is lowercase hyphenated English, **at most five words** (five hyphen-separated tokens).
    - Example: `feat/01-compose-and-config`
    - **Ask** before commit (hard rule 8). The branch name is not permission to commit.
+7. **Stories vs tasks vs ready vs gates** (Agile tracking):
+   - **Story** (backlog item, own file, `DONE-` rename, own git branch): a slice that delivers user/operator value **or** an **enabler** that produces a durable repo increment and unblocks other stories (e.g. owner Initializr). Enablers still use the story template; mark **Type:** enabler when the actor is the owner or the increment is infrastructure.
+   - **Task** (sub-item **inside** a story): a step to finish that story (add Nimbus to `pom.xml`, write a Flyway file). Track as a `## Tasks` checklist on the story file. Owner-blocking tasks start with **`Owner:`**. **No** extra story file, **no** extra branch, **no** `DONE-` for a task. Do not rename the story `DONE-` until ACs **and** tasks (including `Owner:`) are complete.
+   - **Definition of Ready** (environment, not backlog): machine/IDE facts that do not produce a product increment (Java 26 installed, Docker, Maven, Lombok IDE plugin). Track in [`docs/stories/README.md`](stories/README.md). Do **not** make these stories.
+   - **HIFL gates** (Approve / Revise / Park) and “ask before commit” stay **process**, not stories or tasks.
 
 This applies to any agentic SDLC using this playbook, not only CreateYourPizza.
 
