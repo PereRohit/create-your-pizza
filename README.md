@@ -17,13 +17,14 @@ Repo docs are the memory — do not rely on chat or Cursor rules for HIFL handof
 | Intent | **APPROVED** — [docs/intent.md](docs/intent.md) |
 | Spec / PRD | **APPROVED** — [docs/spec.md](docs/spec.md) |
 | Design / TRD | **APPROVED** 2026-09-18 — [docs/design.md](docs/design.md) |
-| Build plan | **On hold** until owner says start |
-| Build → Verify | Not started |
+| Build plan | **APPROVED** 2026-09-18 — [docs/build-plan.md](docs/build-plan.md) |
+| Build | **Started** — stories `docs/stories/`; next `01-compose-config.md`; no application code yet |
+| Verify | Not started |
 
 Full checklist and locked product highlights: [docs/handoff.md](docs/handoff.md). Decisions log: [docs/project-context.md](docs/project-context.md). Docs index: [docs/README.md](docs/README.md).
 
-**Hard rule:** no application code until **Design** and **Build plan** are both approved.
+**Hard rule:** implement **one** story at a time after Design + Build plan Approve (graph in the build plan).
 
 ## Stack (not scaffolded yet)
 
-Locked for later Build: **Java Spring Boot + Maven**; owner creates via Spring Initializr; agent suggests Initializr deps at Build. Postgres + Redis + Docker Compose (volumes + sample data). This repo currently holds HIFL docs only.
+Locked for later Build: **Java 26**, **Spring Boot 4.1.1**, **Maven**, JAR, `application.properties`. Owner Initializr (Java **25** on the site, then `<java.version>26</java.version>`). Two sibling folders `auth-service` / `catalog-service`. Compose: `auth-db`, `catalog-db`, Redis, both apps. This repo currently holds HIFL docs only.

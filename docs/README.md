@@ -10,8 +10,8 @@
 | [intent.md](intent.md) | Stage 1 Intent — **APPROVED** |
 | [spec.md](spec.md) | Stage 2 Spec / PRD — **APPROVED** (aligned 2026-09-18) |
 | [design.md](design.md) | Stage 3 Design / TRD — **APPROVED** 2026-09-18 |
-| `build-plan.md` | Stage 4 — **on hold** until owner says start |
+| [build-plan.md](build-plan.md) | Stage 4 — **APPROVED** 2026-09-18 |
 | `verify.md` | Stage 6 — after Build |
-| [stories/README.md](stories/README.md) | Build-stage user stories — after Build-plan Approve |
+| [stories/README.md](stories/README.md) | Build-stage user stories **01–14** |
 
-**Git:** do not commit unless the owner confirms. Design Approve paperwork is on **`feat/design`**.
+**Git:** do not commit unless the owner confirms.
