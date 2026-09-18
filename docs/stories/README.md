@@ -8,6 +8,14 @@ Created **after** Design Approve **and** Build-plan Approve — **before** appli
 - When complete: rename to `DONE-{priority}-{short-slug}.md`.
 - Do not implement a `DONE-` file again unless the owner reopens it.
 
+## Git branch (required)
+
+Each story is implemented on its **own** branch. The branch holds **only** that story’s changes.
+
+- Format: `feat/<story-id>-<max-5-word-summary>`
+- Example for `01-compose-config.md`: `feat/01-compose-and-config`
+- Still **ask** the owner before any commit.
+
 ## Files
 
 | File | Status |

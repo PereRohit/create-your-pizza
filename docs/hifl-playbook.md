@@ -58,6 +58,12 @@ After Design **and** Build-plan **Approve**, do **not** start implementation by 
 3. Every story that involves **coding** MUST include **unit tests**: **>80% LoC coverage** and **full behaviour coverage** of that story. Environment/setup work may be its own story.
 4. [`docs/handoff.md`](handoff.md) records **which story file(s) are in progress**. When a story is done, **rename** the file with a `DONE-` prefix (e.g. `DONE-01-env-compose.md`) so later agents skip it.
 5. Pick the next non-`DONE-` story in sort order unless the owner says otherwise.
+6. **One git branch per story.** Before implementing a story, create/switch to a branch that contains **only** that story’s changes. Do not mix another story, unrelated refactors, or HIFL paperwork from a different stage onto that branch.
+   - Format: `feat/<story-id>-<max-5-word-summary>`
+   - `<story-id>` is the numeric prefix from the story filename (`01` from `01-compose-config.md`).
+   - `<max-5-word-summary>` is lowercase hyphenated English, **at most five words** (five hyphen-separated tokens).
+   - Example: `feat/01-compose-and-config`
+   - **Ask** before commit (hard rule 8). The branch name is not permission to commit.
 
 This applies to any agentic SDLC using this playbook, not only CreateYourPizza.
 
@@ -70,7 +76,9 @@ This applies to any agentic SDLC using this playbook, not only CreateYourPizza.
 5. Stack choices (e.g. Spring Boot 3) stay provisional until Design (and Build plan) lock them.
 6. Artifacts live in **`docs/`**; stage status is tracked with the project coordinator. Do not scatter decisions only in chat.
 7. **Stage-end handoff required:** after every stage **Approve**, update [`docs/handoff.md`](handoff.md) before drafting the next stage: **compress** completed stages into a short past-memory section, then refresh next-stage checklist/steps. Do **not** wipe and fully rewrite from scratch. That file is the durable resume memory for the next agent — not chat, not Cursor rules.
-8. **No git commit unless the owner confirms.** After doc or code changes, the agent **asks** whether to commit (and on which branch/message). Preferred branch when committing docs: `cursor/sync-spec-prd-revise-efa1` — do not create new branches for doc syncs. Never assume commit.
+8. **No git commit unless the owner confirms.** After doc or code changes, the agent **asks** whether to commit (and on which branch/message). Never assume commit.
+   - **Build stories:** each story uses its own branch `feat/<story-id>-<max-5-word-summary>` (see [Build-stage user stories](#build-stage-user-stories-required-before-coding) rule 6). That branch must contain **only** that story’s changes.
+   - **HIFL / docs-only syncs** (not a coding story): preferred branch `cursor/sync-spec-prd-revise-efa1` — do not invent extra branches for those doc syncs.
 
 ## Gate review checklist (for the human)
 
