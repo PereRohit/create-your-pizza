@@ -47,11 +47,25 @@ Use exactly one of:
 
 Ambiguous replies (“looks ok but…”) should be clarified by the agent as Approve vs Revise before advancing.
 
+## Build-stage user stories (required before coding)
+
+After Design **and** Build-plan **Approve**, do **not** start implementation by opening a random class. First write **user stories** under [`docs/stories/`](stories/README.md).
+
+**Rules:**
+
+1. One markdown file per story. Sort filenames so **dependencies and priority** are obvious (e.g. `01-env-compose.md`, `02-auth-bootstrap.md`).
+2. Format: **As a [type of user], I want [goal] so that [reason].** Include **acceptance criteria**, and excerpts/links to Intent / Spec / Design (and ADRs if any).
+3. Every story that involves **coding** MUST include **unit tests**: **>80% LoC coverage** and **full behaviour coverage** of that story. Environment/setup work may be its own story.
+4. [`docs/handoff.md`](handoff.md) records **which story file(s) are in progress**. When a story is done, **rename** the file with a `DONE-` prefix (e.g. `DONE-01-env-compose.md`) so later agents skip it.
+5. Pick the next non-`DONE-` story in sort order unless the owner says otherwise.
+
+This applies to any agentic SDLC using this playbook, not only CreateYourPizza.
+
 ## Hard rules
 
 1. **No stage starts until the previous stage’s artifact is accepted** (Approve).
 2. **Feedback returns to the owning stage** — Spec feedback does not rewrite Intent unless the owner says the Intent itself is wrong; then reopen Intent.
-3. **No application code before Design and Build plan are both approved.**
+3. **No application code before Design and Build plan are both approved**, and not before **user stories** exist under `docs/stories/` (see above).
 4. **Build (Stage 5) starts only after the Build-plan gate** is Approve.
 5. Stack choices (e.g. Spring Boot 3) stay provisional until Design (and Build plan) lock them.
 6. Artifacts live in **`docs/`**; stage status is tracked with the project coordinator. Do not scatter decisions only in chat.
@@ -136,4 +150,5 @@ For Spec/Design/Build-plan gates, also check consistency with the accepted prior
 - [Intent (Stage 1)](intent.md) — APPROVED
 - [Spec (Stage 2)](spec.md) — APPROVED
 - [Handoff](handoff.md) — living resume: compressed past + next-stage handoff
+- [Stories](stories/README.md) — Build-stage user stories (after Build-plan Approve)
 - [Docs index](README.md) — how to pick up mid-process

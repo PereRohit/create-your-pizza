@@ -2,7 +2,7 @@
 
 **Audience:** Next agent continuing HIFL — Design DRAFT (revised).  
 **Owner:** PereRohit
-**As of:** 2026-09-18  
+**As of:** 2026-09-18 (Design Revise pass 2)  
 **Repo root:** local `create-your-pizza`  
 **Git branch until Design Approve:** **`feat/design`**
 
@@ -14,7 +14,7 @@
 |-------|----------|--------|
 | 1 Intent | [docs/intent.md](docs/intent.md) | **APPROVED** (aligned 2026-09-18) |
 | 2 Spec / PRD | [docs/spec.md](docs/spec.md) | **APPROVED** (aligned 2026-09-18 to Design Revise) |
-| 3 Design / TRD | [docs/design.md](docs/design.md) | **DRAFT — revised 2026-09-18**; awaiting **Approve / Revise / Park** |
+| 3 Design / TRD | [docs/design.md](docs/design.md) | **DRAFT — revised 2026-09-18 pass 2**; awaiting **Approve / Revise / Park** |
 | 4 Build plan | [docs/build-plan.md](docs/build-plan.md) | Not started (after Design Approve) |
 | 5 Build | Spring Boot code in this repo | Not started (after Build-plan Approve) |
 | 6 Verify | [docs/verify.md](docs/verify.md) | Not started (after Build) |
@@ -51,7 +51,8 @@ Process: [docs/hifl-playbook.md](docs/hifl-playbook.md) · Decisions: [docs/proj
 - [x] Draft / revise [docs/design.md](docs/design.md); Design gate
 - [ ] Owner **Approve / Revise / Park** Design
 - [ ] **Ask** whether to git-commit this Revise on `feat/design`
-- [ ] After Design **Approve**: mark design APPROVED; **compress Design into Past stages** + refresh for Build-plan; ask about commit; then draft [docs/build-plan.md](docs/build-plan.md)
+- [ ] After Design **Approve**: compress Design; draft Build plan; **ask** about commit
+- **Picked stories (Build):** none yet — after Build-plan Approve, create `docs/stories/*.md`; record in-progress filenames here; rename to `DONE-` when finished
 - [ ] After Build-plan **Approve**: compress; owner Initializr → implement slice
 - [ ] After Build ready: draft [docs/verify.md](docs/verify.md)
 
@@ -73,7 +74,8 @@ Process: [docs/hifl-playbook.md](docs/hifl-playbook.md) · Decisions: [docs/proj
 ### C. After Build-plan Approve
 
 1. Compress Build-plan; refresh for Build.
-2. Owner Initializr → implement approved slice.
+2. Write ordered stories under `docs/stories/`; record the picked file(s) in this handoff.
+3. Owner Initializr → implement **one story at a time** with tests.
 
 ### D. After Build ready for Verify
 
@@ -84,10 +86,10 @@ Process: [docs/hifl-playbook.md](docs/hifl-playbook.md) · Decisions: [docs/proj
 - Product types: Simple, Combo, Pizza (`product_type` `simple`/`combo`/`pizza`); consumer `simple` / `combo` / `pizza-base` / `pizza-spec`
 - Veg/non-veg on all three; combo price admin-set; pizza option **entities** on **API and PDF**
 - Public PDF: header **Create Your Pizza**, **vN**, name+base price; GET **raw binary**; default latest; `?version=` history; Redis **latest only**
-- Auth: admin **login**; trusted **pending → approve → `/auth/token`**; bootstrap first admin; JWT 30m; local verify; **DB-only** public keys; credential **revoke** (no JWT denylist)
-- Same catalog **GET** for admin JWT and trusted JWT; writes admin-only
-- Envelope + `pagination` sibling; flat `data`; page size 10 (max 100)
-- Lock: **`pdf_generation` only** → 503; catalog Redis **TTL 3 min** (no invalidation-on-write)
+- Auth: admin **login** vs trusted **`/auth/register` only**; JWKS HTTP (no shared DB, no `/validate`); one Postgres per service
+- Redis locks: PDF **120s**, write **30s** (`finally` + expiry); writes 503; job **skips not queued**; version **only on generate**
+- Config MUST: PDF interval (default 5m), catalog TTL (default 3m), JWT TTL (default 30m), lock TTLs 120s / 30s
+- Stories under `docs/stories/` before coding (playbook)
 - Full Dockerize; OpenAPI/Swagger; tests; AGENTS.md at Build
 
 ## What NOT to do
@@ -97,6 +99,8 @@ Process: [docs/hifl-playbook.md](docs/hifl-playbook.md) · Decisions: [docs/proj
 - Do not leave `feat/design` for Design work until Approve (unless owner says otherwise)
 - Do not blank-rewrite this handoff
 - Do not add Cursor rules for HIFL handoff
-- Do not call auth service per-request to validate JWTs
+- Do not call **`/auth/validate`** per catalog request — JWKS + local verify
+- Do not share one Postgres across auth and catalog
+- Do not start coding without `docs/stories/` files (after Build-plan Approve)
 - Do not put API secrets in JWT claims
 - Do not give trusted systems a catalog API-key handler — JWT only after `/auth/token`

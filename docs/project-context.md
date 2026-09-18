@@ -97,7 +97,8 @@ A pizza delivery store needs one catalog of **Simple**, **Combo**, and **Pizza**
 | PDF history | Every generation **inserts** a numeric version + bytea. GET default **latest** raw binary; `?version=` for history. PDF prints **v1/v2/…**. Redis **latest only**; past → DB. |
 | Pizza-spec on PDF | Option entities **must** appear on the PDF (name + base price). |
 | Options API | External systems get options as **`GET /api/products`** rows (`type=pizza-spec`). |
-| Lock | **`pdf_generation` only**. No `catalog_write.busy` / skip-if-save-in-progress. |
+| Lock | Redis: PDF lock TTL **120s**, write lock TTL **30s** (`finally` + expiry). Writes **503** during gen; job **skips** (not queued) if write in progress. |
+| PDF version | Tied to **successful generation** only — not to each admin product write. |
 | Catalog Redis | **TTL 3 min**; Redis-first; write on DB fetch; **no** invalidation on write. |
 
 ## Auth principals (v1)
@@ -124,7 +125,7 @@ Former Intent mention of a distinct CUSTOMER principal for PDF access is **super
 
 Also locked for runtime: **Postgres** (PDF **history** version+bytea, option entities, **minimal** `pdf_generation` status row, user/roles/status, **DB-only JWT public keys**), **Redis** (catalog cache **TTL 3 min** + **latest** PDF — **not** JWT keys, **not** historical PDF), **JWT** (local verify; admin login vs trusted token), **OpenAPI/Swagger**, **tests**, Docker Compose. Paginated JSON uses envelope + **`pagination` sibling**; public GET PDF = **raw binary** (optional `version`).
 
-Do not start application code until Design and Build plan are approved. Spec is **APPROVED** (aligned 2026-09-18). Design/TRD is **DRAFT** awaiting gate.
+Do not start application code until Design and Build plan are approved **and** `docs/stories/` exists. Spec is **APPROVED** (aligned 2026-09-18). Design/TRD is **DRAFT** awaiting gate. **One Postgres per service**; catalog verifies JWT via **JWKS**, not auth DB and not `/validate`.
 
 **Process (agent resume):** after every stage **Approve**, update [`handoff.md`](handoff.md): **compress** completed stages into past memory, then refresh next-stage checklist/steps — do not wipe and fully rewrite. Repo docs (playbook + handoff) are the durable memory — not Cursor rules. **Do not git-commit** unless the owner confirms; preferred doc branch when committing: `cursor/sync-spec-prd-revise-efa1`.
 
@@ -181,7 +182,7 @@ Do not start application code until Design and Build plan are approved. Spec is 
 | 2026-09-17 | **Process:** after every stage **Approve**, update `docs/handoff.md` — compress past stages + refresh next-stage handoff (no blank rewrite; no Cursor rule for HIFL handoff) | Locked (owner) |
 | 2026-09-17 | **Process:** do **not** git-commit unless owner confirms; preferred doc branch when committing: `cursor/sync-spec-prd-revise-efa1` | Locked (owner) |
 | 2026-09-17 | Design started on owner go-ahead; draft on branch **`feat/design`** until Design Approve | Locked (owner) |
-| 2026-09-18 | **Design Revise:** admin login vs trusted pending+approve+`/auth/token`; bootstrap first admin; PDF history + `?version=`; pizza-spec on PDF and `/api/products`; `product_type`; `pdf_generation` only; catalog Redis TTL 3 min | Locked (HIFL Design Revise) |
+| 2026-09-18 | **Design Revise:** Redis lock TTLs PDF **120s** / write **30s** (config + `finally`); skip is **not queued**; PDF version increments **only on generation** | Locked (HIFL Design Revise) |
 
 ## Document map
 

@@ -1,6 +1,6 @@
 # Design / TRD — CreateYourPizza
 
-**Status:** DRAFT — revised 2026-09-18 (owner Design Revise). Awaiting Design gate (**Approve / Revise / Park**).
+**Status:** DRAFT — revised 2026-09-18 (owner Design Revise, pass 2). Awaiting Design gate (**Approve / Revise / Park**).
 
 **Upstream:** [Intent](intent.md) (**APPROVED**) · [Spec / PRD](spec.md) (**APPROVED**, aligned to this Design Revise)
 
@@ -16,14 +16,14 @@ This TRD translates APPROVED Intent + Spec into service boundaries, schema, API 
 
 **In scope for Design**
 
-- Two-service architecture (auth-service + catalog-service)
-- Shared Postgres (+ Redis for catalog/PDF cache only)
-- Data model (tables, schema purpose, access patterns, ERD)
-- JWT issue/verify, DB-only public keys, `kid` rotation
-- Admin vs trusted-system vs (later) customer **registration and access**
-- HTTP capabilities, envelope, pagination, public PDF binary + version history
-- PDF dirty/5-min job and `pdf_generation` status lock only
-- Docker Compose topology
+- Two-service architecture, **one Postgres per service**
+- Redis for catalog cache, latest PDF, and **generation/write locks** (catalog only)
+- Data model (tables, purpose, access patterns, ERD)
+- JWT issue; catalog **local verify** via auth **JWKS HTTP** (no shared DB, no `/validate`)
+- Registration / login / admin capability **flow diagrams**
+- HTTP APIs, envelope, pagination, PDF history
+- PDF dirty job + Redis locks (writes 503; job skips if a write is in progress)
+- Docker Compose; config-property notes for Build
 - OpenAPI / tests **notes** (artifacts at Build)
 
 **Out of scope for Design**
@@ -37,42 +37,38 @@ This TRD translates APPROVED Intent + Spec into service boundaries, schema, API 
 
 ## 2. Architecture
 
-Two Spring Boot + Maven applications. Owner scaffolds via Spring Initializr at **Build**. One Postgres instance, one Redis instance, Docker Compose bring-up.
+Two Spring Boot + Maven applications. Owner scaffolds via Spring Initializr at **Build**. **One Postgres per service.** One Redis for catalog only.
 
 ```text
-Public client          GET /api/menu.pdf[?version=N]  (raw application/pdf)
+Public                 GET /api/menu.pdf[?version=N]
         |
         v
-catalog-service  ----R/W---->  Postgres schema catalog
-        |                      (products, options, PDF history, status, dirty)
-        |                ----read---->  Postgres schema auth.verification_keys
-        |                ----cache--->  Redis (catalog TTL + latest menu only)
+catalog-service  --R/W-->  catalog-postgres   (products, options, PDF history, dirty)
+        |            --cache/lock-->  Redis   (catalog TTL, latest menu, PDF/write locks)
         |
-Admin JWT              catalog writes + same catalog reads as trusted
-Trusted JWT            catalog reads only (after /auth/token)
+        |   JWT local verify using public keys from memory
+        |   (filled by GET /auth/.well-known/jwks.json — not auth DB)
         |
-        +------------> auth-service  ----R/W---->  Postgres schema auth
-                                               (users, credentials, public keys)
-                                               private signing keys stay on auth only
+auth-service     --R/W-->  auth-postgres      (users, credentials, verification_keys)
+                         private signing keys stay in auth process only
 ```
 
-| Service | Responsibility |
-|---------|----------------|
-| **auth-service** | Bootstrap first admin; admin login; trusted **register → pending → admin approve/deny**; trusted **API key+secret → JWT**; admin user listing and trusted **revoke** / admin delete. Owns `users` + roles, hashed secrets, **writes** public verify keys. **Private signing keys never leave auth**. |
-| **catalog-service** | Product and option-entity CRUD, catalog queries, PDF job + public GET (latest or historical version). **Reads** public keys from DB and verifies JWT **locally**. **Must not** call auth per request to validate a token. |
+| Service | Database | Responsibility |
+|---------|----------|----------------|
+| **auth-service** | **auth-postgres** | Bootstrap first admin; trusted register/approve; admin login; `/auth/token`; JWKS publish; user admin APIs. Owns users + hashed secrets + **public** JWK rows. Private keys never leave auth. |
+| **catalog-service** | **catalog-postgres** | Catalog CRUD, queries, PDF job + GET. **Never** opens auth-postgres. Verifies JWT **locally** with JWKS cached in memory. |
 
-**Shared runtime**
+**Why not catalog reading `verification_keys`:** that shared-DB shortcut breaks one-DB-per-service. **Why not `/validate` on every catalog request:** it re-couples catalog availability to auth on the hot path and contradicts local JWT verify. **It is not needed.** Industry pattern: auth exposes **JWKS** (public keys only); catalog fetches and verifies signatures itself.
 
-- **One Postgres** with two schemas: `auth` and `catalog`. Same physical database so “same user table + roles” is one table.
-- **One Redis** used **only** by catalog-service (catalog cache + **latest** menu PDF). Not JWT keys, not token comparison, not historical PDFs.
-- Services are independently deployable containers on the Compose network.
+| Option | Use? |
+|--------|------|
+| Shared Postgres / catalog SELECT keys | **No** — violates one DB per service |
+| `POST /auth/validate` per request | **No** — not required; extra hop; auth becomes a runtime dependency for every GET |
+| **`GET /auth/.well-known/jwks.json`** + in-memory cache + lazy refetch on unknown `kid` | **Yes** — public material only; no scheduled JWKS poll (Spec: no refresh-interval product) |
 
-**Trust boundaries**
+**Redis:** catalog-service only (cache + latest PDF + locks). Auth does not use Redis.
 
-- Public: PDF GET (optional `version`); trusted **register** (pending); admin **login**.
-- Auth: token exchange for **approved** trusted systems; admin user-management APIs (Admin JWT).
-- Catalog JSON APIs: valid JWT + required `scope` (role as coarse gate).
-- Catalog never holds private signing material.
+**Trust boundaries:** public PDF, public trusted register, public admin login, public JWKS, public `/auth/token`. Catalog JSON = Bearer JWT + scope. Catalog never holds private keys.
 
 ---
 
@@ -80,29 +76,33 @@ Trusted JWT            catalog reads only (after /auth/token)
 
 Logical tables. Column types are indicative. Build owns Flyway/Liquibase DDL. UUID primary keys unless noted.
 
-### 3.0 Schema purpose and access patterns
+### 3.0 Database purpose and access patterns
 
-| Schema | Purpose | Who reads | Who writes |
-|--------|---------|-----------|------------|
-| **`auth`** | Identity, roles, admin passwords, trusted API credentials + approval/revoke state, JWT **public** verify keys | **auth-service:** all tables. **catalog-service:** `verification_keys` **only** (local JWT verify) | **auth-service only.** Catalog never writes `auth`. |
-| **`catalog`** | Sellable products, combo membership, pizza option entities, PDF **history**, dirty flag, PDF-generation lock | **catalog-service only** | **catalog-service only.** Auth never reads or writes catalog data. |
+Each service has its **own Postgres**. Table names below live in that service’s database (no cross-schema grants).
+
+| Database | Purpose | Who reads | Who writes |
+|----------|---------|-----------|------------|
+| **auth-postgres** | Identity, roles, passwords, trusted credentials + approval/revoke, **public** JWKs | **auth-service only** (JWKS is served as HTTP, not as DB access) | **auth-service only** |
+| **catalog-postgres** | Products, combo membership, option entities, PDF **history**, dirty meta | **catalog-service only** | **catalog-service only** |
 
 **Access patterns (typical)**
 
 | Pattern | Path |
 |---------|------|
-| Admin login | `auth.users` by `username` where `role=ADMIN` and `status=ACTIVE` → verify password → JWT |
-| Trusted register | Insert `auth.users` (`TRUSTED_SYSTEM`, `PENDING`) + placeholder credentials row (no usable secret yet) |
-| Admin approve trusted | Set user `ACTIVE`; generate `api_key` + secret; store `secret_hash`; return secret **once** in approve response |
-| Trusted token | Lookup `api_key` → user `ACTIVE` and not revoked → verify secret hash → JWT |
-| Catalog list/get | Redis `create-your-pizza/catalog:*` (TTL 3 min) → on miss Postgres `products` / `option_entities` → write Redis |
-| Latest PDF | Redis `create-your-pizza/menu` → on miss latest `catalog.menu_pdf` by max `version` → backfill Redis |
-| Historical PDF | `catalog.menu_pdf` **by `version` only** — never Redis |
-| Catalog write | If `pdf_generation.busy` → 503; else mutate catalog + set dirty. **No** `catalog_write` lock row |
+| Admin login | auth-postgres `users` by username, `ADMIN`+`ACTIVE` → JWT |
+| Trusted register | Insert `TRUSTED_SYSTEM` `PENDING` + empty credentials |
+| Admin approve | `ACTIVE` + generate api_key/secret; secret **once** in HTTP `data` |
+| Trusted token | api_key + secret hash → JWT |
+| Catalog JWKS | catalog **HTTP GET** auth JWKS → memory map by `kid` (not SQL) |
+| Catalog list/get | Redis `create-your-pizza/catalog:*` (TTL from config, default 3 min) → miss → catalog-postgres → write Redis |
+| Latest PDF | Redis menu key → miss → `menu_pdf` max(version) → backfill Redis |
+| Historical PDF | `menu_pdf` by version — never Redis |
+| Catalog write | If Redis PDF-generation lock → 503; else take write lock, mutate, set dirty, drop write lock |
+| PDF job | If Redis write lock → **skip**; else take PDF lock, generate if dirty |
 
 ### 3.1 Entity relationship (visual)
 
-Yes — an ERD belongs in this TRD so table FKs are reviewable without reading every column. Two diagrams: `auth` and `catalog`.
+Yes — ERDs stay in this TRD. Two diagrams: **auth-postgres** and **catalog-postgres**.
 
 ```mermaid
 erDiagram
@@ -134,7 +134,7 @@ erDiagram
   }
 ```
 
-`verification_keys` has **no FK** to `users`. Auth writes keys; catalog reads them by `kid`.
+`verification_keys` has **no FK** to `users`. Auth writes keys and **publishes** them on JWKS. Catalog never queries this table.
 
 ```mermaid
 erDiagram
@@ -174,17 +174,11 @@ erDiagram
     timestamptz last_catalog_change_at
     int last_pdf_version
   }
-  system_status {
-    text lock_name PK
-    boolean busy
-    text holder
-    timestamptz updated_at
-  }
 ```
 
-`option_entities` are a **shared spec catalog** in v1 (no FK from `products`). `menu_pdf` is a **history** table (one row per numeric version). `system_status` holds a **single** lock: `pdf_generation`.
+`option_entities` are a shared spec catalog in v1 (no FK from `products`). `menu_pdf` is history (one row per numeric version). **No `system_status` table** — PDF vs write exclusion uses **Redis locks** (§6).
 
-### 3.2 Schema `auth`
+### 3.2 Database `auth-postgres`
 
 #### `users`
 
@@ -214,7 +208,7 @@ Future CUSTOMER columns (`phone`, `name`, `email`) are **not** added in v1.
 
 #### `verification_keys`
 
-Central **public** verify material. **DB only**. Catalog reads; auth writes.
+Public JWK material for JWKS. **Auth-postgres only.** Catalog does not replicate this table.
 
 | Column | Type | Notes |
 |--------|------|--------|
@@ -225,9 +219,9 @@ Central **public** verify material. **DB only**. Catalog reads; auth writes.
 | `created_at` | timestamptz | |
 | `updated_at` | timestamptz | |
 
-Private keys: auth-service process/config only. Never inserted here.
+Private keys: auth-service process/config only. Never inserted here. Never sent to catalog except as **public** JWKS JSON over HTTP.
 
-### 3.3 Schema `catalog`
+### 3.3 Database `catalog-postgres`
 
 #### `products`
 
@@ -289,20 +283,9 @@ One row **per generated version**. Latest = `max(version)`. Past bytes stay in D
 | `id` | smallint PK | Constant `1` |
 | `dirty` | boolean | Set true on successful catalog mutation |
 | `last_catalog_change_at` | timestamptz | |
-| `last_pdf_version` | integer | Equals latest `menu_pdf.version` after a successful job |
+| `last_pdf_version` | integer | Latest **generated** `menu_pdf.version` — **not** updated on product writes |
 
-#### `system_status`
-
-Minimal lock table. **Only** PDF generation.
-
-| Column | Type | Notes |
-|--------|------|--------|
-| `lock_name` | text PK | **`pdf_generation` only** (no `catalog_write`) |
-| `busy` | boolean | |
-| `holder` | text nullable | Job instance / request id |
-| `updated_at` | timestamptz | |
-
-Seed one row `pdf_generation` with `busy = false`.
+Dirty + last version live here. **Locks do not.** Do not add `generating` / `write_in_progress` columns — those would recreate `system_status` inside `catalog_meta`.
 
 ### 3.4 Consumer listing mapping
 
@@ -368,7 +351,7 @@ Future customer (not v1)
 
 On **auth-service** startup:
 
-1. `SELECT count(*) FROM auth.users WHERE role = 'ADMIN'`.
+1. Count `users` where `role = 'ADMIN'` in **auth-postgres**.
 2. If count ≥ 1 → do nothing.
 3. If count = 0 → insert one `ADMIN` / `ACTIVE` with a generated username + password; **print both to the process stdout / terminal** (one-time). Operators copy them; they are not written to Redis or PDF.
 
@@ -378,7 +361,8 @@ Compose logs are the share path in v1. AGENTS.md (Build) will say “read auth-s
 
 | Method | Path | Auth | Purpose |
 |--------|------|------|---------|
-| `POST` | `/auth/register` | Public | **Trusted system only** in v1: create `PENDING` user + empty credentials. Does **not** create admins. Does **not** return API secret. |
+| `GET` | `/auth/.well-known/jwks.json` | Public | Active public JWKs (`keys` array). Catalog uses this — **not** `/validate`. |
+| `POST` | `/auth/register` | Public | **Trusted system only** in v1. Does **not** create admins. Does **not** return API secret. |
 | `POST` | `/auth/login` | Public | Admin username+password → JWT. Rejects non-admin and non-`ACTIVE`. |
 | `POST` | `/auth/token` | Public (key+secret) | Trusted exchange → JWT. Requires `ACTIVE` + unrevoked credentials. |
 | `POST` | `/auth/admins` | Admin JWT | Create another admin (username+password). |
@@ -388,7 +372,7 @@ Compose logs are the share path in v1. AGENTS.md (Build) will say “read auth-s
 | `POST` | `/auth/users/{id}/revoke` | Admin JWT | Trusted `ACTIVE` → `REVOKED`; token exchange stops. |
 | `DELETE` | `/auth/users/{id}` | Admin JWT | Delete/disable another admin (not last admin). Customer delete is **later**, same route reserved. |
 
-JWT **TTL = 30 minutes**. Signing: RS256. Auth upserts the public JWK into `verification_keys` on boot/rotation.
+JWT **TTL** from config `app.jwt.ttl` (default **30 minutes**). Signing: RS256. Auth upserts the public JWK into `verification_keys` on boot/rotation and serves JWKS.
 
 ### 4.4 Binding claims (unchanged from Spec)
 
@@ -403,21 +387,199 @@ Payload: `sub`, `iss`, `aud`, `exp`, `iat`, `scope`, `roles`, `client_id` when t
 
 `iss` / `aud` chosen at Build. Catalog rejects mismatch.
 
-### 4.5 Local verify (catalog-service)
+### 4.5 Local verify (catalog-service) — JWKS, not `/validate`
 
 1. Parse JWT; read `kid`.
-2. Resolve public JWK from memory (loaded from `auth.verification_keys` where `active = true`).
-3. Verify signature, `exp`, `iss`, `aud`.
+2. Resolve public JWK from an **in-memory map** filled from `GET {authBase}/.well-known/jwks.json`.
+3. Verify signature, `exp`, `iss`, `aud` **in catalog**.
 4. Authorize: required `scope`; write routes also require `roles` contains `ADMIN`.
 
-**No HTTP call to auth-service** for validation. Redis is not used for keys or tokens. Catalog does **not** re-check `users.status` on each request (JWT until expiry). Revoke is enforced at **token issuance**.
+**Do not** call `POST /auth/validate` (v1 **does not** expose it). **Do not** query auth-postgres. Redis is not used for keys or tokens. Catalog does **not** re-check `users.status` on each request. Revoke is enforced at **token issuance**.
 
-### 4.6 `kid` rotation (no JWKS refresh interval)
+If auth is down, catalog can still verify tokens whose `kid` is already cached.
 
-1. Auth inserts a new `verification_keys` row and signs with that `kid`. Previous row can stay `active` until tokens expire.
-2. Catalog loads active keys at **startup**.
-3. Unknown `kid` → **lazy SELECT** from DB, cache if active, else 401.
-4. No scheduled JWKS poll.
+### 4.6 `kid` rotation (no JWKS timer)
+
+1. Auth inserts a new `verification_keys` row and signs with that `kid`.
+2. Catalog loads JWKS at **startup**.
+3. Unknown `kid` → **HTTP GET JWKS again**, cache, else 401.
+4. **No** scheduled refresh interval. On-demand fetch is not a poller.
+
+### 4.7 How we know admin vs trusted at registration
+
+**By URL, not by a public `role` field.** Public self-service must not mint `ADMIN`.
+
+| Who | How they come into existence | HTTP |
+|-----|------------------------------|------|
+| First admin | Auth **startup bootstrap** if zero admins | No HTTP. Credentials to **stdout**. |
+| Later admin | Existing admin creates them | `POST /auth/admins` + Admin JWT. Body: `username`, `password`. Role implied `ADMIN`. |
+| Trusted system | Public application for access | `POST /auth/register` **only**. Body: `displayName` (no password, no `role`). Server forces `TRUSTED_SYSTEM` + `PENDING`. |
+| Future customer | Public self-register (not v1) | Separate path later — never `/auth/register` or `/auth/admins`. |
+
+If a client sends `role: "ADMIN"` on `/auth/register`, **ignore or 400**.
+
+### 4.8 Registration flows (state + HTTP)
+
+**Trusted**
+
+```json
+POST /auth/register
+{ "displayName": "Partner POS" }
+```
+
+```json
+201
+{ "status": 201, "message": "success", "error": "", "data": { "userId": "uuid", "status": "PENDING", "role": "TRUSTED_SYSTEM" } }
+```
+
+```mermaid
+stateDiagram-v2
+  [*] --> PENDING: POST /auth/register
+  PENDING --> ACTIVE: POST /auth/users/id/approve
+  PENDING --> DENIED: POST /auth/users/id/deny
+  ACTIVE --> REVOKED: POST /auth/users/id/revoke
+  DENIED --> [*]
+  REVOKED --> [*]
+```
+
+```mermaid
+sequenceDiagram
+  participant TS as TrustedSystem
+  participant Auth as authService
+  participant Admin as AdminClient
+  TS->>Auth: POST /auth/register displayName
+  Auth-->>TS: 201 PENDING userId
+  Note over TS: token exchange fails until ACTIVE
+  Admin->>Auth: POST /auth/login username password
+  Auth-->>Admin: JWT ADMIN
+  Admin->>Auth: GET /auth/users status PENDING
+  Auth-->>Admin: list pending
+  alt approve
+    Admin->>Auth: POST /auth/users/id/approve Bearer JWT
+    Auth-->>Admin: data apiKey apiSecret once
+  else deny
+    Admin->>Auth: POST /auth/users/id/deny Bearer JWT
+    Auth-->>Admin: 200 DENIED
+  end
+```
+
+**Admin — bootstrap then optional create** (no PENDING)
+
+```mermaid
+sequenceDiagram
+  participant Boot as authStartup
+  participant DB as authPostgres
+  participant Out as Stdout
+  Boot->>DB: count role ADMIN
+  alt count is 0
+    Boot->>DB: insert ADMIN ACTIVE
+    Boot->>Out: username and password
+  else count at least 1
+    Boot->>Boot: skip
+  end
+```
+
+```json
+POST /auth/admins
+Authorization: Bearer <admin-jwt>
+{ "username": "chef", "password": "..." }
+```
+
+```json
+201
+{ "status": 201, "message": "success", "error": "", "data": { "userId": "uuid", "role": "ADMIN", "status": "ACTIVE", "username": "chef" } }
+```
+
+### 4.9 Login / JWT issuance (before catalog)
+
+**Admin**
+
+```json
+POST /auth/login
+{ "username": "bootstrap-admin", "password": "..." }
+```
+
+```json
+200
+{ "status": 200, "message": "success", "error": "", "data": { "accessToken": "<jwt>", "tokenType": "Bearer", "expiresIn": 1800 } }
+```
+
+```mermaid
+sequenceDiagram
+  participant A as Admin
+  participant Auth as authService
+  participant Cat as catalogService
+  A->>Auth: POST /auth/login username password
+  Auth-->>A: JWT ADMIN
+  Note over A,Cat: only now call catalog
+  A->>Cat: GET or POST /api/products Bearer JWT
+```
+
+**Trusted (no login)**
+
+```json
+POST /auth/token
+{ "apiKey": "...", "apiSecret": "..." }
+```
+
+Same `accessToken` envelope. 401 if not ACTIVE.
+
+```mermaid
+sequenceDiagram
+  participant TS as TrustedSystem
+  participant Auth as authService
+  participant Cat as catalogService
+  TS->>Auth: POST /auth/token apiKey apiSecret
+  Auth-->>TS: JWT TRUSTED_SYSTEM
+  TS->>Cat: GET /api/products Bearer JWT
+```
+
+**Catalog verify — JWKS, not validate**
+
+```mermaid
+sequenceDiagram
+  participant C as Client
+  participant Cat as catalogService
+  participant Auth as authService
+  C->>Cat: GET /api/products Bearer JWT
+  alt kid unknown in memory
+    Cat->>Auth: GET /auth/.well-known/jwks.json
+    Auth-->>Cat: public keys
+  end
+  Cat->>Cat: verify signature locally
+  Cat-->>C: envelope data
+```
+
+### 4.10 What an admin can call
+
+```mermaid
+flowchart TB
+  login[POST /auth/login]
+  subgraph authAdmin [authService Admin JWT]
+    listUsers[GET /auth/users]
+    approve[POST /auth/users/id/approve]
+    deny[POST /auth/users/id/deny]
+    revoke[POST /auth/users/id/revoke]
+    addAdmin[POST /auth/admins]
+    delUser[DELETE /auth/users/id]
+  end
+  subgraph catWrite [catalog write]
+    cProd[POST PUT DELETE /api/products]
+    cOpt[POST PUT DELETE /api/options]
+  end
+  subgraph catRead [catalog read]
+    gList[GET /api/products]
+    gOne[GET /api/products/id]
+    gOpt[GET /api/options/id]
+  end
+  pub[GET /api/menu.pdf]
+  login --> authAdmin
+  login --> catWrite
+  login --> catRead
+  login --> pub
+```
+
+Trusted JWT may use **catalog read** and **PDF** only.
 
 ---
 
@@ -469,9 +631,9 @@ Canonical query params: **`page` + `size`**.
 | `PUT` | `/api/options/{id}` | Update option entity |
 | `DELETE` | `/api/options/{id}` | Delete option entity |
 
-While `pdf_generation.busy = true` → **503** + `Retry-After: 60`.
+While Redis PDF-generation lock is held → **503** + `Retry-After: 60`.
 
-Successful mutation: set `catalog_meta.dirty = true`. **Do not** delete Redis catalog keys (TTL 3 min). **Do not** set a catalog-write lock.
+Successful mutation: take **catalog-write** Redis lock, set `catalog_meta.dirty = true`, release write lock. **Do not** delete Redis catalog keys (TTL).
 
 ### 5.4 Catalog-service — queries (`catalog:read`; Admin **or** Trusted)
 
@@ -507,9 +669,13 @@ Unauthenticated → 401. Wrong scope → 403.
 
 Always **raw binary** (never JSON envelope) on success. Missing version or no rows yet → JSON **404** envelope.
 
+### 5.6 Test-only PDF trigger (Build)
+
+`POST /test/pdf/generate` — **no auth**. Enabled only when a test/dev profile is on (not production). Same lock/dirty rules as the scheduled job; it only **starts** generation immediately.
+
 ---
 
-## 6. PDF job and status-table lock
+## 6. PDF job and Redis locks
 
 **Content**
 
@@ -519,20 +685,39 @@ Always **raw binary** (never JSON envelope) on success. Missing version or no ro
   - sellable products (simple, combo, pizza / pizza-base)
   - **pizza-spec option entities** (price `0` in v1)
 
-**Cadence:** every **5 minutes** on catalog-service. Single Compose replica in v1.
+**Cadence:** from config `app.pdf.interval` (default **5 minutes**) on catalog-service.
 
-**Algorithm** (no `catalog_write` lock)
+**Skip is not a queue.** If the job (or test trigger) sees a write in progress, it **returns immediately**. Nothing is stored to retry that run. `catalog_meta.dirty` **stays true**, so a **later** interval (or another test trigger) may generate. Missed cycles are not backfilled as extra versions.
 
-1. Read `catalog_meta`; if `dirty = false` → no-op.
-2. Set `pdf_generation` busy (`false` → `true`). If already busy → skip (defensive).
-3. Generate PDF from current active products **and** option entities. `version = last_pdf_version + 1` (or 1).
-4. **Insert** a new `menu_pdf` row (do not overwrite past rows). Write Redis `create-your-pizza/menu` with **this** version only (latest).
-5. Set `dirty = false`, `last_pdf_version = version`, clear `pdf_generation.busy`.
+**Version is owned by generation, not by admin writes.** A product create/update/delete sets `dirty` only. It does **not** insert `menu_pdf` or bump `last_pdf_version`. `menu_pdf.version` (printed as **vN**) increments **only** when a generation run **successfully inserts** a new history row.
 
-**Admin write path**
+**Why Redis locks, not `system_status` or extra `catalog_meta` flags:** `catalog_meta` stays dirty/version; `menu_pdf` stays bytes. Redis `SET key NX EX ttl` excludes writers vs the job and **self-heals** if `DEL` never runs (crash, kill, hang). Always `DEL` in `finally` on the happy/error path; **TTL is the safety net**.
 
-1. If `pdf_generation.busy` → 503 + `Retry-After: 60`.
-2. Persist mutation; set dirty. Job may run concurrently with a write **only** if busy was not set yet; next dirty cycle still regenerates. **Do not** skip the job because a catalog save is in progress.
+| Redis key | When | Config | Default TTL |
+|-----------|------|--------|-------------|
+| `create-your-pizza/lock:pdf-generation` | Held for the duration of PDF generation | `app.lock.pdf-ttl` **MUST** exist | **120 seconds** |
+| `create-your-pizza/lock:catalog-write` | Held for the duration of an admin catalog mutation | `app.lock.write-ttl` **MUST** exist | **30 seconds** |
+
+PDF lock TTL must be **longer than a healthy generate** (so two jobs do not overlap) and **≤ `app.pdf.interval`** (default 5 min) so a dead job does not block a full extra interval after expiry. Write lock is short because a mutation is a transaction. After TTL, Redis drops the key; the next job or `POST /test/pdf/generate` can proceed.
+
+**Job**
+
+1. If write lock exists → **skip** (not queued). Leave `dirty` unchanged.
+2. If `dirty = false` → no-op.
+3. `SET` PDF lock `NX EX app.lock.pdf-ttl`. If not acquired → skip (not queued).
+4. Re-check write lock; if present → `DEL` PDF lock, **skip** (not queued).
+5. Generate from current products + options. Assign `version = last_pdf_version + 1` (or **1** if none).
+6. **Insert** `menu_pdf`; write Redis latest menu JSON; `dirty = false`; `last_pdf_version = version`.
+7. `DEL` PDF lock in `finally` (TTL still expires if this never runs).
+
+**Admin write**
+
+1. If PDF lock exists → **503** + `Retry-After: 60`.
+2. `SET` write lock `NX EX app.lock.write-ttl`. If not acquired → **503**.
+3. Persist mutation; `dirty = true`. **Do not** change `menu_pdf` / `last_pdf_version`.
+4. `DEL` write lock in `finally`.
+
+Test `POST /test/pdf/generate` uses the **same** job algorithm (skip, not queue).
 
 ---
 
@@ -543,7 +728,9 @@ Used by **catalog-service only**.
 | Key | Value | Role |
 |-----|--------|------|
 | `create-your-pizza/menu` | JSON `{pdf, version, updatedAt}` UTC | **Latest** menu only. Redis-first / DB fallback. Overwritten by the PDF job. **No TTL required** (job replaces). Historical versions are **not** stored here. |
-| `create-your-pizza/catalog:*` | Cached list/detail JSON (hashed query or id) | Redis-first / DB fallback. On DB hit, **write Redis**. **TTL = 3 minutes**. **No** manual invalidation on admin write. Readers may see catalog JSON up to ~3 minutes stale. |
+| `create-your-pizza/catalog:*` | Cached list/detail JSON | Redis-first / DB fallback. On DB hit, **write Redis**. **TTL** from `app.cache.catalog-ttl` (default **3 minutes**). **No** invalidation on write. |
+| `create-your-pizza/lock:pdf-generation` | holder id | PDF job lock (`NX` + **`app.lock.pdf-ttl` default 120s**) |
+| `create-your-pizza/lock:catalog-write` | holder id | Catalog write lock (`NX` + **`app.lock.write-ttl` default 30s**) |
 
 **Not stored in Redis:** JWT public keys, sessions, API secrets, historical PDF bytes.
 
@@ -553,20 +740,13 @@ Used by **catalog-service only**.
 
 | Service | Notes |
 |---------|--------|
-| `postgres` | Volume; schemas `auth` + `catalog`; tables; catalog sample data |
-| `redis` | Volume persistence |
-| `auth-service` | Depends on postgres; **bootstrap admin** if none; print credentials to logs |
-| `catalog-service` | Depends on postgres + redis |
+| `auth-postgres` | Volume; auth tables only |
+| `catalog-postgres` | Volume; catalog tables + sample products/options |
+| `redis` | Volume; catalog cache + locks |
+| `auth-service` | Depends on auth-postgres; bootstrap admin; JWKS |
+| `catalog-service` | Depends on catalog-postgres + redis; `AUTH_JWKS_URL` |
 
-**Seed (sample data)**
-
-- Do **not** rely on SQL seed for the first admin if bootstrap is used; if Compose restarts with a volume, bootstrap no-ops.
-- Sample **simple**, **combo** (combo_items), **pizza** (veg and non-veg)
-- All locked option entities
-- `system_status` one idle `pdf_generation` row; `catalog_meta` dirty=true so the first job can produce **v1**
-- Optional **dev-only** approved trusted client: **not** required if operators use register+approve; Build may still seed one inactive pending row for tests
-
-No application code in this stage.
+**Seed:** no SQL first-admin if bootstrap is used. Sample simple/combo/pizza + option entities. `catalog_meta` dirty=true so first job can produce **v1**. **No** `system_status` seed.
 
 ---
 
@@ -583,12 +763,26 @@ No application code in this stage.
 - `type=pizza-spec` returns all options; untyped list can include them
 - Filters, page size 10, max 100, flat `data`, `pagination`, `next=-1`
 - PDF includes **vN** and **pizza-spec** rows; latest Redis; `?version=` historical DB; unknown version 404
-- Write during PDF busy → 503; **no** catalog_write skip behavior
-- Catalog Redis TTL 3 min write-through; no invalidation-on-write requirement
+- Catalog verifies JWT via JWKS HTTP, never auth DB, never `/validate`
+- Write during PDF lock → 503; job **skips** (not queued) if write lock held; `dirty` stays true
+- PDF **version increments only on successful generation**, never on product writes
+- Lock TTLs: PDF **120s**, write **30s** (`finally` DEL + Redis expiry)
+- Catalog Redis TTL from config (default 3 min)
+- Test `POST /test/pdf/generate` same locks, no auth, test profile only
 
-**AGENTS.md** at Build: compose, first-admin logs, Swagger.
+**Build config (properties — MUST exist; defaults if generated)**
 
-**Initializr deps:** Build-plan, not here.
+| Property | Default |
+|----------|---------|
+| `app.pdf.interval` | 5 minutes |
+| `app.cache.catalog-ttl` | 3 minutes |
+| `app.jwt.ttl` | 30 minutes |
+| `app.lock.pdf-ttl` | **120 seconds** |
+| `app.lock.write-ttl` | **30 seconds** |
+
+**AGENTS.md** at Build: compose, first-admin logs, Swagger, JWKS URL.
+
+**Stories:** before coding, write stories under `docs/stories/` per playbook (not this TRD).
 
 ---
 
@@ -597,22 +791,20 @@ No application code in this stage.
 | Topic | Decision |
 |-------|----------|
 | Pagination max | **100**; default **10**; clamp |
-| Status columns | `lock_name` PK, `busy`, `holder`, `updated_at` |
-| Lock names | **`pdf_generation` only** |
-| 503 `Retry-After` | Header `Retry-After: 60` |
+| PDF/write exclusion | **Redis locks** — not `system_status`, not flags on `catalog_meta` |
+| Job vs write | Writes **503** if PDF lock; job **skips** (not queued) if write lock; `dirty` remains |
+| PDF version | Increments **only** on successful generation insert — **not** on admin product writes |
+| Lock TTLs | PDF **120s**, write **30s**; `finally` DEL; Redis TTL self-heal |
 | `product_type` | DB `simple` \| `combo` \| `pizza` |
 | pizza-base vs pizza-spec | pizza-base = `products.pizza`; pizza-spec = `option_entities` on **`GET /api/products`** |
-| Options for trusted | Same list API; `type=pizza-spec` for all options |
-| Category vs pizza-spec | Veg filter excludes specs unless `type=pizza-spec` |
-| List params | `page` + `size` |
-| `kid` rotation | Startup load + lazy DB lookup; no JWKS poll |
-| GET PDF | Raw binary; default latest; `version` query numeric; history in DB; Redis latest only |
-| PDF rows | Sellable products **and** pizza-spec; show **vN** |
-| Combo delete | Hard delete; cascade combo_items |
-| Key format | JWK JSON; RS256 |
-| Catalog Redis | TTL **3 min**; Redis-first; fill on DB fetch; **no** invalidation on write |
+| Admin vs trusted register | **Different endpoints** (`/auth/admins` vs `/auth/register`) |
+| JWT verify | **JWKS HTTP** + memory; **no** shared DB; **no** `/validate` |
+| Databases | **One Postgres per service** |
+| `kid` rotation | Startup JWKS + refetch on unknown kid; no timer |
+| GET PDF | Raw binary; default latest; `version` query; history in catalog DB; Redis latest only |
+| Catalog Redis | TTL from config default **3 min**; Redis-first; fill on DB fetch |
 | Auth bootstrap | First admin on empty admin set; stdout credentials |
-| Trusted access | Register pending → admin approve → `/auth/token` → same catalog GET as admin |
+| Config | PDF interval, cache TTL, JWT TTL, **lock TTLs** **must** be properties with those defaults |
 
 ---
 
@@ -628,7 +820,7 @@ Optional later: JWT denylist on revoke; customer self-register; purge old `menu_
 
 ## 12. Gate
 
-Design / TRD is **DRAFT** (revised 2026-09-18).
+Design / TRD is **DRAFT** (revised 2026-09-18, pass 2).
 
 Please respond with one of:
 

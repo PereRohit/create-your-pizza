@@ -12,5 +12,6 @@
 | [design.md](design.md) | Stage 3 Design / TRD — **DRAFT** (revised 2026-09-18); awaiting gate |
 | `build-plan.md` | Stage 4 — after Design Approve |
 | `verify.md` | Stage 6 — after Build |
+| [stories/README.md](stories/README.md) | Build-stage user stories — after Build-plan Approve |
 
 **Git:** do not commit unless the owner confirms. Design work lives on **`feat/design`** until Design Approve.

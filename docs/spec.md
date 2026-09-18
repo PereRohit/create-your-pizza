@@ -1,6 +1,6 @@
 # Spec / PRD — CreateYourPizza pizza catalog
 
-**Status:** APPROVED 2026-09-17 (owner HIFL Approve: Spec). **Aligned 2026-09-18** to owner Design Revise (auth approval, PDF history, pizza-spec on PDF, `pdf_generation` lock only, catalog Redis TTL). Design remains DRAFT awaiting Design gate.
+**Status:** APPROVED 2026-09-17. **Aligned 2026-09-18** (Design Revise pass 2: one DB per service + JWKS, Redis locks, registration/login flows). Design remains DRAFT.
 
 **Upstream:** [Intent](intent.md) (**APPROVED** 2026-09-17)
 
@@ -21,7 +21,7 @@
 1. Single source of truth for catalog items across three admin product types, with **option entities** for pizza options and consumer listing types (**simple**, **combo**, **pizza-base**, **pizza-spec**).
 2. Clear public vs authenticated boundaries (PDF public; admin + trusted APIs JWT-protected with **standard registered claims** + **binding OAuth2-style scopes**).
 3. Read-heavy performance via Postgres + Redis **catalog** cache (including efficient current-menu PDF fetch from Redis).
-4. Efficient PDF generation (async, dirty-driven, 5-minute cadence) with **DB version history + bytea**, Redis **latest** menu only, and **status-table `pdf_generation` lock** vs admin writes (HTTP 503).
+4. Efficient PDF generation (async, dirty-driven, interval from **config** default 5 min) with **DB version history + bytea**, Redis **latest** menu, and **Redis locks** (writes 503 while generating; job **skips** if a write is in progress).
 5. **Java Spring Boot + Maven**, fully **dockerized** one-command bring-up.
 6. Shareable **OpenAPI/Swagger**, **AGENTS.md**, and automated **tests** as delivery criteria.
 
@@ -93,13 +93,14 @@ Separate section of catalog product rules (admin/API/data concepts). The **PDF m
 | **FR-13** | System exposes a **public** endpoint (or equivalent) to obtain the **menu card PDF**. |
 | **FR-14** | PDF access requires **no authentication**. |
 | **FR-15** | PDF content reflects the catalog as of the last successful dirty-triggered generation. |
-| **FR-16** | PDF generation runs **asynchronously** on a **fixed ~5-minute interval**, and **only when** the catalog dirty flag (or equivalent version marker) indicates updates since the last PDF. |
+| **FR-16** | PDF generation runs **asynchronously** on a configurable interval (**default 5 minutes**, **MUST** be a properties/config value), and **only when** the catalog is dirty. |
 | **FR-16a** | PDF is **very basic**: header text **Create Your Pizza** (with spaces); printed **version** as **v1 / v2 / …**; body is a **table** of **name + base price** for sellable products **and pizza-spec option entities**. |
-| **FR-16b** | **Product decision — concurrency:** While the PDF job is generating, enforce lock via a **status table** row **`pdf_generation`** so catalog updates do not proceed; admin/catalog write APIs return **HTTP 503** with the [busy envelope](#locked-product-decision--status-table-lock--503-envelope) so clients **retry later**. |
-| **FR-16c** | **Removed (Design Revise 2026-09-18):** do **not** skip the PDF job because a catalog save is in progress. There is **no** `catalog_write` busy flag. |
-| **FR-16d** | **PDF storage:** Postgres **history** — one row per numeric **version** + **bytea**. On generation, **insert** a new version and write **latest** to Redis. Public fetch of **latest**: **Redis-first** with **DB fallback**. Fetch of a **past version**: **DB only**. See [§4 PDF Redis shape](#locked-product-decision--pdf-storage-version--bytea--redis). |
+| **FR-16b** | While PDF generation is in progress, catalog **writes** return **HTTP 503** busy envelope. Coordination is **not** a `system_status` table (Design: Redis locks). |
+| **FR-16c** | If a **catalog write is in progress** when the job (or test trigger) fires, generation **skips that run**. It is **not queued**. `dirty` stays true so a later cycle may run. **No extra PDF versions** are created for skipped runs. |
+| **FR-16d** | **PDF storage:** Postgres **history** — one row per numeric **version** + **bytea**. **Version increments only when generation succeeds** (not when an admin writes products). On generation, **insert** a new version and write **latest** to Redis. Public fetch of **latest**: **Redis-first** with **DB fallback**. Fetch of a **past version**: **DB only**. See [§4 PDF Redis shape](#locked-product-decision--pdf-storage-version--bytea--redis). |
 | **FR-16e** | **GET PDF HTTP response:** **raw binary PDF** (`application/pdf`) only — **not** the JSON envelope. Default = **latest**. Optional query param **`version`** (numeric) selects a specific historical or current version. |
 | **FR-16f** | Redis stores **only the latest** generated menu. Past menu bytes **always** come from Postgres. |
+| **FR-16g** | A **test-only** unauthenticated route may trigger PDF generation on demand (same lock/dirty/skip rules). Not for production. |
 
 ### Auth
 
@@ -108,9 +109,9 @@ Separate section of catalog product rules (admin/API/data concepts). The **PDF m
 | **FR-17** | A **generic, extensible central auth service** allows principals to **register and authenticate**. v1 uses it for **Admin** and **trusted-system** principals on a **single user table with roles**. **Admins authenticate with username/password login** (`POST /auth/login`) → JWT. **Trusted/external systems do not login**; they **register** (pending), receive an **API key + secret only after admin approve**, then call **`POST /auth/token`** for a JWT. All catalog protected APIs use **JWT only** (no separate API-key handler on catalog). It must be **extensible** so **customers** can **self-register without admin approval** later (still **visible** to admins; admin **delete** later). Future **CUSTOMER** profile fields: **phone**, **name**, **email**. **User orders / order flows** are **created separately** (out of v1). |
 | **FR-17a** | If **no ADMIN** exists in the user table at **auth-service startup**, the service **creates one** and **prints username + password to the terminal/stdout**. If at least one admin exists, **do not** create another bootstrap admin. |
 | **FR-17b** | Admins can **list users** (admins / trusted / later customers), **approve or deny** pending trusted registrations, **revoke** trusted access (blocks further token exchange), and **delete other admins** (not the last remaining admin). Additional admins are created by an existing admin, **not** via public register. |
-| **FR-18** | On successful auth, the service issues a **JWT with 30-minute TTL** for subsequent API calls. |
+| **FR-18** | On successful auth, the service issues a **JWT**. TTL **MUST** be a config/properties value (**default 30 minutes**). |
 | **FR-18a** | JWTs use **exact industry-standard claim names** locked in [§4 JWT claims](#locked-product-decision--jwt-claim-names-binding). Claims carry identity + **binding OAuth2-style scopes** ([§4 scopes](#locked-product-decision--oauth2-style-scope-vocabulary-binding)). **API secrets must not appear in the JWT** — used only at token issuance. |
-| **FR-19** | Protected APIs validate the JWT **locally** using **industry-standard signature verification** (plus expiry/claims/scope checks) before authorizing the requested action. The **catalog service must not call the auth service solely to validate** a presented token. Verification **public-key** material comes from a **central DB-only store** per [§4 key material](#locked-product-decision--jwt-verification-key-material). **No JWKS refresh-interval** implementation. |
+| **FR-19** | Protected catalog APIs validate the JWT **locally** (signature + expiry/claims/scope). Catalog **must not** call auth **`/validate`** per request and **must not** read auth’s database. Public verify material is published by auth as **JWKS**; catalog caches JWKs in memory and refetches on unknown `kid`. **No JWKS refresh-interval** (no timer). **One Postgres per service.** |
 | **FR-20** | **Invalidating outstanding JWTs / denylist** is **out of scope** for v1 (expiry is the control). **Admin revoke of trusted API credentials** **is in scope** — further `/auth/token` calls fail; existing JWTs work until `exp`. |
 
 ### Delivery quality & ops
@@ -120,8 +121,9 @@ Separate section of catalog product rules (admin/API/data concepts). The **PDF m
 | **FR-21** | System publishes an **OpenAPI (Swagger)** description that serves as the **API list for integrations** and is **importable by Postman** (and similar tools) to build a test collection. |
 | **FR-22** | Automated **test cases** cover core system and API behaviors (auth boundaries, catalog CRUD, filters/pagination/flat array, public PDF access, concurrency/503 envelope where practical). |
 | **FR-23** | Repository includes **AGENTS.md** as a **delivery artifact** so cloners using an agent for development/setup have project guidance. **Create the file at Build** (document here; do not require the file before Build). |
-| **FR-24** | **Postgres** and **Redis** run via **Docker** with **volume persistence** and **sample data** for each product type (**Simple**, **Combo**, **Pizza**) and option entities. |
-| **FR-25** | The **entire stack** (application service(s) + Postgres + Redis) is **dockerized** so anyone can clone the repo and bring the system up with a simple command (e.g. `docker compose up`). |
+| **FR-24** | **Postgres per service** and **Redis** (catalog) run via **Docker** with **volume persistence** and **sample data** for each product type (**Simple**, **Combo**, **Pizza**) and option entities. |
+| **FR-25** | The **entire stack** is **dockerized** (`docker compose up`). |
+| **FR-26** | Catalog Redis list/detail **TTL MUST** be a config/properties value (**default 3 minutes**). Redis-first, DB fallback, write Redis on DB hit; no invalidation-on-write. |
 
 ---
 
@@ -129,15 +131,15 @@ Separate section of catalog product rules (admin/API/data concepts). The **PDF m
 
 | ID | Requirement |
 |----|-------------|
-| **NFR-1** | **Read-heavy:** Redis is the **catalog** cache layer (**TTL 3 minutes**; Redis-first, DB fallback, **write Redis on successful DB fetch**; **no** invalidation-on-write) and the **latest menu PDF** fetch path (Redis-first, DB fallback). Historical PDFs are DB-only. |
-| **NFR-2** | **Postgres** stores product, **option entities**, user/role information, **PDF version history + bytea**, and **status-table** lock rows as the system of record. |
-| **NFR-3** | **JWT TTL = 30 minutes**; no live JWT denylist in v1; **credential revoke** for trusted systems is in v1; claims per locked claim table + binding scopes. |
+| **NFR-1** | **Read-heavy:** Redis catalog cache (**TTL from config, default 3 minutes**; Redis-first, DB fallback, write Redis on DB fetch; **no** invalidation-on-write) and **latest menu PDF** (Redis-first, DB fallback). Historical PDFs are catalog-DB only. Redis also holds **PDF/write locks**. |
+| **NFR-2** | **auth-postgres** stores users/roles/credentials/public JWKs. **catalog-postgres** stores products, option entities, PDF history, dirty meta. **No shared database. No status-table lock rows.** |
+| **NFR-3** | **JWT TTL from config, default 30 minutes**; no live JWT denylist; **credential revoke** for trusted systems is in v1. |
 | **NFR-4** | **OpenAPI/Swagger** is a release artifact, kept consistent with implemented endpoints; suitable for Postman import. |
 | **NFR-5** | **Tests** are part of Definition of Done for Build/Verify. |
-| **NFR-6** | **PDF job:** async, **5-minute** poll/schedule, skip work when catalog is not dirty; apply **FR-16b** with **`pdf_generation` only**; on success **insert** version+bytea and refresh Redis **latest**; avoid busy-spinning. |
-| **NFR-7** | Catalog Redis keys expire via **TTL 3 minutes** (not deleted on Admin write). Latest PDF Redis key is replaced on successful generation. |
+| **NFR-6** | **PDF job:** async; interval **from config (default 5 min)**; skip when not dirty; **skip if write in progress (not queued)**; 503 on writes during generation; version **only** on successful generate. Redis lock TTLs **MUST** be config: PDF lock **default 120s**, write lock **default 30s** (`finally` DEL + Redis expiry so a crash cannot hold generation forever). |
+| **NFR-7** | Catalog Redis keys expire via **config TTL (default 3 minutes)**. Latest PDF Redis key is replaced on successful generation. |
 | **NFR-8** | **Stack:** **Java Spring Boot** with **Maven**. Owner creates the initial project via **Spring Initializr**. Suggested Spring dependencies for Initializr packaging are a **Build-stage development task** (document in Build plan when Build starts; **do not scaffold application code now**). |
-| **NFR-9** | **Ops:** Docker Compose (or equivalent) one-command bring-up with persistent volumes and seeded sample catalog data. |
+| **NFR-9** | **Ops:** Docker Compose one-command bring-up: **auth-postgres**, **catalog-postgres**, Redis, both apps, volumes, sample catalog data. |
 | **NFR-10** | **AGENTS.md** ships with the built repo for agent-assisted setup/dev (see FR-23). |
 | **NFR-11** | Consumer list default **page size = 10**; HTTP body products = **flat array** in `data` with **`pagination` sibling**; filters override default presentation/ordering. |
 | **NFR-12** | All success and error **JSON** API responses use the **standard envelope**; paginated lists include `pagination`; 503 busy responses omit `data` and `pagination`. Public GET PDF is **raw binary**, not the envelope. |
@@ -150,7 +152,7 @@ Separate section of catalog product rules (admin/API/data concepts). The **PDF m
 
 - Local verification is the common industry pattern for short-lived JWTs and avoids coupling catalog availability to an auth round-trip on every call.
 - Owner suggestion of Redis as a token comparison store is **not** chosen as the primary validation mechanism; **standards take precedence**.
-- **Redis remains** for **catalog caching** and **current menu PDF** — **not** for JWT public-key material and **not** for comparing opaque session tokens.
+- **Redis** remains for **catalog caching**, **latest menu PDF**, and **generation/write locks** — **not** JWT public keys and **not** opaque session tokens.
 - Live JWT **denylist** remains **out of scope** for v1 (JWT expiry is the control). **Admin revoke of trusted API keys** is in v1 and stops **new** token issuance only.
 
 ### Locked product decision — JWT claim names (binding)
@@ -199,15 +201,15 @@ Design/Build must use these strings unchanged unless a later Spec Revise changes
 
 ### Locked product decision — JWT verification key material
 
-**Decision (product — binding):** Do **not** duplicate auth signing public key/secret across many config copies. The **central store for public verification key material is Postgres (DB) only** — **not Redis**.
+**Decision (product):** **One Postgres per service.** Public JWKs live **only in auth-postgres**. Catalog **never** reads auth tables.
 
 **Rules:**
 
-1. Maintain a **DB-only** central store of **public verification material only** (JWK/JWKS JSON or PEM public key) with **rotation metadata** as Design needs (e.g. `kid`, `alg`, `updated_at`).
-2. **Private signing keys stay only on the auth service** — never copied into catalog config or Redis as signing secrets.
-3. Catalog service **reads public key material from the DB central store** and verifies locally — **no per-request auth call**.
-4. **No JWKS refresh-interval** implementation in v1 (do not schedule periodic JWKS endpoint refreshes as a product requirement).
-5. Redis is **not** used for JWT key material (Redis remains catalog cache + current menu PDF only).
+1. Auth stores **public** JWKs in its own DB and exposes **`GET /auth/.well-known/jwks.json`**.
+2. **Private signing keys stay only on the auth service.**
+3. Catalog **GETs JWKS over HTTP**, caches in **memory**, verifies JWT **locally**. Unknown `kid` → refetch JWKS. **No** scheduled JWKS poll.
+4. **No** `POST /auth/validate` (not needed for short-lived JWTs).
+5. Redis is **not** used for JWT key material.
 
 ### Locked product decision — PDF storage (version history + bytea + Redis latest)
 
@@ -218,7 +220,7 @@ Design/Build must use these strings unchanged unless a later Spec Revise changes
 3. On generation, **insert** the new DB row and write **latest** to Redis (same JSON shape).
 4. **Latest** public fetch: **Redis-first**, **DB fallback** (`max(version)`).
 5. **Historical** fetch (`version` query param ≠ latest): **Postgres only**.
-6. Preserve dirty/5-minute job and **FR-16b** (`pdf_generation` lock → 503). **No** skip-if-catalog-save-in-progress.
+6. Preserve dirty job (interval from config), **FR-16b** (writes 503 while generating), **FR-16c** (skip job if write in progress). Locks: **Redis**, not a status table.
 
 **Redis (binding):**
 
@@ -243,24 +245,14 @@ Design/Build must use these strings unchanged unless a later Spec Revise changes
 
 **Decision (product):**
 
-1. During PDF generation, set busy on status-table lock **`pdf_generation`** so catalog mutations fail fast with **HTTP 503** (clients retry).
-2. **Do not** maintain a `catalog_write` busy flag. The job does **not** skip because a catalog save is in progress.
+1. During PDF generation, catalog mutations fail fast with **HTTP 503**.
+2. If a catalog write is in progress when the job fires, the job **skips** that run (**not queued**). `dirty` remains true.
+3. Implement with **Redis locks** on catalog-service (Design). Lock TTLs: PDF **120s**, write **30s** (config; `finally` + expiry). **Do not** use a `system_status` table or extra lock columns on `catalog_meta` / `menu_pdf`.
+4. **PDF version** increments only on a **successful generation insert**, never on admin product writes.
 
 ### Locked product decision — Status table lock + 503 envelope
 
-**Decision (product):**
-
-- Lock/busy state is coordinated with a **status table** (not left open between advisory lock vs row lock vs status table).
-- **Schema must be extremely simple and minimal** — only fields required to lock the other process. Sketch (Design may rename columns; do not over-model):
-
-| Column (sketch) | Purpose |
-|-----------------|---------|
-| `lock_name` / key | Which lock — v1: **`pdf_generation` only** |
-| `busy` flag **or** `holder` | Whether busy / who holds the lock |
-| `updated_at` | Last change timestamp |
-
-- Do **not** add extra workflow, history, or multi-state machine columns unless a later Spec Revise requires them.
-- **503** responses use the **same standard envelope**, **without** `data` and **without** `pagination`:
+**Decision (product):** **No status table.** 503 JSON body is unchanged:
 
 ```json
 {
@@ -269,6 +261,8 @@ Design/Build must use these strings unchanged unless a later Spec Revise changes
   "error": "system busy"
 }
 ```
+
+Omit `data` and `pagination`. Optional header `Retry-After: 60` (Design).
 
 ### Locked product decision — Standard JSON envelope
 
@@ -360,8 +354,8 @@ Product fields as exemplified (`productName`, `productId`, `productType`, `produ
 **Decision (product):**
 
 1. **Same user table with roles** for Admin, Trusted system, and future Customer (`ADMIN`, `TRUSTED_SYSTEM`, `CUSTOMER`).
-2. **Admin:** username/password **login** → JWT. First admin **bootstrapped** at auth startup if none exist (credentials to stdout). Further admins created by an admin.
-3. **Trusted:** public **register** → `PENDING` → admin **approve** (issue API key+secret) or **deny**. No login. **`POST /auth/token`** → JWT. Admin may **revoke** (stops new tokens).
+2. **Admin:** username/password **login** → JWT. First admin **bootstrapped** at auth startup if none exist (credentials to stdout). Further admins: **`POST /auth/admins`** (not public register).
+3. **Trusted:** public **`POST /auth/register`** only (server sets `TRUSTED_SYSTEM` + `PENDING`) → admin **approve** (`/auth/token` after). Principal type is the **URL**, not a client-supplied `role`.
 4. **Future CUSTOMER:** self-register **without** approval; **visible** to admins; admin **delete** later — not built in v1. Profile fields later: **phone**, **name**, **email**.
 5. API secret hashed at rest; **never** in JWT.
 6. **User orders / other order flows** later — out of v1.
@@ -407,8 +401,9 @@ Full OpenAPI lands in Design/Build (Swagger UI / OpenAPI artifact for Postman). 
 
 | Method / resource (sketch) | Auth | Purpose |
 |----------------------------|------|---------|
-| `POST /auth/register` | Public | Trusted system **pending** registration only (v1). Not admin self-register. |
-| `POST /auth/login` | Public | Admin username/password → JWT (30m) |
+| `GET /auth/.well-known/jwks.json` | Public | Catalog (and anyone) reads **public** JWKs. Not a validate endpoint. |
+| `POST /auth/register` | Public | Trusted **pending** registration only. Not admin self-register. |
+| `POST /auth/login` | Public | Admin username/password → JWT |
 | `POST /auth/token` | Public (API key + secret) | **Approved** trusted system → JWT (`sub`, `client_id`, `roles`, `scope`); secret not in token |
 | `GET /auth/users` | Admin JWT | List admins / trusted / (later) customers; filter pending |
 | `POST /auth/users/{id}/approve` | Admin JWT | Issue API key+secret **once**; activate trusted |
@@ -427,7 +422,7 @@ Full OpenAPI lands in Design/Build (Swagger UI / OpenAPI artifact for Postman). 
 | `GET /api/products/{id}` | Admin or Trusted JWT (`catalog:read`) | Fetch one product |
 | Option-entity admin routes (sketch) | Admin JWT (`catalog:write`) | CRUD crust size / crust type / topping option entities |
 
-Admin writes during PDF generation lock (status table busy) → **503** busy envelope (FR-16b).
+Admin writes during PDF generation (Redis PDF lock) → **503** busy envelope (FR-16b). Job skips if write lock is held (FR-16c).
 
 ### Catalog (trusted / consumer query — Admin uses same)
 
@@ -479,12 +474,12 @@ Not full SQL DDL — Design owns schema detail. Conceptual entities:
 | **OptionEntity (pizza-spec)** | First-class crust size/type/topping entities; on **`GET /api/products`** and **on the PDF** |
 | **CatalogVersion / DirtyFlag** | Marker on catalog mutation; PDF job checks dirty |
 | **MenuPdfArtifact** | **History**: numeric version PK + bytea; PDF shows **vN**; **latest** also in Redis `create-your-pizza/menu`; past versions DB-only |
-| **SystemStatus / lock status table** | **Minimal** — **`pdf_generation` only** + busy/holder + `updated_at`. No `catalog_write`. |
-| **VerificationKeyMaterial** | **DB-only** public JWK + rotation metadata — **not Redis**; **no JWKS refresh-interval** |
+| **SystemStatus** | **Removed.** Redis locks on catalog-service. |
+| **VerificationKeyMaterial** | Public JWKs in **auth-postgres only**; published as **JWKS HTTP**; catalog memory cache |
 
-**PDF job (product behavior):** On Admin write → set dirty. Every 5 minutes: if not dirty → no-op; else mark **`pdf_generation` busy** → generate PDF (header + **vN** + name/price table including **pizza-spec**) → **insert** version+bytea (history) **and** Redis latest JSON → clear dirty → clear busy. Concurrent admin writes while busy → **HTTP 503**. Job does **not** skip for in-progress catalog saves.
+**PDF job (product behavior):** On Admin write → Redis write lock → set dirty (**do not** bump PDF version) → drop write lock. Every interval: if write lock → **skip (not queued)**; if not dirty → no-op; else Redis PDF lock → generate → insert **next** version+bytea + Redis latest → clear dirty → drop PDF lock. Writes during PDF lock → **503**. Lock TTLs 120s / 30s self-heal if `DEL` never runs.
 
-**Cache:** Redis caches product list/detail with **TTL 3 minutes** (Redis-first, fill on DB fetch, **no** invalidation on write) and the **latest** menu PDF. Historical PDFs are DB-only. Redis is **not** the JWT validation store and **not** the public-key store.
+**Cache:** Redis catalog JSON **TTL from config (default 3 min)**; latest PDF; **locks**. Not JWT keys.
 
 **Seed / sample data:** Dockerized Postgres must include sample rows for **Simple**, **Combo**, and **Pizza** product types and **option entities**, each with veg/non-veg as applicable.
 
@@ -514,9 +509,9 @@ Not full SQL DDL — Design owns schema detail. Conceptual entities:
 - Real-time PDF regeneration on every write (v1 is dirty + 5-minute async)
 - Putting API secrets into JWT claims
 - Duplicating private signing keys into catalog service config
-- **JWKS refresh-interval** implementation; Redis as JWT public-key store
-- Manual invalidation of catalog Redis keys on write (TTL 3 min instead)
-- `catalog_write` busy / skip-job-if-save-in-progress
+- **JWKS refresh-interval timer**; Redis as JWT public-key store; catalog reading auth DB; **`/auth/validate` per request**
+- `system_status` table / lock columns on `catalog_meta`
+- Manual invalidation of catalog Redis keys on write (TTL instead)
 - Prescribing concrete DTO class designs in Spec (wire JSON examples only; DTOs at coding)
 - Full OpenAPI/SQL as part of *this* Spec gate (sketch only here)
 - Spring Initializr dependency packaging / application scaffold before Build
@@ -532,7 +527,10 @@ Resolved by Spec Revises (see §4 and decision log in project-context) — **not
 - JWT validation approach → **local signature verification**; Redis = catalog cache (+ current PDF) only — **not** key store
 - Combo pricing → **admin-set**, not sum
 - PDF layout minimum → header **Create Your Pizza**; **vN**; name + base price table **including pizza-spec**
-- PDF/catalog concurrency → **`pdf_generation` only** / 503 envelope; **no** skip-if-save-in-progress
+- PDF/catalog concurrency → Redis locks; writes 503; job skips if write in progress; **no status table**
+- Key material → **auth-postgres + JWKS HTTP**; catalog memory; **no shared DB**; **no /validate**
+- One Postgres per service
+- Config MUST exist for PDF interval (default 5m), catalog TTL (default 3m), JWT TTL (default 30m)
 - PDF storage → **version history + bytea**; Redis **latest only**; `GET ?version=` numeric; default latest raw binary
 - User model → same table + roles; **admin login**; **trusted pending+approve**; bootstrap first admin; future CUSTOMER no-approval
 - Catalog Redis → **TTL 3 min**; Redis-first; fill on DB fetch; no invalidation-on-write
@@ -544,7 +542,6 @@ Resolved by Spec Revises (see §4 and decision log in project-context) — **not
 - Consumer listing types → **simple / combo / pizza-base / pizza-spec**
 - Pizza options → **option entities** (not free-form-string-only catalog)
 - Standard API envelope → locked (success `error: ""`; 503 omits `data` and `pagination`; pagination sibling when paginating)
-- Key material → **DB-only** central store of **public** verify material; **no JWKS refresh interval**; private keys on auth only
 - DTOs → **determined during coding**; Spec locks wire JSON examples only
 - Veg/non-veg → **all types** (Simple, Combo, Pizza)
 - Stack → **Java Spring Boot + Maven**; Initializr by owner; deps at Build
@@ -556,8 +553,9 @@ Still for Design (implementation detail only) — **answered in [design.md](desi
 1. Pagination max → **100**
 2. Status columns + `Retry-After: 60`
 3. pizza-base / pizza-spec mapping + options on `/api/products`
-4. `kid` rotation → startup + lazy DB lookup
+4. `kid` rotation → JWKS startup + refetch on unknown kid (not auth DB)
 5. GET PDF raw binary + version query; no JSON metadata sibling in v1
+6. Redis locks; one DB per service; registration by URL
 
 ---
 
@@ -567,13 +565,11 @@ When Build starts (after Design + Build plan Approve):
 
 - Owner creates the initial project via **Spring Initializr** (Java, Spring Boot, **Maven**).
 - Agent provides **suggested Spring dependencies** for Initializr packaging as a Build-stage task.
-- Produce **OpenAPI/Swagger**, **AGENTS.md**, Docker Compose (app + Postgres + Redis + volumes + sample data), and tests per this Spec.
+- Produce **OpenAPI/Swagger**, **AGENTS.md**, Docker Compose (**auth-postgres** + **catalog-postgres** + Redis + apps), tests, **`docs/stories/`** before coding.
 - Do **not** scaffold application code in Intent/Spec/Design stages.
 
 ---
 
 ## 12. Approved — aligned to Design Revise
 
-Spec is **APPROVED** (2026-09-17). Product locks **updated 2026-09-18** to match owner Design Revise (all files as needed). Do **not** reopen unrelated Spec scope without a new Spec **Revise** gate.
-
-Design/TRD is **DRAFT** ([design.md](design.md)) — awaiting Design **Approve / Revise / Park**. Do not start Build-plan or application code until Design Approve.
+Spec is **APPROVED** (2026-09-17). Product locks **updated 2026-09-18** (Design Revise pass 2). Design/TRD is **DRAFT** ([design.md](design.md)) — awaiting **Approve / Revise / Park**. Do not start Build-plan or application code until Design Approve.
