@@ -60,15 +60,15 @@ Central auth issues JWTs used by Admin and Trusted system in v1. Public customer
 
 ### Pizza option catalog (product specification — option entities)
 
-Separate section of catalog product rules (admin/API/data concepts). The **PDF must include pizza-spec option entities** (same name + base-price table; option price is 0 in v1). In the **consumer API**, pizza **base** sellable products and pizza **specification/option catalog** items are distinct listing types (**pizza-base** vs **pizza-spec**). Option entities are returned on **`GET /api/products`** (filter `type=pizza-spec` for all options).
+Separate section of catalog product rules (admin/API/data concepts). The **PDF must include pizza-spec option entities** (same name + **that option’s price**). In the **consumer API**, pizza **base** sellable products and pizza **specification/option catalog** items are distinct listing types (**pizza-base** vs **pizza-spec**). Option entities are returned on **`GET /api/products`** (filter `type=pizza-spec` for all options). Each option has its **own price**; `kind` remains only **CRUST_SIZE**, **CRUST_TYPE**, **TOPPING**.
 
 **Locked approach:** pizza options (crust size, crust type, toppings, etc.) are modeled as **first-class option entities** — not only free-form strings for the catalog of sizes/types/toppings. Design details schema; Spec locks the entity approach.
 
 | ID | Requirement |
 |----|-------------|
-| **FR-4a** | **Crust size** option entities: **10 inch (small)** — base; **12 inch (medium)**; **15 inch (large)**. |
-| **FR-4b** | **Crust type** option entities: **thin crust** — base; **cheese burst**; **deep dish**. |
-| **FR-4c** | **Topping** option entities: **chicken**, **mushrooms**, **pepperoni**, **olive** — **olive is the base** topping. |
+| **FR-4a** | **Crust size** option entities: **10 inch (small)** — base; **12 inch (medium)**; **15 inch (large)**. Each has its **own price**. |
+| **FR-4b** | **Crust type** option entities: **thin crust** — base; **cheese burst**; **deep dish**. Each has its **own price** (e.g. thin 10, deep dish 25). |
+| **FR-4c** | **Topping** option entities: **chicken**, **mushrooms**, **pepperoni**, **olive** — **olive is the base** topping. Each has its **own price**. |
 | **FR-4d** | **Customisations:** free-text field(s); **non-chargeable** (no price impact in v1). |
 | **FR-4f** | Option catalog (sizes, types, toppings) is persisted and administered as **option entities** (CRUD via admin APIs as Design maps). Consumer **pizza-spec** listing surfaces these option entities; **pizza-base** surfaces sellable pizza products. |
 
@@ -94,7 +94,7 @@ Separate section of catalog product rules (admin/API/data concepts). The **PDF m
 | **FR-14** | PDF access requires **no authentication**. |
 | **FR-15** | PDF content reflects the catalog as of the last successful dirty-triggered generation. |
 | **FR-16** | PDF generation runs **asynchronously** on a configurable interval (**default 5 minutes**, **MUST** be a properties/config value), and **only when** the catalog is dirty. |
-| **FR-16a** | PDF is **very basic**: header text **Create Your Pizza** (with spaces); printed **version** as **v1 / v2 / …**; body is a **table** of **name + base price** for sellable products **and pizza-spec option entities**. |
+| **FR-16a** | PDF is **very basic**: header text **Create Your Pizza** (with spaces); printed **version** as **v1 / v2 / …**; body is a **table** of **name + price** for sellable products **and pizza-spec option entities** (option price = that row’s `price`). |
 | **FR-16b** | While PDF generation is in progress, catalog **writes** return **HTTP 503** busy envelope. Coordination is **not** a `system_status` table (Design: Redis locks). |
 | **FR-16c** | If a **catalog write is in progress** when the job (or test trigger) fires, generation **skips that run**. It is **not queued**. `dirty` stays true so a later cycle may run. **No extra PDF versions** are created for skipped runs. |
 | **FR-16d** | **PDF storage:** Postgres **history** — one row per numeric **version** + **bytea**. **Version increments only when generation succeeds** (not when an admin writes products). On generation, **insert** a new version and write **latest** to Redis. Public fetch of **latest**: **Redis-first** with **DB fallback**. Fetch of a **past version**: **DB only**. See [§4 PDF Redis shape](#locked-product-decision--pdf-storage-version--bytea--redis). |
@@ -108,7 +108,7 @@ Separate section of catalog product rules (admin/API/data concepts). The **PDF m
 |----|-------------|
 | **FR-17** | A **generic, extensible central auth service** allows principals to **register and authenticate**. v1 uses it for **Admin** and **trusted-system** principals on a **single user table with roles**. **Admins authenticate with username/password login** (`POST /auth/login`) → JWT. **Trusted/external systems do not login**; they **register** (pending), receive an **API key + secret only after admin approve**, then call **`POST /auth/token`** for a JWT. All catalog protected APIs use **JWT only** (no separate API-key handler on catalog). It must be **extensible** so **customers** can **self-register without admin approval** later (still **visible** to admins; admin **delete** later). Future **CUSTOMER** profile fields: **phone**, **name**, **email**. **User orders / order flows** are **created separately** (out of v1). |
 | **FR-17a** | If **no ADMIN** exists in the user table at **auth-service startup**, the service **creates one** and **prints username + password to the terminal/stdout**. If at least one admin exists, **do not** create another bootstrap admin. |
-| **FR-17b** | Admins can **list users** (admins / trusted / later customers), **approve or deny** pending trusted registrations, **revoke** trusted access (blocks further token exchange), and **delete other admins** (not the last remaining admin). Additional admins are created by an existing admin, **not** via public register. |
+| **FR-17b** | Admins can **list users** (**paginated**), **approve or deny** pending trusted registrations, **revoke** trusted access, and **delete other admins**. A logged-in admin **cannot remove their own** user record (**403**). That keeps at least the caller as an admin. Additional admins are created by an existing admin, **not** via public register. |
 | **FR-18** | On successful auth, the service issues a **JWT**. TTL **MUST** be a config/properties value (**default 30 minutes**). |
 | **FR-18a** | JWTs use **exact industry-standard claim names** locked in [§4 JWT claims](#locked-product-decision--jwt-claim-names-binding). Claims carry identity + **binding OAuth2-style scopes** ([§4 scopes](#locked-product-decision--oauth2-style-scope-vocabulary-binding)). **API secrets must not appear in the JWT** — used only at token issuance. |
 | **FR-19** | Protected catalog APIs validate the JWT **locally** (signature + expiry/claims/scope). Catalog **must not** call auth **`/validate`** per request and **must not** read auth’s database. Public verify material is published by auth as **JWKS**; catalog caches JWKs in memory and refetches on unknown `kid`. **No JWKS refresh-interval** (no timer). **One Postgres per service.** |
@@ -141,7 +141,7 @@ Separate section of catalog product rules (admin/API/data concepts). The **PDF m
 | **NFR-8** | **Stack:** **Java Spring Boot** with **Maven**. Owner creates the initial project via **Spring Initializr**. Suggested Spring dependencies for Initializr packaging are a **Build-stage development task** (document in Build plan when Build starts; **do not scaffold application code now**). |
 | **NFR-9** | **Ops:** Docker Compose one-command bring-up: **auth-postgres**, **catalog-postgres**, Redis, both apps, volumes, sample catalog data. |
 | **NFR-10** | **AGENTS.md** ships with the built repo for agent-assisted setup/dev (see FR-23). |
-| **NFR-11** | Consumer list default **page size = 10**; HTTP body products = **flat array** in `data` with **`pagination` sibling**; filters override default presentation/ordering. |
+| **NFR-11** | Consumer list default **page size = 10**; **every JSON list** (catalog **and** `/auth/users`) uses flat `data` + **`pagination` sibling**; get-by-id has no `pagination`. |
 | **NFR-12** | All success and error **JSON** API responses use the **standard envelope**; paginated lists include `pagination`; 503 busy responses omit `data` and `pagination`. Public GET PDF is **raw binary**, not the envelope. |
 
 ### Locked product decision — JWT validation (rationale)
@@ -266,32 +266,19 @@ Omit `data` and `pagination`. Optional header `Retry-After: 60` (Design).
 
 ### Locked product decision — Standard JSON envelope
 
-**Decision (product — binding for coding):** JSON API responses use:
+**Decision (product — binding for coding):** JSON API responses use `status`, `message`, `data` when present, `pagination` on **lists**, `error` when there is an error.
+
+**Docs layout convention (not a Build/omit-empty implementation rule):** examples in this Spec **omit empty fields** (no `"error": ""`, no empty-string product fields, no `pagination` on get-by-id). Coding **may** still send success `error: ""` if the stack always includes the key; **do not** treat omit-empty as a Definition of Done.
+
+**Paginated list example:**
 
 ```json
 {
   "status": 200,
   "message": "success",
-  "error": "",
-  "data": {},
-  "pagination": {
-    "current": 1,
-    "next": 2,
-    "total": 10
-  }
-}
-```
-
-**Paginated catalog/list example** (`data` = flat array of products; `pagination` sibling):
-
-```json
-{
-  "status": 200,
-  "message": "success",
-  "error": "",
   "data": [
     {
-      "productName": "",
+      "productName": "Cola",
       "productId": "uuid",
       "productType": "simple",
       "productPrice": 233.44,
@@ -312,9 +299,9 @@ Omit `data` and `pagination`. Optional header `Retry-After: 60` (Design).
 |-------|---------|
 | `status` | HTTP status code (number) |
 | `message` | Human-readable success/info |
-| `error` | Error detail when applicable; on **success**, use empty string `""` (not null) |
-| `data` | Payload. For catalog/list: **array of products** (flat). Other JSON APIs may use object or array as appropriate. **Omitted** on 503 busy responses. |
-| `pagination` | **Sibling to `data`** when the response is paginated. **Omitted** on 503 busy (prefer omit both `data` and `pagination`). Not required on non-paginated JSON responses. |
+| `error` | Error detail when applicable. **Omitted** in Spec/Design **examples** when there is no error (**docs only** — not a required omit-empty serializer). |
+| `data` | Payload. For catalog/list: **array of products** (flat). **Omitted** on 503 busy responses. |
+| `pagination` | **Sibling to `data` on every list.** **Omitted** on 503, on get-by-id, and on other non-list JSON. |
 
 **Pagination field rules:**
 
@@ -322,7 +309,7 @@ Omit `data` and `pagination`. Optional header `Retry-After: 60` (Design).
 |-------|---------|
 | `pagination.current` | Current page number |
 | `pagination.next` | Next page number, or **-1** if no more pages |
-| `pagination.total` | **Total products** (not total pages) |
+| `pagination.total` | **Total matching items** (not total pages) |
 
 Product fields as exemplified (`productName`, `productId`, `productType`, `productPrice`, `productCategory`, `productCreatedAt`, `productUpdatedAt`); Design/coding may add further product fields (`...`). `productType` values remain **simple / combo / pizza-base / pizza-spec**.
 
@@ -338,23 +325,24 @@ Product fields as exemplified (`productName`, `productId`, `productType`, `produ
 2. Each product includes **product type** and other details (wire fields as in envelope example; additional fields allowed at Design/coding).
 3. Listing types: **simple**, **combo**, **pizza-base**, **pizza-spec**.
 4. **Wire format:** products always returned as a **flat array** in `data`. Never nested-by-type groups over HTTP.
-5. **Pagination:** include `pagination` object **sibling to `data`** with `current`, `next` (−1 if none), `total` = total products.
+5. **Pagination:** include `pagination` object **sibling to `data`** with `current`, `next` (−1 if none), `total` = **total matching items** (products or users, depending on the list).
 6. Internal SQL may group for ordering/pagination logic; external systems always see a flat list.
 7. Default ordering: **creation order** (Design may apply stable type-aware internal ordering before flattening).
 8. **If a filter is specified, filter takes precedence** over default presentation/ordering.
 9. **Admin** may call the **same** list/query APIs as Trusted systems.
-10. **DTOs** for request/response mapping are left to coding — Spec locks wire JSON only.
+10. **All JSON lists** use this pagination (including **`GET /auth/users`**). Get-by-id does not.
+11. **DTOs** for request/response mapping are left to coding — Spec locks wire JSON only. **Omitting empty keys is a docs layout convention, not a coding mandate.**
 
 ### Locked product decision — Option entities
 
-**Decision (product):** Pizza option catalog (crust size, crust type, toppings, etc.) is modeled as **first-class option entities**. Spec locks this approach; Design details schema and how **pizza-base** vs **pizza-spec** map on read APIs. Free-text customisations remain non-entity free-text and non-chargeable.
+**Decision (product):** Pizza option catalog (crust size, crust type, toppings) is modeled as **first-class option entities**. Each entity has its **own price**. `kind` is only **CRUST_SIZE**, **CRUST_TYPE**, **TOPPING**. Design details schema and pizza-base vs pizza-spec mapping. Free-text customisations remain non-entity and non-chargeable.
 
 ### Locked product decision — User table + roles + future CUSTOMER
 
 **Decision (product):**
 
 1. **Same user table with roles** for Admin, Trusted system, and future Customer (`ADMIN`, `TRUSTED_SYSTEM`, `CUSTOMER`).
-2. **Admin:** username/password **login** → JWT. First admin **bootstrapped** at auth startup if none exist (credentials to stdout). Further admins: **`POST /auth/admins`** (not public register).
+2. **Admin:** username/password **login** → JWT. First admin **bootstrapped** at auth startup if none exist (credentials to stdout). Further admins: **`POST /auth/admins`**. An admin **cannot delete their own** user row.
 3. **Trusted:** public **`POST /auth/register`** only (server sets `TRUSTED_SYSTEM` + `PENDING`) → admin **approve** (`/auth/token` after). Principal type is the **URL**, not a client-supplied `role`.
 4. **Future CUSTOMER:** self-register **without** approval; **visible** to admins; admin **delete** later — not built in v1. Profile fields later: **phone**, **name**, **email**.
 5. API secret hashed at rest; **never** in JWT.
@@ -405,12 +393,12 @@ Full OpenAPI lands in Design/Build (Swagger UI / OpenAPI artifact for Postman). 
 | `POST /auth/register` | Public | Trusted **pending** registration only. Not admin self-register. |
 | `POST /auth/login` | Public | Admin username/password → JWT |
 | `POST /auth/token` | Public (API key + secret) | **Approved** trusted system → JWT (`sub`, `client_id`, `roles`, `scope`); secret not in token |
-| `GET /auth/users` | Admin JWT | List admins / trusted / (later) customers; filter pending |
+| `GET /auth/users` | Admin JWT | Paginated list (`page`/`size`); filter `role`, `status` |
 | `POST /auth/users/{id}/approve` | Admin JWT | Issue API key+secret **once**; activate trusted |
 | `POST /auth/users/{id}/deny` | Admin JWT | Deny pending trusted |
 | `POST /auth/users/{id}/revoke` | Admin JWT | Revoke trusted credentials |
 | `POST /auth/admins` | Admin JWT | Create another admin |
-| `DELETE /auth/users/{id}` | Admin JWT | Delete other admin (not last). Customer delete later |
+| `DELETE /auth/users/{id}` | Admin JWT | Delete another admin. **403 if id is the caller**. Customer delete later |
 
 ### Catalog (admin)
 
@@ -471,7 +459,7 @@ Not full SQL DDL — Design owns schema detail. Conceptual entities:
 | **SimpleProduct** | Fixed-price item; **veg/non-veg required** |
 | **Combo** | Links to multiple Simple products; **admin-set catalog price**; **veg/non-veg required** |
 | **Pizza** | Veg/non-veg; consumer **pizza-base**; free-text customisations (non-chargeable) |
-| **OptionEntity (pizza-spec)** | First-class crust size/type/topping entities; on **`GET /api/products`** and **on the PDF** |
+| **OptionEntity (pizza-spec)** | First-class crust size/type/topping entities; **per-row price**; `kind` only those three; on **`GET /api/products`** and **on the PDF** |
 | **CatalogVersion / DirtyFlag** | Marker on catalog mutation; PDF job checks dirty |
 | **MenuPdfArtifact** | **History**: numeric version PK + bytea; PDF shows **vN**; **latest** also in Redis `create-your-pizza/menu`; past versions DB-only |
 | **SystemStatus** | **Removed.** Redis locks on catalog-service. |
@@ -489,13 +477,13 @@ Not full SQL DDL — Design owns schema detail. Conceptual entities:
 
 | Area | Acceptance |
 |------|------------|
-| **FR-1–4 / 4a–4f Product types & option entities** | Admin can persist and retrieve Simple, Combo, Pizza, and **option entities**; Combo price is admin-set (not sum); **veg/non-veg on all three types**; Pizza supports documented crust size/type/toppings as entities + non-chargeable free-text customisations; consumer listing distinguishes **pizza-base** vs **pizza-spec**. |
-| **FR-5 Admin CRUD** | With valid Admin JWT (`sub` + `catalog:write`), create/update/delete succeed; without JWT or with Trusted-only JWT, writes return 401/403; during PDF busy (status table), writes return **503** busy envelope (no `data`, no `pagination`). |
-| **FR-6 Dirty flag** | Any successful catalog mutation sets dirty so PDF job will regenerate within one successful 5-minute cycle. |
-| **FR-7–11 / 7a / 11a–11b Queries** | Trusted **and Admin** JWT with `catalog:read` can filter by veg/non-veg, type (`simple`/`combo`/`pizza-base`/`pizza-spec`), maxPrice, and paginate (default size **10**); **pizza-spec options appear as rows** on `GET /api/products`; standard envelope; flat `data` + `pagination` sibling; unauthenticated → 401. |
-| **FR-13–16 / 16a–16f PDF** | Unauthenticated GET returns **raw binary** PDF with header **Create Your Pizza**, **vN**, name+base-price table **including pizza-spec**; default latest; `?version=` numeric history; DB history rows; Redis **latest only**; `pdf_generation` busy → 503 on writes. |
-| **FR-17–20 / 17a–17b / 18a Auth** | Bootstrap first admin to stdout; admin login JWT; trusted pending register + admin approve/deny/revoke; `/auth/token` after approve; same catalog GET as admin; local verify; secrets not in JWT; **no JWT denylist**; CUSTOMER register not required in v1. |
-| **FR-21–25 Quality & ops** | OpenAPI/Swagger imports into Postman; tests cover auth matrix, CRUD, filters/flat pagination, public PDF, concurrency/503 where practical; AGENTS.md present at Build delivery; Docker Compose brings up app + Postgres + Redis with volumes and sample data. |
+| **FR-1–4 / 4a–4f Product types & option entities** | Admin can persist Simple, Combo, Pizza, and **option entities with per-row price**; `kind` only three values; Combo price admin-set; veg/non-veg on all three; pizza-base vs pizza-spec on list and PDF. |
+| **FR-5 Admin CRUD** | With valid Admin JWT (`sub` + `catalog:write`), create/update/delete succeed; without JWT or with Trusted-only JWT, writes return 401/403; during PDF busy, writes return **503** busy envelope (no `data`, no `pagination`). |
+| **FR-6 Dirty flag** | Any successful catalog mutation sets dirty so PDF job will regenerate within one successful cycle (skip if write in progress). |
+| **FR-7–11 / 7a / 11a–11b Queries** | Trusted **and Admin** JWT with `catalog:read` can filter by veg/non-veg, type, maxPrice (**including option prices**), paginate (default **10**); pizza-spec on `GET /api/products`; envelope + `pagination`. |
+| **FR-13–16 / 16a–16g PDF** | Unauthenticated GET returns **raw binary** PDF with header **Create Your Pizza**, **vN**, name+price table **including pizza-spec at each option’s price**; default latest; `?version=` history. |
+| **FR-17–20 / 17a–17b / 18a Auth** | Bootstrap first admin; admin login; trusted pending+approve; **paginated** `GET /auth/users`; **cannot DELETE self**; `/auth/token`; local JWKS verify. |
+| **FR-21–25 Quality & ops** | OpenAPI/Swagger imports into Postman; tests cover auth matrix, CRUD, filters/flat pagination, public PDF, concurrency/503 where practical; AGENTS.md at Build; Docker Compose: both Postgres + Redis. |
 
 ---
 
@@ -512,7 +500,7 @@ Not full SQL DDL — Design owns schema detail. Conceptual entities:
 - **JWKS refresh-interval timer**; Redis as JWT public-key store; catalog reading auth DB; **`/auth/validate` per request**
 - `system_status` table / lock columns on `catalog_meta`
 - Manual invalidation of catalog Redis keys on write (TTL instead)
-- Prescribing concrete DTO class designs in Spec (wire JSON examples only; DTOs at coding)
+- Prescribing omit-empty JSON serialization at Build (docs examples omit empty keys only)
 - Full OpenAPI/SQL as part of *this* Spec gate (sketch only here)
 - Spring Initializr dependency packaging / application scaffold before Build
 - Creating AGENTS.md before Build (planned artifact only until then)

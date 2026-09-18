@@ -1,6 +1,6 @@
 # Design / TRD — CreateYourPizza
 
-**Status:** DRAFT — revised 2026-09-18 (owner Design Revise, pass 2). Awaiting Design gate (**Approve / Revise / Park**).
+**Status:** DRAFT — revised 2026-09-18 (owner Design Revise, option prices / self-delete / list pagination). Awaiting Design gate (**Approve / Revise / Park**).
 
 **Upstream:** [Intent](intent.md) (**APPROVED**) · [Spec / PRD](spec.md) (**APPROVED**, aligned to this Design Revise)
 
@@ -159,6 +159,7 @@ erDiagram
     uuid id PK
     text kind
     text name
+    numeric price
     boolean is_base
     timestamptz created_at
     timestamptz updated_at
@@ -256,13 +257,14 @@ First-class pizza-spec catalog (not free-form strings).
 | Column | Type | Notes |
 |--------|------|--------|
 | `id` | UUID PK | Wire `productId` on **pizza-spec** rows |
-| `kind` | text | `CRUST_SIZE` \| `CRUST_TYPE` \| `TOPPING` |
+| `kind` | text | **Only** `CRUST_SIZE` \| `CRUST_TYPE` \| `TOPPING` |
 | `name` | text | Display name |
+| `price` | numeric(12,2) | **Per-option catalog price** (Rs.). Example: thin crust **10**, deep dish **25**. Independent per row; not derived from `kind`. |
 | `is_base` | boolean | Seed: 10-inch size, thin crust, olive topping |
 | `created_at` | timestamptz | |
 | `updated_at` | timestamptz | |
 
-Seed (Build): sizes 10 / 12 / 15 inch (10 base); types thin / cheese burst / deep dish (thin base); toppings chicken, mushrooms, pepperoni, olive (olive base).
+Seed (Build): same locked names; **each row has its own `price`**. Illustrative: `CRUST_TYPE` thin = 10, deep dish = 25 (cheese burst admin-set). Sizes and toppings likewise priced per entity.
 
 Pizza **sellable** products (`product_type = pizza`) do not require a join to options in v1.
 
@@ -302,13 +304,13 @@ Dirty + last version live here. **Locks do not.** Do not add `generating` / `wri
 - Mixed catalog (products **and** options): `GET /api/products` with no `type` (flat union)
 - One option: `GET /api/options/{id}` (also `catalog:read`)
 
-**pizza-spec wire fields:** `productId` = option id, `productName` = option name, `productType` = `pizza-spec`, `productPrice` = `0` (not priced sellables in v1), `productCategory` = `""`, plus `optionKind` and `isBase`.
+**pizza-spec wire fields:** `productId` = option id, `productName` = option name, `productType` = `pizza-spec`, `productPrice` = **that option’s `price`**, plus `optionKind` and `isBase`. Do **not** invent an empty `productCategory` on pizza-spec (options have no veg flag).
 
-**pizza-base extra:** `customisationNotes` (string, may be empty).
+**pizza-base extra:** `customisationNotes` only when non-empty.
 
 Default sort: `created_at` ascending across the union. Filters take precedence.
 
-`maxPrice` means `price < maxPrice`. Ignore `maxPrice` when `type=pizza-spec`. On an untyped list, include pizza-spec rows that satisfy `0 < maxPrice`.
+`maxPrice` means `price < maxPrice` on sellable `products.price` **and** on `option_entities.price` for pizza-spec rows.
 
 Veg/non-veg applies to `products.category`. Exclude pizza-spec when `category` is set, unless `type=pizza-spec` (then category is ignored).
 
@@ -345,7 +347,7 @@ Future customer (not v1)
 
 **Revoke vs JWT denylist:** Admin revoke sets trusted `status=REVOKED` (and `revoked_at`). Further `/auth/token` calls fail. **Outstanding JWTs remain valid until `exp` (30m).** That is intentional and matches Spec: no live JWT denylist in v1. If a partner is compromised, revoke immediately and wait out TTL (or rotate signing keys as an operational exception).
 
-**Last admin:** cannot delete/revoke the last remaining `ACTIVE` `ADMIN`. Additional admins are created by an existing admin (not public self-register).
+**Self-delete:** an Admin JWT **must not** `DELETE /auth/users/{id}` (or otherwise remove) when `{id}` equals JWT `sub`. Respond **403**. That keeps at least the caller’s admin row; they may still delete **other** admins. Additional admins are created by an existing admin (not public self-register).
 
 ### 4.2 Bootstrap first admin
 
@@ -366,11 +368,11 @@ Compose logs are the share path in v1. AGENTS.md (Build) will say “read auth-s
 | `POST` | `/auth/login` | Public | Admin username+password → JWT. Rejects non-admin and non-`ACTIVE`. |
 | `POST` | `/auth/token` | Public (key+secret) | Trusted exchange → JWT. Requires `ACTIVE` + unrevoked credentials. |
 | `POST` | `/auth/admins` | Admin JWT | Create another admin (username+password). |
-| `GET` | `/auth/users` | Admin JWT | List users (admins, trusted, later customers). Query: `role`, `status` (e.g. `PENDING`). Paginated envelope. |
+| `GET` | `/auth/users` | Admin JWT | List users. Query: `role`, `status`, **`page`**, **`size`**. **Paginated** envelope (same rules as catalog lists). |
 | `POST` | `/auth/users/{id}/approve` | Admin JWT | Trusted `PENDING` → `ACTIVE`; generate api_key + secret; return secret **once** in `data`. |
 | `POST` | `/auth/users/{id}/deny` | Admin JWT | Trusted `PENDING` → `DENIED`. No credentials. |
 | `POST` | `/auth/users/{id}/revoke` | Admin JWT | Trusted `ACTIVE` → `REVOKED`; token exchange stops. |
-| `DELETE` | `/auth/users/{id}` | Admin JWT | Delete/disable another admin (not last admin). Customer delete is **later**, same route reserved. |
+| `DELETE` | `/auth/users/{id}` | Admin JWT | Delete another user/admin. **403 if `{id}` is the caller (`sub`)**. Customer delete later. |
 
 JWT **TTL** from config `app.jwt.ttl` (default **30 minutes**). Signing: RS256. Auth upserts the public JWK into `verification_keys` on boot/rotation and serves JWKS.
 
@@ -585,18 +587,21 @@ Trusted JWT may use **catalog read** and **PDF** only.
 
 ## 5. HTTP APIs
 
-JSON responses use the **standard envelope**. Paginated lists include `pagination` sibling. Success `error` is `""`. Public GET PDF is **raw binary**.
+JSON responses use the **standard envelope**. **Every list** includes `pagination` (catalog products **and** `GET /auth/users`). Get-by-id and other single-resource JSON do **not** include `pagination`. Public GET PDF is **raw binary**.
 
 DTO classes are **not** specified here.
 
+**Laid-out JSON in this TRD / Spec:** examples **omit empty keys** (no `"error": ""`, no `""` placeholders, no unused `pagination`). **Not a Build/serialization rule** — coding may still emit the full envelope (including success `error: ""`) as previously locked.
+
 ### 5.1 Envelope (locked)
+
+Success **list** (shape; empty keys omitted in this layout):
 
 ```json
 {
   "status": 200,
   "message": "success",
-  "error": "",
-  "data": {},
+  "data": [],
   "pagination": {
     "current": 1,
     "next": 2,
@@ -605,7 +610,7 @@ DTO classes are **not** specified here.
 }
 ```
 
-- `pagination` only on paginated JSON.
+- `pagination` only on **list** JSON.
 - 503 busy: `{ "status": 503, "message": "please try after sometime", "error": "system busy" }` — omit `data` and `pagination`. Header **`Retry-After: 60`**.
 
 ### 5.2 Pagination
@@ -618,7 +623,7 @@ DTO classes are **not** specified here.
 | `pagination.next` | Next page or **-1** |
 | `pagination.total` | Total matching items (products + pizza-spec in that query) |
 
-Canonical query params: **`page` + `size`**.
+Canonical query params: **`page` + `size`**. Applies to **`GET /api/products`** and **`GET /auth/users`** (and any future list). **Not** on GET-by-id.
 
 ### 5.3 Catalog-service — admin writes (`catalog:write` + `ADMIN`)
 
@@ -683,7 +688,7 @@ Always **raw binary** (never JSON envelope) on success. Missing version or no ro
 - Visible **version** as **v1 / v2 / …** matching `menu_pdf.version`
 - Table rows **name + base price** for:
   - sellable products (simple, combo, pizza / pizza-base)
-  - **pizza-spec option entities** (price `0` in v1)
+  - **pizza-spec option entities** (each row’s **own** `price`)
 
 **Cadence:** from config `app.pdf.interval` (default **5 minutes**) on catalog-service.
 
@@ -768,7 +773,9 @@ Used by **catalog-service only**.
 - PDF **version increments only on successful generation**, never on product writes
 - Lock TTLs: PDF **120s**, write **30s** (`finally` DEL + Redis expiry)
 - Catalog Redis TTL from config (default 3 min)
-- Test `POST /test/pdf/generate` same locks, no auth, test profile only
+- Option entities have **per-row price**; PDF and list `productPrice` use it
+- Admin cannot DELETE own user (403)
+- `GET /auth/users` paginated like catalog lists
 
 **Build config (properties — MUST exist; defaults if generated)**
 
@@ -796,7 +803,11 @@ Used by **catalog-service only**.
 | PDF version | Increments **only** on successful generation insert — **not** on admin product writes |
 | Lock TTLs | PDF **120s**, write **30s**; `finally` DEL; Redis TTL self-heal |
 | `product_type` | DB `simple` \| `combo` \| `pizza` |
-| pizza-base vs pizza-spec | pizza-base = `products.pizza`; pizza-spec = `option_entities` on **`GET /api/products`** |
+| pizza-base vs pizza-spec | pizza-base = `products.pizza`; pizza-spec = `option_entities` (with **per-row price**) on **`GET /api/products`** |
+| Option price | Each `option_entities` row has **`price`**; `kind` still only the three values |
+| Self-delete | Admin **cannot** DELETE own `users` row (403); implies ≥1 admin remains |
+| List pagination | **All list APIs** (`/api/products`, `/auth/users`); not get-by-id |
+| Empty JSON keys | **Docs examples omit empties** — **not** a Build omit-empty requirement |
 | Admin vs trusted register | **Different endpoints** (`/auth/admins` vs `/auth/register`) |
 | JWT verify | **JWKS HTTP** + memory; **no** shared DB; **no** `/validate` |
 | Databases | **One Postgres per service** |

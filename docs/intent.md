@@ -48,7 +48,7 @@ Incorporated from the owner brief and HIFL Revises (first + second):
 - Catalog of three admin product types: **Simple**, **Combo**, **Pizza**
 - **Veg / non-veg** on **Simple, Combo, and Pizza**
 - Consumer API listing types: **simple**, **combo**, **pizza-base**, **pizza-spec** (pizza base products vs specification/option catalog items as distinct types)
-- **Pizza option catalog** as **option entities** (Spec): crust sizes (10 / 12 / 15 inch), crust types (thin base, cheese burst, deep dish), toppings (chicken, mushrooms, pepperoni, **olive base**), free-text **non-chargeable** customisations
+- Pizza option catalog as **option entities** (Spec): three `kind`s only; **each option has its own price**; free-text customisations **non-chargeable**
 - Admin maintenance of products, prices, and combos; **combo price = admin-defined**, not derived sum; Admin may use **same** catalog query APIs as Trusted
 - Public, unauthenticated **PDF menu card** — header **Create Your Pizza**; **vN**; tabular **name + base price** including **pizza-spec**
 - PDF **history in DB**; Redis **latest only**; GET default latest raw binary; `?version=` numeric for past (DB)
