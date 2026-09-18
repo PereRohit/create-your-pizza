@@ -206,7 +206,7 @@ Controllers and use-cases stay testable without a database. Flyway + real Postgr
 
 ## 6. Story order (create files after Approve)
 
-Filenames under `docs/stories/`. Implement **one story at a time**. Record the in-progress file in [handoff.md](handoff.md). Rename to `DONE-` when finished. Every **coding** story: **>80% LoC** of that story’s new/changed code **and** full behaviour tests of its acceptance criteria (via mocks/fakes above).
+Filenames under `docs/stories/`. Implement **one story at a time** on a **dedicated git branch** `feat/<story-id>-<max-5-word-summary>` that contains **only** that story’s changes ([playbook](hifl-playbook.md)). Record the in-progress file in [handoff.md](handoff.md). Rename to `DONE-` when finished. Every **coding** story: **>80% LoC** of that story’s new/changed code **and** full behaviour tests of its acceptance criteria (via mocks/fakes above).
 
 An arrow **A → B** means **B starts only after A is `DONE-`**. After **01**, auth (**02–05**) and catalog schema (**06**) may proceed independently. **07** waits for **both** **03** (JWKS exists) and **06** (catalog schema). After **08**, queries/cache (**09→10**) and PDF (**11→12** and **11→13**) may proceed independently. **14** waits for **05**, **12**, and **13**. Numeric order **01 through 14** is a valid total order if you do not want to interleave.
 
@@ -340,6 +340,7 @@ Then Stage 6: draft [docs/verify.md](verify.md).
 - Do not git-commit unless the owner confirms
 - Do not scaffold Java before owner Initializr (except waiting)
 - Do not add a parent POM
+- Do not put two stories on one git branch; use `feat/<story-id>-<max-5-word-summary>`
 - Do not select Docker Compose Support on Initializr
 - Do not implement customer register/login
 - Do not put API secrets in JWT

@@ -63,6 +63,7 @@ Process: [docs/hifl-playbook.md](hifl-playbook.md) · Decisions: [docs/project-c
 3. **Stack:** Java Spring Boot **4.1.1** + Maven + JAR; Java **26** (Initializr **25** then pin POM); independent siblings `auth-service` / `catalog-service`; Lombok; properties files; owner Initializr.
 4. **Gate language:** Approve / Revise: … / Park — no silent skips.
 5. **Build:** one story at a time; follow [build-plan.md](build-plan.md) §6 graph; rename to `DONE-` when finished.
+6. **Story git branches:** `feat/<story-id>-<max-5-word-summary>` (example `feat/01-compose-and-config`); **only** that story’s changes on the branch; still ask before commit.
 
 ## Checklist for the next agent
 
@@ -76,7 +77,7 @@ Process: [docs/hifl-playbook.md](hifl-playbook.md) · Decisions: [docs/project-c
 
 ### A. Now
 
-1. Implement [`docs/stories/01-compose-config.md`](stories/01-compose-config.md). Record this filename here as in progress.
+1. Create/switch to `feat/01-compose-and-config` (playbook: one branch per story). Implement [`docs/stories/01-compose-config.md`](stories/01-compose-config.md). Record this filename here as in progress.
 2. **Ask** before git commit.
 3. Owner runs Initializr (checklist in [build-plan.md](build-plan.md) §4) into sibling folders.
 
@@ -105,6 +106,7 @@ Process: [docs/hifl-playbook.md](hifl-playbook.md) · Decisions: [docs/project-c
 ## What NOT to do
 
 - Do not skip the §6 story graph
+- Do not mix two stories on one branch; use `feat/<story-id>-<max-5-word-summary>`
 - Do not git-commit unless the owner confirms
 - Do not blank-rewrite this handoff
 - Do not add Cursor rules for HIFL handoff
