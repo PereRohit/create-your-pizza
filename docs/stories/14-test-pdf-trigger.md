@@ -1,7 +1,7 @@
-# 13 — Test-only PDF trigger
+# 14 — Test-only PDF trigger
 
 **Status:** ready  
-**Depends on:** `11-pdf-job-locks.md`  
+**Depends on:** `12-pdf-job-locks.md`  
 **Links:** [Intent](../intent.md) · [Spec](../spec.md) · [Design](../design.md) · [Build plan](../build-plan.md)
 
 ## Story
@@ -21,4 +21,4 @@ As a developer, I want an unauthenticated test-profile route that starts PDF gen
 
 ## Notes
 
-Unblocks **14** (with 05 and 12).
+Unblocks **15** (with 06 and 13).

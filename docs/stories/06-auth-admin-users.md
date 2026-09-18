@@ -1,7 +1,7 @@
-# 05 — Auth admin user APIs
+# 06 — Auth admin user APIs
 
 **Status:** ready  
-**Depends on:** `04-auth-login-register-token.md`  
+**Depends on:** `05-auth-login-register-token.md`  
 **Links:** [Intent](../intent.md) · [Spec](../spec.md) · [Design](../design.md) · [Build plan](../build-plan.md)
 
 ## Story
@@ -25,4 +25,4 @@ As an admin, I want to create other admins, list users, and approve/deny/revoke 
 
 ## Notes
 
-Unblocks **14** (with 12 and 13).
+Unblocks **15** (with 13 and 14).

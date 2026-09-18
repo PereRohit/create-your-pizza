@@ -72,7 +72,7 @@ create-your-pizza/                          ← git root
   docs/
   docker-compose.yml                        ← whole stack (Build story 01)
   README.md
-  AGENTS.md                                 ← after story 14
+  AGENTS.md                                 ← after story 15
   auth-service/
     pom.xml                                 ← groupId com.createyourpizza / artifactId auth-service
     src/main/java/com/createyourpizza/auth/
@@ -182,7 +182,7 @@ Install Lombok in the IDE (annotation processing) so generated getters compile.
 
 ### 4.4 Agent wait
 
-Until the owner drops both Initializr trees into `auth-service/` and `catalog-service/`, Java stories wait. Story **01** (Compose + properties) can start after Approve before jars exist.
+Stories **01** (Compose) and **02** (owner Initializr) have no dependency on each other. Java stories **03** and **07** wait until **02** is `DONE-`.
 
 ---
 
@@ -208,67 +208,69 @@ Controllers and use-cases stay testable without a database. Flyway + real Postgr
 
 Filenames under `docs/stories/`. Implement **one story at a time** on a **dedicated git branch** `feat/<story-id>-<max-5-word-summary>` that contains **only** that story’s changes ([playbook](hifl-playbook.md)). Record the in-progress file in [handoff.md](handoff.md). Rename to `DONE-` when finished. Every **coding** story: **>80% LoC** of that story’s new/changed code **and** full behaviour tests of its acceptance criteria (via mocks/fakes above).
 
-An arrow **A → B** means **B starts only after A is `DONE-`**. After **01**, auth (**02–05**) and catalog schema (**06**) may proceed independently. **07** waits for **both** **03** (JWKS exists) and **06** (catalog schema). After **08**, queries/cache (**09→10**) and PDF (**11→12** and **11→13**) may proceed independently. **14** waits for **05**, **12**, and **13**. Numeric order **01 through 14** is a valid total order if you do not want to interleave.
-
-Owner Initializr for `auth-service` is required before **02**. Owner Initializr for `catalog-service` is required before **06**.
+An arrow **A → B** means **B starts only after A is `DONE-`**. **01** and **02** may proceed in parallel. Auth (**03–06**) needs **01** and **02**. Catalog schema (**07**) needs **01** and **02**. **08** waits for **04** and **07**. After **09**, queries/cache (**10→11**) and PDF (**12→13** and **12→14**) may proceed independently. **15** waits for **06**, **13**, and **14**. Numeric order **01 through 15** is a valid total order.
 
 ```mermaid
 flowchart TB
   s01["01 compose-config"]
+  s02["02 OWNER maven-initializr"]
 
   subgraph auth ["auth-service"]
-    s02["02 auth-schema-bootstrap"]
-    s03["03 auth-jwks-jwt"]
-    s04["04 login-register-token"]
-    s05["05 auth-admin-users"]
-    s02 --> s03 --> s04 --> s05
+    s03["03 auth-schema-bootstrap"]
+    s04["04 auth-jwks-jwt"]
+    s05["05 login-register-token"]
+    s06["06 auth-admin-users"]
+    s03 --> s04 --> s05 --> s06
   end
 
   subgraph catalog ["catalog-service"]
-    s06["06 catalog-schema-seed"]
-    s07["07 catalog-jwt-jwks"]
-    s08["08 catalog-writes"]
-    s09["09 catalog-queries"]
-    s10["10 catalog-redis-cache"]
-    s11["11 pdf-job-locks"]
-    s12["12 public-pdf"]
-    s13["13 test-pdf-trigger"]
-    s06 --> s07 --> s08
-    s08 --> s09 --> s10
-    s08 --> s11
-    s06 --> s11
-    s11 --> s12
-    s11 --> s13
+    s07["07 catalog-schema-seed"]
+    s08["08 catalog-jwt-jwks"]
+    s09["09 catalog-writes"]
+    s10["10 catalog-queries"]
+    s11["11 catalog-redis-cache"]
+    s12["12 pdf-job-locks"]
+    s13["13 public-pdf"]
+    s14["14 test-pdf-trigger"]
+    s07 --> s08 --> s09
+    s09 --> s10 --> s11
+    s09 --> s12
+    s07 --> s12
+    s12 --> s13
+    s12 --> s14
   end
 
-  s14["14 openapi-agents"]
+  s15["15 openapi-agents"]
 
-  s01 --> s02
-  s01 --> s06
-  s03 --> s07
-  s05 --> s14
-  s12 --> s14
-  s13 --> s14
+  s01 --> s03
+  s02 --> s03
+  s01 --> s07
+  s02 --> s07
+  s04 --> s08
+  s06 --> s15
+  s13 --> s15
+  s14 --> s15
 ```
 
 | File | Depends on | Outcome |
 |------|------------|---------|
-| `01-compose-config.md` | — | Root Compose: `auth-db`, `catalog-db`, `redis`, both apps (stubs OK); volumes; env; **MUST** properties with defaults (PDF 5m, catalog TTL 3m, JWT 30m, lock 120s/30s) |
-| `02-auth-schema-bootstrap.md` | 01 + Initializr auth | Flyway `users`, `trusted_client_credentials`, `verification_keys`; startup: if zero `ADMIN` → insert + **stdout** username/password; skip if ≥1 admin |
-| `03-auth-jwks-jwt.md` | 02 | RS256 in process; upsert public JWK; `GET /auth/.well-known/jwks.json`; issue JWT with locked claims + `iss`/`aud`/`app.jwt.ttl` |
-| `04-auth-login-register-token.md` | 03 | Public `POST /auth/login`, `POST /auth/register` (trusted PENDING only; ignore/400 `role`), `POST /auth/token`; secret hashed; **never** in JWT |
-| `05-auth-admin-users.md` | 04 | `POST /auth/admins`; paginated `GET /auth/users` (`role`, `status`, `page`, `size`); approve (secret **once**), deny, revoke; `DELETE` other users; **403 DELETE self** |
-| `06-catalog-schema-seed.md` | 01 + Initializr catalog | Flyway products, combo_items, option_entities, menu_pdf, catalog_meta; seed simples/combo/pizza + option entities with **per-row prices** (FR-4a–c); `catalog_meta` dirty=true; **no** first-admin SQL; **no** `system_status` |
-| `07-catalog-jwt-jwks.md` | 03, 06 | Resource Server + JWKS URL; startup load; unknown `kid` refetch; **no** auth-db; **no** `/validate`; 401/403 |
-| `08-catalog-writes.md` | 07 | Admin CRUD products + options; pizza `optionsEnabled`; combo membership; dirty on success; write lock; if PDF lock → **503** + `Retry-After: 60`; no Redis catalog-key delete; no `menu_pdf` bump on write |
-| `09-catalog-queries.md` | 08 | `GET /api/products` union + filters (`category`, `type`, `maxPrice`, `page`/`size` default 10 max 100 clamp); pizza-spec rows; get-by-id product/option; Admin **and** Trusted same reads; Trusted cannot write |
-| `10-catalog-redis-cache.md` | 09 | Redis-first `create-your-pizza/catalog:*`; TTL `app.cache.catalog-ttl`; fill on DB hit; **no** invalidation-on-write |
-| `11-pdf-job-locks.md` | 08, 06 | Interval job + skip-not-queue; PDF lock 120s; generate header **Create Your Pizza**, **vN**, sellable + **options available** note + options **own space**; insert history; Redis latest JSON; version **only** on successful insert |
-| `12-public-pdf.md` | 11 | `GET /api/menu.pdf` raw binary; latest Redis-first; `?version=` history DB (Redis OK if latest); 404 envelope if missing |
-| `13-test-pdf-trigger.md` | 11 | `POST /test/pdf/generate` unauthenticated; **test/dev profile only**; same job algorithm |
-| `14-openapi-agents.md` | 05, 12, 13 | springdoc both services; `AGENTS.md` (compose, first-admin **logs**, Swagger URLs, JWKS URL) |
+| `01-compose-config.md` | — | Root Compose: `auth-db`, `catalog-db`, `redis`, both apps (stubs OK until **02**); volumes; env; **MUST** properties |
+| `02-OWNER-maven-initializr.md` | — | **Owner** Initializr both sibling Maven apps; pin Java 26; coordinates per §3–4 |
+| `03-auth-schema-bootstrap.md` | 01, 02 | Flyway auth tables; first admin stdout if zero admins |
+| `04-auth-jwks-jwt.md` | 03 | RS256; JWKS; issue JWT; Nimbus **task** |
+| `05-auth-login-register-token.md` | 04 | login, register PENDING, `/auth/token` |
+| `06-auth-admin-users.md` | 05 | admins, paginated users, approve/deny/revoke, no self-delete |
+| `07-catalog-schema-seed.md` | 01, 02 | Flyway catalog + seed; dirty=true |
+| `08-catalog-jwt-jwks.md` | 04, 07 | Resource Server + JWKS URL |
+| `09-catalog-writes.md` | 08 | Admin CRUD; dirty; write lock; 503 on PDF lock |
+| `10-catalog-queries.md` | 09 | List/get filters pagination pizza-spec |
+| `11-catalog-redis-cache.md` | 10 | Redis-first catalog keys TTL 3m |
+| `12-pdf-job-locks.md` | 09, 07 | PDF job; locks; OpenPDF **task** |
+| `13-public-pdf.md` | 12 | Public raw PDF GET + version |
+| `14-test-pdf-trigger.md` | 12 | Test-profile generate route |
+| `15-openapi-agents.md` | 06, 13, 14 | springdoc + `AGENTS.md` |
 
-Stories 08–13 are catalog-service; 02–05 are auth-service. Do not start **08** before **07**. Do not start a story until every incoming arrow in the graph is `DONE-`.
+Stories **03–06** are auth-service; **07–14** catalog-service plus **15** both. Do not start **09** before **08**. Do not start a story until every incoming arrow in the graph is `DONE-`.
 
 ---
 
@@ -338,7 +340,7 @@ Then Stage 6: draft [docs/verify.md](verify.md).
 ## 10. What NOT to do
 
 - Do not git-commit unless the owner confirms
-- Do not scaffold Java before owner Initializr (except waiting)
+- Do not scaffold Java before story **02** is `DONE-` (owner Initializr)
 - Do not add a parent POM
 - Do not put two stories on one git branch; use `feat/<story-id>-<max-5-word-summary>`
 - Do not select Docker Compose Support on Initializr
@@ -357,4 +359,4 @@ Then Stage 6: draft [docs/verify.md](verify.md).
 
 Build plan is **APPROVED** (2026-09-18).
 
-**Build:** follow [stories](stories/README.md) and the §6 graph. Next story: `01-compose-config.md`. Owner Initializr before `02` / `06`.
+**Build:** follow [stories](stories/README.md) and the §6 graph. **01** and **02** may proceed in parallel. **02** is the owner Initializr enabler.

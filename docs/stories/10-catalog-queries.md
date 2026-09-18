@@ -1,7 +1,7 @@
-# 09 — Catalog queries
+# 10 — Catalog queries
 
 **Status:** ready  
-**Depends on:** `08-catalog-writes.md`  
+**Depends on:** `09-catalog-writes.md`  
 **Links:** [Intent](../intent.md) · [Spec](../spec.md) · [Design](../design.md) · [Build plan](../build-plan.md)
 
 ## Story
@@ -28,4 +28,4 @@ As an admin or trusted system, I want the same list and get APIs with filters an
 
 ## Notes
 
-Unblocks **10**.
+Unblocks **11**.

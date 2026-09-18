@@ -1,7 +1,7 @@
-# 10 — Catalog Redis cache
+# 11 — Catalog Redis cache
 
 **Status:** ready  
-**Depends on:** `09-catalog-queries.md`  
+**Depends on:** `10-catalog-queries.md`  
 **Links:** [Intent](../intent.md) · [Spec](../spec.md) · [Design](../design.md) · [Build plan](../build-plan.md)
 
 ## Story

@@ -18,7 +18,7 @@ Repo docs are the memory — do not rely on chat or Cursor rules for HIFL handof
 | Spec / PRD | **APPROVED** — [docs/spec.md](docs/spec.md) |
 | Design / TRD | **APPROVED** 2026-09-18 — [docs/design.md](docs/design.md) |
 | Build plan | **APPROVED** 2026-09-18 — [docs/build-plan.md](docs/build-plan.md) |
-| Build | **Started** — stories `docs/stories/`; next `01-compose-config.md`; no application code yet |
+| Build | **Started** — stories `docs/stories/` **01–15**; next **01** and/or **02** (Initializr); no application code yet |
 | Verify | Not started |
 
 Full checklist and locked product highlights: [docs/handoff.md](docs/handoff.md). Decisions log: [docs/project-context.md](docs/project-context.md). Docs index: [docs/README.md](docs/README.md).

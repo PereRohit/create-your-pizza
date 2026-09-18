@@ -1,7 +1,7 @@
-# 02 — Auth schema and first-admin bootstrap
+# 03 — Auth schema and first-admin bootstrap
 
 **Status:** ready  
-**Depends on:** `01-compose-config.md` + owner Initializr `auth-service`  
+**Depends on:** `01-compose-config.md`, `02-OWNER-maven-initializr.md`  
 **Links:** [Intent](../intent.md) · [Spec](../spec.md) · [Design](../design.md) · [Build plan](../build-plan.md)
 
 ## Story
@@ -20,6 +20,11 @@ As an operator, I want auth-service to own `auth-db` schema and create the first
 
 - Unit tests with **>80% LoC** coverage of code added/changed for this story
 - Full **behaviour** coverage: bootstrap when zero admins; skip when ≥1 admin; credentials appear on stdout (capture/mock)
+
+## Tasks
+
+- [ ] Flyway migrations for Design auth tables
+- [ ] Bootstrap listener: create first admin only when zero admins; print credentials to stdout
 
 ## Notes
 

@@ -1,7 +1,7 @@
-# 12 — Public PDF GET
+# 13 — Public PDF GET
 
 **Status:** ready  
-**Depends on:** `11-pdf-job-locks.md`  
+**Depends on:** `12-pdf-job-locks.md`  
 **Links:** [Intent](../intent.md) · [Spec](../spec.md) · [Design](../design.md) · [Build plan](../build-plan.md)
 
 ## Story
@@ -23,4 +23,4 @@ As a public menu consumer, I want unauthenticated raw PDF download of the latest
 
 ## Notes
 
-Unblocks **14** (with 05 and 13).
+Unblocks **15** (with 06 and 14).

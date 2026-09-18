@@ -1,7 +1,7 @@
-# 07 — Catalog JWT verify via JWKS
+# 08 — Catalog JWT verify via JWKS
 
 **Status:** ready  
-**Depends on:** `03-auth-jwks-jwt.md`, `06-catalog-schema-seed.md`  
+**Depends on:** `04-auth-jwks-jwt.md`, `07-catalog-schema-seed.md`  
 **Links:** [Intent](../intent.md) · [Spec](../spec.md) · [Design](../design.md) · [Build plan](../build-plan.md)
 
 ## Story
@@ -24,4 +24,4 @@ As catalog-service, I want OAuth2 Resource Server local JWT verify from auth JWK
 
 ## Notes
 
-Do not start **08** until this is `DONE-`.
+Do not start **09** until this is `DONE-`.
