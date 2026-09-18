@@ -84,7 +84,7 @@ Process: [docs/hifl-playbook.md](docs/hifl-playbook.md) · Decisions: [docs/proj
 ## Locked product highlights (do not rediscover)
 
 - Product types: Simple, Combo, Pizza (`product_type` `simple`/`combo`/`pizza`); consumer `simple` / `combo` / `pizza-base` / `pizza-spec`
-- Veg/non-veg on all three; combo price admin-set; pizza option **entities** with **per-row price** on **API and PDF**
+- Veg/non-veg on all three; combo price admin-set; pizza options **shared**, **pizzas only**, **`optionsEnabled`**; PDF note **options available** + options in **own space**
 - Public PDF: header **Create Your Pizza**, **vN**, name+base price; GET **raw binary**; default latest; `?version=` history; Redis **latest only**
 - Auth: admin **login** vs trusted **`/auth/register` only**; cannot **DELETE self**; paginated `/auth/users`; JWKS HTTP
 - Redis locks: PDF **120s**, write **30s** (`finally` + expiry); writes 503; job **skips not queued**; version **only on generate**

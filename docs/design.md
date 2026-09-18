@@ -1,6 +1,6 @@
 # Design / TRD — CreateYourPizza
 
-**Status:** DRAFT — revised 2026-09-18 (owner Design Revise, option prices / self-delete / list pagination). Awaiting Design gate (**Approve / Revise / Park**).
+**Status:** DRAFT — revised 2026-09-18 (pizza `optionsEnabled` + PDF note). Awaiting Design gate (**Approve / Revise / Park**).
 
 **Upstream:** [Intent](intent.md) (**APPROVED**) · [Spec / PRD](spec.md) (**APPROVED**, aligned to this Design Revise)
 
@@ -146,6 +146,7 @@ erDiagram
     text product_type
     text category
     numeric price
+    boolean options_enabled
     text customisation_notes
     boolean active
     timestamptz created_at
@@ -177,7 +178,7 @@ erDiagram
   }
 ```
 
-`option_entities` are a shared spec catalog in v1 (no FK from `products`). `menu_pdf` is history (one row per numeric version). **No `system_status` table** — PDF vs write exclusion uses **Redis locks** (§6).
+`option_entities` are a **shared pizza-only** spec catalog (no FK from `products`). Pizzas opt in with `options_enabled`. `menu_pdf` is history. **No `system_status` table.**
 
 ### 3.2 Database `auth-postgres`
 
@@ -235,6 +236,7 @@ Sellable catalog. Veg/non-veg on all three types. Combo **price is admin-set**, 
 | `product_type` | text | `simple` \| `combo` \| `pizza` (not `admin_type`) |
 | `category` | text | `veg` \| `non-veg` |
 | `price` | numeric(12,2) | Base/list price (Rs.); combo = admin-set |
+| `options_enabled` | boolean | **Pizza only.** If true, this pizza uses the **shared** option catalog (all `option_entities`). If false, no options. **Not** per-pizza option lists. Null/false for simple/combo. |
 | `customisation_notes` | text nullable | Pizza only; free-text **non-chargeable**; null for simple/combo |
 | `active` | boolean | Soft-hide from consumer list if false |
 | `created_at` | timestamptz | Default consumer sort |
@@ -252,7 +254,7 @@ Membership does **not** drive combo price.
 
 #### `option_entities`
 
-First-class pizza-spec catalog (not free-form strings).
+First-class **pizza-only** option catalog (not free-form strings). **One shared set** for every pizza with `options_enabled = true`. There is **no** per-pizza option assignment table.
 
 | Column | Type | Notes |
 |--------|------|--------|
@@ -266,7 +268,7 @@ First-class pizza-spec catalog (not free-form strings).
 
 Seed (Build): same locked names; **each row has its own `price`**. Illustrative: `CRUST_TYPE` thin = 10, deep dish = 25 (cheese burst admin-set). Sizes and toppings likewise priced per entity.
 
-Pizza **sellable** products (`product_type = pizza`) do not require a join to options in v1.
+Pizza **sellable** products (`product_type = pizza`) opt in via `options_enabled`. They do **not** join to a subset of options.
 
 #### `menu_pdf` (history)
 
@@ -306,7 +308,9 @@ Dirty + last version live here. **Locks do not.** Do not add `generating` / `wri
 
 **pizza-spec wire fields:** `productId` = option id, `productName` = option name, `productType` = `pizza-spec`, `productPrice` = **that option’s `price`**, plus `optionKind` and `isBase`. Do **not** invent an empty `productCategory` on pizza-spec (options have no veg flag).
 
-**pizza-base extra:** `customisationNotes` only when non-empty.
+**pizza-base extra:** `optionsEnabled` (boolean). `customisationNotes` only when non-empty.
+
+Options apply **only to pizzas**. Simple and combo never have `optionsEnabled`. If `optionsEnabled` is true, the pizza uses the **same** global pizza-spec list as every other enabled pizza.
 
 Default sort: `created_at` ascending across the union. Filters take precedence.
 
@@ -629,8 +633,8 @@ Canonical query params: **`page` + `size`**. Applies to **`GET /api/products`** 
 
 | Method | Path | Purpose |
 |--------|------|---------|
-| `POST` | `/api/products` | Create simple / combo / pizza (`productType` in body: `simple` \| `combo` \| `pizza`) |
-| `PUT` | `/api/products/{id}` | Update product / price / combo membership / pizza notes |
+| `POST` | `/api/products` | Create simple / combo / pizza. Pizza body includes **`optionsEnabled`** (boolean). |
+| `PUT` | `/api/products/{id}` | Update product / price / combo membership / pizza notes / **`optionsEnabled`** |
 | `DELETE` | `/api/products/{id}` | Hard delete; `combo_items` cascade |
 | `POST` | `/api/options` | Create option entity |
 | `PUT` | `/api/options/{id}` | Update option entity |
@@ -686,9 +690,10 @@ Always **raw binary** (never JSON envelope) on success. Missing version or no ro
 
 - Header **Create Your Pizza**
 - Visible **version** as **v1 / v2 / …** matching `menu_pdf.version`
-- Table rows **name + base price** for:
-  - sellable products (simple, combo, pizza / pizza-base)
-  - **pizza-spec option entities** (each row’s **own** `price`)
+- **Sellable products** (own block): name + base price for simple, combo, and pizza.
+  - Pizza with `options_enabled = true`: same row plus a note **options available** (shared catalog; not a per-pizza option list).
+  - Pizza with `options_enabled = false`: name + price only (no options note).
+- **Pizza-spec options** (own space, as before): name + that option’s `price` for all `option_entities`. Not mixed into the pizza product rows except via the “options available” note.
 
 **Cadence:** from config `app.pdf.interval` (default **5 minutes**) on catalog-service.
 
@@ -767,7 +772,7 @@ Used by **catalog-service only**.
 - Trusted cannot write
 - `type=pizza-spec` returns all options; untyped list can include them
 - Filters, page size 10, max 100, flat `data`, `pagination`, `next=-1`
-- PDF includes **vN** and **pizza-spec** rows; latest Redis; `?version=` historical DB; unknown version 404
+- PDF: includes **vN** and pizza row note **options available** when flag true; pizza-spec still in **its own space**; latest Redis; `?version=` historical DB; unknown version 404
 - Catalog verifies JWT via JWKS HTTP, never auth DB, never `/validate`
 - Write during PDF lock → 503; job **skips** (not queued) if write lock held; `dirty` stays true
 - PDF **version increments only on successful generation**, never on product writes
@@ -803,7 +808,8 @@ Used by **catalog-service only**.
 | PDF version | Increments **only** on successful generation insert — **not** on admin product writes |
 | Lock TTLs | PDF **120s**, write **30s**; `finally` DEL; Redis TTL self-heal |
 | `product_type` | DB `simple` \| `combo` \| `pizza` |
-| pizza-base vs pizza-spec | pizza-base = `products.pizza`; pizza-spec = `option_entities` (with **per-row price**) on **`GET /api/products`** |
+| pizza-base vs pizza-spec | pizza-base = `products.pizza` + **`optionsEnabled`**; pizza-spec = shared `option_entities` (**pizzas only**) |
+| Pizza options | Shared catalog; pizza **flag** opts in; **no** per-pizza option set |
 | Option price | Each `option_entities` row has **`price`**; `kind` still only the three values |
 | Self-delete | Admin **cannot** DELETE own `users` row (403); implies ≥1 admin remains |
 | List pagination | **All list APIs** (`/api/products`, `/auth/users`); not get-by-id |

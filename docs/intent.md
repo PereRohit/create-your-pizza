@@ -29,7 +29,7 @@ A pizza delivery store needs one maintained product catalog that covers simple i
   - **Combo** = combination of simple products with an **admin-set catalog price** (not the sum of component simples)
   - **Pizza** = customizable with documented crust sizes, crust types, toppings (olive base), and free-text non-chargeable customisations (detail in Spec)
   - **Veg / non-veg** applies to **Simple, Combo, and Pizza** (all three types)
-- Anyone can download/view the **public PDF menu card** with no login. PDF is basic: header **Create Your Pizza**; printed **vN**; table rows of **item name + base price** for sellable products **and pizza-spec options**. Default GET is latest (raw binary); optional numeric `version` query for history.
+- Anyone can download/view the **public PDF menu card** with no login. PDF is basic: header **Create Your Pizza**; printed **vN**; sellable **name + price** (pizza with options: note **options available**); pizza-spec options in **their own space**.
 - PDF artifacts are stored **in the database as version history** (version bumps **only when a PDF is generated**, not on each product write). **Redis holds the latest menu only**. Dirty job + Redis locks: admin writes during generation → 503; if a write is in progress the job **skips** (not queued).
 - A **registered trusted system** (and **Admin** on the same query APIs) can query the catalog via REST with filters: veg/non-veg, product type, price under Rs. X, and pagination (**default page size 10**). Consumer listing product types: **simple**, **combo**, **pizza-base**, **pizza-spec**. Wire format: products as a **flat array** (Spec); sorted in **creation order** by default; if a **filter is specified, the filter takes precedence**.
 - Callers authenticate via a **generic, extensible central auth service** that issues a **JWT with 30-minute TTL**. **Admins login** (username/password). **Trusted systems do not login**; they get an API key **only after admin approval**, then **`/auth/token`** → JWT so catalog uses **one JWT path**. First admin is **bootstrapped** on empty admin table (credentials printed to the terminal). Customer auth is **provisioned for later** (self-register, no approval, visible to admins). Live **JWT denylist** is out of scope; **credential revoke** for trusted systems is in v1.
@@ -48,9 +48,9 @@ Incorporated from the owner brief and HIFL Revises (first + second):
 - Catalog of three admin product types: **Simple**, **Combo**, **Pizza**
 - **Veg / non-veg** on **Simple, Combo, and Pizza**
 - Consumer API listing types: **simple**, **combo**, **pizza-base**, **pizza-spec** (pizza base products vs specification/option catalog items as distinct types)
-- Pizza option catalog as **option entities** (Spec): three `kind`s only; **each option has its own price**; free-text customisations **non-chargeable**
+- Pizza option catalog as **option entities** (**pizzas only**): shared set; pizza **`optionsEnabled`** flag; **per-option price**; three `kind`s; free-text customisations **non-chargeable**
 - Admin maintenance of products, prices, and combos; **combo price = admin-defined**, not derived sum; Admin may use **same** catalog query APIs as Trusted
-- Public, unauthenticated **PDF menu card** — header **Create Your Pizza**; **vN**; tabular **name + base price** including **pizza-spec**
+- Public, unauthenticated **PDF menu card** — header **Create Your Pizza**; **vN**; sellable name+price; pizza **options available** note when enabled; pizza-spec in **own space**
 - PDF **history in DB**; Redis **latest only**; GET default latest raw binary; `?version=` numeric for past (DB)
 - **Generic extensible central auth**; admin login; trusted pending+approve+token; bootstrap first admin; JWT 30m; customer auth **provisioned** (no approval later)
 - Catalog queries: veg/non-veg, type, price under Rs. X, pagination (default **10** per page); **flat array** response; **filter overrides** default presentation
@@ -78,7 +78,7 @@ Incorporated from the owner brief and HIFL Revises (first + second):
 ## Constraints
 
 - **Auth:** generic extensible central auth; JWT TTL **30 minutes**; admin **login**; trusted **register → admin approve → `/auth/token`**; catalog validates JWT **locally**; JWT denylist out of scope; trusted credential revoke in v1; customer auth provisioned (no approval); **API secrets stay out of the JWT**
-- **Public surface:** PDF menu card requires **no** authentication; header **Create Your Pizza**, **vN**, name + base price (including pizza-spec); optional `version` query
+- **Public surface:** PDF requires **no** authentication; header **Create Your Pizza**, **vN**, sellable name+price, pizza **options available** note when enabled, pizza-spec in **own space**
 - **Protected surfaces:** admin catalog writes and trusted-system catalog APIs require valid JWT at the appropriate level
 - **Storage:** Postgres (products + user information + **versioned PDF**) and Redis (**catalog** cache + **current menu PDF** fetch path)
 - **PDF:** async, dirty-only; DB **history** (version from **generation**, not writes); Redis **latest**; writes 503 during gen; job **skips** if write in progress (not queued); lock TTLs 120s / 30s

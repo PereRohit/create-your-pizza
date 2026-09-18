@@ -95,7 +95,8 @@ A pizza delivery store needs one catalog of **Simple**, **Combo**, and **Pizza**
 | Future customer | Self-register **without** approval; visible to admins; admin delete later (not v1). |
 | `product_type` | DB column `product_type`: `simple` \| `combo` \| `pizza` (not `admin_type`) |
 | PDF history | Every generation **inserts** a numeric version + bytea. GET default **latest** raw binary; `?version=` for history. PDF prints **v1/v2/…**. Redis **latest only**; past → DB. |
-| Pizza-spec on PDF | Option entities **must** appear on the PDF (name + **that option’s price**). |
+| Pizza-spec on PDF | Options listed in **their own space** (name + option price). Pizza product rows with options enabled add note **options available**. |
+| Pizza options | **Pizzas only.** Shared catalog. Per-pizza **`optionsEnabled`** flag. **No** per-pizza option subset. |
 | Option price | Each option row has **`price`**; `kind` still only `CRUST_SIZE` / `CRUST_TYPE` / `TOPPING`. |
 | Self-delete | Admin **cannot** delete own user record (403). |
 | List pagination | All JSON lists including **`GET /auth/users`**; not get-by-id. |
@@ -186,7 +187,7 @@ Do not start application code until Design and Build plan are approved **and** `
 | 2026-09-17 | **Process:** after every stage **Approve**, update `docs/handoff.md` — compress past stages + refresh next-stage handoff (no blank rewrite; no Cursor rule for HIFL handoff) | Locked (owner) |
 | 2026-09-17 | **Process:** do **not** git-commit unless owner confirms; preferred doc branch when committing: `cursor/sync-spec-prd-revise-efa1` | Locked (owner) |
 | 2026-09-17 | Design started on owner go-ahead; draft on branch **`feat/design`** until Design Approve | Locked (owner) |
-| 2026-09-18 | **Design Revise:** option **per-row price**; admin cannot DELETE self; paginate all lists incl. `/auth/users`; docs JSON omits empty keys (not a Build rule) | Locked (HIFL Design Revise) |
+| 2026-09-18 | **Design Revise:** options **pizzas only**; shared catalog + pizza **`optionsEnabled`**; PDF pizza note **options available**; options section stays separate | Locked (HIFL Design Revise) |
 
 ## Document map
 

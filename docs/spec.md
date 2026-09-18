@@ -53,14 +53,14 @@ Central auth issues JWTs used by Admin and Trusted system in v1. Public customer
 | **FR-1** | System supports three admin product types: **Simple**, **Combo**, **Pizza**. Consumer listing exposes four types: **simple**, **combo**, **pizza-base**, **pizza-spec** (see FR-9 / FR-11a). |
 | **FR-2** | **Simple** products are sold as standalone items with a **fixed price** (e.g. cold drinks, chips) and a **veg / non-veg** classification. |
 | **FR-3** | **Combo** products represent a **combination of multiple Simple products**. Combo **catalog price is admin-defined** and is **not** derived from the sum of component Simple prices. Combos have a **veg / non-veg** classification. |
-| **FR-4** | **Pizza** products have **veg / non-veg** category and use the **pizza option entities** below; pizzas are **customizable** to taste within those options plus free-text non-chargeable customisations. |
+| **FR-4** | **Pizza** products have **veg / non-veg**, optional **`optionsEnabled`**, and use the **shared pizza option entities** when that flag is true; pizzas are **customizable** only when options are enabled, plus free-text non-chargeable customisations. |
 | **FR-4e** | **Veg / non-veg applies to Simple, Combo, and Pizza** — not pizzas only. |
 | **FR-5** | Admin can **create, update, and delete** catalog entries (products, prices, combo definitions, pizza option entities as applicable) when authenticated with an Admin-capable JWT. |
 | **FR-6** | Catalog writes that add, update, or delete products **mark the catalog dirty** so the PDF job knows regeneration is needed. |
 
 ### Pizza option catalog (product specification — option entities)
 
-Separate section of catalog product rules (admin/API/data concepts). The **PDF must include pizza-spec option entities** (same name + **that option’s price**). In the **consumer API**, pizza **base** sellable products and pizza **specification/option catalog** items are distinct listing types (**pizza-base** vs **pizza-spec**). Option entities are returned on **`GET /api/products`** (filter `type=pizza-spec` for all options). Each option has its **own price**; `kind` remains only **CRUST_SIZE**, **CRUST_TYPE**, **TOPPING**.
+Separate section of catalog product rules. Options are **for pizzas only**. Each pizza has **`optionsEnabled`**: if true, it uses the **same shared** option catalog (no per-pizza option lists). The **PDF** lists pizza-spec options in **their own space** (name + option price) **and**, on pizza product rows with options enabled, a note **options available**. Consumer listing: **pizza-base** vs **pizza-spec**. Options on **`GET /api/products?type=pizza-spec`**. Each option has its **own price**; `kind` remains only **CRUST_SIZE**, **CRUST_TYPE**, **TOPPING**.
 
 **Locked approach:** pizza options (crust size, crust type, toppings, etc.) are modeled as **first-class option entities** — not only free-form strings for the catalog of sizes/types/toppings. Design details schema; Spec locks the entity approach.
 
@@ -70,7 +70,8 @@ Separate section of catalog product rules (admin/API/data concepts). The **PDF m
 | **FR-4b** | **Crust type** option entities: **thin crust** — base; **cheese burst**; **deep dish**. Each has its **own price** (e.g. thin 10, deep dish 25). |
 | **FR-4c** | **Topping** option entities: **chicken**, **mushrooms**, **pepperoni**, **olive** — **olive is the base** topping. Each has its **own price**. |
 | **FR-4d** | **Customisations:** free-text field(s); **non-chargeable** (no price impact in v1). |
-| **FR-4f** | Option catalog (sizes, types, toppings) is persisted and administered as **option entities** (CRUD via admin APIs as Design maps). Consumer **pizza-spec** listing surfaces these option entities; **pizza-base** surfaces sellable pizza products. |
+| **FR-4f** | Option catalog is **pizza-only**, persisted as **option entities**. Admin sets **`optionsEnabled`** on create/update pizza. Enabled pizzas all share the **same** option set. Consumer **pizza-spec** lists those entities; **pizza-base** lists sellable pizzas (with `optionsEnabled`). Simple/combo have no options. |
+| **FR-4g** | There is **no** per-pizza option catalog (no pizza-specific subset of crusts/toppings). |
 
 ### Queries (trusted system / consumer API)
 
@@ -94,7 +95,7 @@ Separate section of catalog product rules (admin/API/data concepts). The **PDF m
 | **FR-14** | PDF access requires **no authentication**. |
 | **FR-15** | PDF content reflects the catalog as of the last successful dirty-triggered generation. |
 | **FR-16** | PDF generation runs **asynchronously** on a configurable interval (**default 5 minutes**, **MUST** be a properties/config value), and **only when** the catalog is dirty. |
-| **FR-16a** | PDF is **very basic**: header text **Create Your Pizza** (with spaces); printed **version** as **v1 / v2 / …**; body is a **table** of **name + price** for sellable products **and pizza-spec option entities** (option price = that row’s `price`). |
+| **FR-16a** | PDF is **very basic**: header **Create Your Pizza**; printed **vN**. **Sellable block:** name + price (simple, combo, pizza). Pizza with options enabled: add note **options available**. **Options block (own space):** pizza-spec entities, name + that option’s `price`. |
 | **FR-16b** | While PDF generation is in progress, catalog **writes** return **HTTP 503** busy envelope. Coordination is **not** a `system_status` table (Design: Redis locks). |
 | **FR-16c** | If a **catalog write is in progress** when the job (or test trigger) fires, generation **skips that run**. It is **not queued**. `dirty` stays true so a later cycle may run. **No extra PDF versions** are created for skipped runs. |
 | **FR-16d** | **PDF storage:** Postgres **history** — one row per numeric **version** + **bytea**. **Version increments only when generation succeeds** (not when an admin writes products). On generation, **insert** a new version and write **latest** to Redis. Public fetch of **latest**: **Redis-first** with **DB fallback**. Fetch of a **past version**: **DB only**. See [§4 PDF Redis shape](#locked-product-decision--pdf-storage-version--bytea--redis). |
@@ -216,7 +217,7 @@ Design/Build must use these strings unchanged unless a later Spec Revise changes
 **Decision (product):**
 
 1. Persist **every** generated PDF in Postgres as a **history** of numeric **version** + **bytea** (one row per version; do not overwrite past bytes).
-2. PDF **content** includes header **Create Your Pizza**, label **v{version}**, and name+base-price rows for sellable products **and pizza-spec options**.
+2. PDF **content** includes header **Create Your Pizza**, **v{version}**, sellable name+price rows (pizza with options: note **options available**), and pizza-spec options in **a separate space**.
 3. On generation, **insert** the new DB row and write **latest** to Redis (same JSON shape).
 4. **Latest** public fetch: **Redis-first**, **DB fallback** (`max(version)`).
 5. **Historical** fetch (`version` query param ≠ latest): **Postgres only**.
@@ -335,7 +336,7 @@ Product fields as exemplified (`productName`, `productId`, `productType`, `produ
 
 ### Locked product decision — Option entities
 
-**Decision (product):** Pizza option catalog (crust size, crust type, toppings) is modeled as **first-class option entities**. Each entity has its **own price**. `kind` is only **CRUST_SIZE**, **CRUST_TYPE**, **TOPPING**. Design details schema and pizza-base vs pizza-spec mapping. Free-text customisations remain non-entity and non-chargeable.
+**Decision (product):** Pizza option catalog is **first-class option entities**, **pizzas only**. Each pizza has **`optionsEnabled`**. If true, the pizza uses the **one shared** option catalog (not a per-pizza set). Each entity has its **own price**. `kind` is only **CRUST_SIZE**, **CRUST_TYPE**, **TOPPING**. Free-text customisations remain non-entity and non-chargeable.
 
 ### Locked product decision — User table + roles + future CUSTOMER
 
@@ -404,7 +405,7 @@ Full OpenAPI lands in Design/Build (Swagger UI / OpenAPI artifact for Postman). 
 
 | Method / resource (sketch) | Auth | Purpose |
 |----------------------------|------|---------|
-| `POST /api/products` | Admin JWT (`catalog:write`) | Create Simple / Combo / Pizza |
+| `POST /api/products` | Admin JWT (`catalog:write`) | Create Simple / Combo / Pizza (pizza: **`optionsEnabled`**) |
 | `PUT /api/products/{id}` | Admin JWT (`catalog:write`) | Update product / price / combo membership / pizza options |
 | `DELETE /api/products/{id}` | Admin JWT (`catalog:write`) | Delete product |
 | `GET /api/products/{id}` | Admin or Trusted JWT (`catalog:read`) | Fetch one product |
@@ -441,7 +442,7 @@ Admin writes during PDF generation (Redis PDF lock) → **503** busy envelope (F
 | `GET /api/menu.pdf` | **None** | Latest menu PDF (**Redis-first**; **DB fallback**; key `create-your-pizza/menu`) |
 | `GET /api/menu.pdf?version={n}` | **None** | Specific numeric version (**DB** if not latest; Redis allowed if latest) |
 
-**HTTP response:** **raw binary PDF** only (`Content-Type: application/pdf`). **Not** the JSON envelope. PDF body includes **v{n}** and pizza-spec option rows.
+**HTTP response:** **raw binary PDF** only. PDF: **v{n}**; sellable rows; pizza **options available** note when enabled; pizza-spec in **own space**.
 
 Path names are illustrative; Design may rename while preserving the capability matrix. JSON APIs use the standard envelope (+ `pagination` when paginating); PDF GET is the binary exception.
 
@@ -458,8 +459,8 @@ Not full SQL DDL — Design owns schema detail. Conceptual entities:
 | **Product** | `product_type` `simple` \| `combo` \| `pizza`; veg/non-veg; base price; timestamps |
 | **SimpleProduct** | Fixed-price item; **veg/non-veg required** |
 | **Combo** | Links to multiple Simple products; **admin-set catalog price**; **veg/non-veg required** |
-| **Pizza** | Veg/non-veg; consumer **pizza-base**; free-text customisations (non-chargeable) |
-| **OptionEntity (pizza-spec)** | First-class crust size/type/topping entities; **per-row price**; `kind` only those three; on **`GET /api/products`** and **on the PDF** |
+| **Pizza** | Veg/non-veg; **`optionsEnabled`** to use the **shared** option catalog; free-text customisations (non-chargeable). Consumer: **pizza-base** |
+| **OptionEntity (pizza-spec)** | Shared pizza-only catalog; **per-row price**; three `kind`s; on **`GET /api/products?type=pizza-spec`** and **PDF options section** |
 | **CatalogVersion / DirtyFlag** | Marker on catalog mutation; PDF job checks dirty |
 | **MenuPdfArtifact** | **History**: numeric version PK + bytea; PDF shows **vN**; **latest** also in Redis `create-your-pizza/menu`; past versions DB-only |
 | **SystemStatus** | **Removed.** Redis locks on catalog-service. |
@@ -477,11 +478,11 @@ Not full SQL DDL — Design owns schema detail. Conceptual entities:
 
 | Area | Acceptance |
 |------|------------|
-| **FR-1–4 / 4a–4f Product types & option entities** | Admin can persist Simple, Combo, Pizza, and **option entities with per-row price**; `kind` only three values; Combo price admin-set; veg/non-veg on all three; pizza-base vs pizza-spec on list and PDF. |
+| **FR-1–4 / 4a–4g Product types & option entities** | Option entities **pizza-only**, **per-row price**, shared catalog; pizza **`optionsEnabled`**; no per-pizza option set; pizza-base vs pizza-spec. |
 | **FR-5 Admin CRUD** | With valid Admin JWT (`sub` + `catalog:write`), create/update/delete succeed; without JWT or with Trusted-only JWT, writes return 401/403; during PDF busy, writes return **503** busy envelope (no `data`, no `pagination`). |
 | **FR-6 Dirty flag** | Any successful catalog mutation sets dirty so PDF job will regenerate within one successful cycle (skip if write in progress). |
 | **FR-7–11 / 7a / 11a–11b Queries** | Trusted **and Admin** JWT with `catalog:read` can filter by veg/non-veg, type, maxPrice (**including option prices**), paginate (default **10**); pizza-spec on `GET /api/products`; envelope + `pagination`. |
-| **FR-13–16 / 16a–16g PDF** | Unauthenticated GET returns **raw binary** PDF with header **Create Your Pizza**, **vN**, name+price table **including pizza-spec at each option’s price**; default latest; `?version=` history. |
+| **FR-13–16 / 16a–16g PDF** | Raw binary PDF; **vN**; sellable name+price; pizza with options: note **options available**; pizza-spec in **own space** with option prices. |
 | **FR-17–20 / 17a–17b / 18a Auth** | Bootstrap first admin; admin login; trusted pending+approve; **paginated** `GET /auth/users`; **cannot DELETE self**; `/auth/token`; local JWKS verify. |
 | **FR-21–25 Quality & ops** | OpenAPI/Swagger imports into Postman; tests cover auth matrix, CRUD, filters/flat pagination, public PDF, concurrency/503 where practical; AGENTS.md at Build; Docker Compose: both Postgres + Redis. |
 
@@ -514,7 +515,7 @@ Resolved by Spec Revises (see §4 and decision log in project-context) — **not
 
 - JWT validation approach → **local signature verification**; Redis = catalog cache (+ current PDF) only — **not** key store
 - Combo pricing → **admin-set**, not sum
-- PDF layout minimum → header **Create Your Pizza**; **vN**; name + base price table **including pizza-spec**
+- PDF layout minimum → header **Create Your Pizza**; **vN**; sellable table + pizza **options available** note; pizza-spec in **own space**
 - PDF/catalog concurrency → Redis locks; writes 503; job skips if write in progress; **no status table**
 - Key material → **auth-postgres + JWKS HTTP**; catalog memory; **no shared DB**; **no /validate**
 - One Postgres per service
