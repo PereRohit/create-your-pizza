@@ -839,4 +839,4 @@ Optional later: JWT denylist on revoke; customer self-register; purge old `menu_
 
 Design / TRD is **APPROVED** (2026-09-18).
 
-**Build plan** (`docs/build-plan.md`) is **DRAFT**. Do not write `docs/stories/` or application code until Build-plan **Approve**. Then: stories, then owner Initializr.
+**Build plan** (`docs/build-plan.md`) is **APPROVED**. Stories: `docs/stories/`. Owner Initializr then implement per graph.

@@ -1,10 +1,10 @@
 # CreateYourPizza — Agentic SDLC handoff
 
-**Audience:** Next agent continuing HIFL — Design **APPROVED**; Build plan **DRAFT** (owner started 2026-09-18).  
+**Audience:** Next agent continuing HIFL — Build plan **APPROVED**; **Build** in progress.  
 **Owner:** PereRohit  
-**As of:** 2026-09-18 (Build-plan Revise)  
+**As of:** 2026-09-18 (Build-plan Approve)  
 **Repo root:** local `create-your-pizza`  
-**Git:** last Design work on **`feat/design`**; owner said **do not commit** this Build-plan start.
+**Git:** last Design work on **`feat/design`**; **ask** before commit.
 
 **How to resume:** read [docs/hifl-playbook.md](hifl-playbook.md) → this file → open linked artifacts as needed. After every stage **Approve**: **compress** completed stages here, then refresh next-stage items — do **not** wipe and fully rewrite.
 
@@ -15,8 +15,8 @@
 | 1 Intent | [docs/intent.md](docs/intent.md) | **APPROVED** (aligned 2026-09-18) |
 | 2 Spec / PRD | [docs/spec.md](docs/spec.md) | **APPROVED** (aligned 2026-09-18) |
 | 3 Design / TRD | [docs/design.md](docs/design.md) | **APPROVED** 2026-09-18 |
-| 4 Build plan | [docs/build-plan.md](docs/build-plan.md) | **DRAFT** 2026-09-18 — awaiting Approve / Revise / Park |
-| 5 Build | Spring Boot code in this repo | Not started (after Build-plan Approve) |
+| 4 Build plan | [docs/build-plan.md](docs/build-plan.md) | **APPROVED** 2026-09-18 |
+| 5 Build | Spring Boot + Compose in this repo | **Started** — stories written; no application code yet |
 | 6 Verify | [docs/verify.md](docs/verify.md) | Not started (after Build) |
 
 Process: [docs/hifl-playbook.md](hifl-playbook.md) · Decisions: [docs/project-context.md](docs/project-context.md) · Docs index: [docs/README.md](docs/README.md)
@@ -49,41 +49,45 @@ Process: [docs/hifl-playbook.md](hifl-playbook.md) · Decisions: [docs/project-c
 - Stories: `docs/stories/{priority}-{slug}.md` after Build-plan Approve; coding stories >80% LoC + full behaviour tests.
 - Detail: [docs/design.md](docs/design.md)
 
+### 4 Build plan — APPROVED 2026-09-18
+
+- Stack: Spring Boot **4.1.1**, Maven JAR, Java **26** (Initializr **25** then pin POM), `.properties`, Lombok both apps.
+- Independent siblings: `groupId` **`com.createyourpizza`**; artifacts **`auth-service`**, **`catalog-service`**; packages `com.createyourpizza.auth` / `com.createyourpizza.catalog`.
+- Catalog: OAuth2 Resource Server + JWKS URL. Tests: mock ports. One root Compose. Graph of stories **01–14**.
+- Detail: [docs/build-plan.md](docs/build-plan.md) §6
+
 ## Owner preferences (must follow)
 
 1. **Git commits:** Do **not** commit unless the owner **confirms**. After changes, **ask**.
 2. **Stage-end handoff:** On every stage **Approve**, **compress** past stages and refresh next-agent sections — do not blank-rewrite.
 3. **Stack:** Java Spring Boot **4.1.1** + Maven + JAR; Java **26** (Initializr **25** then pin POM); independent siblings `auth-service` / `catalog-service`; Lombok; properties files; owner Initializr.
 4. **Gate language:** Approve / Revise: … / Park — no silent skips.
-5. **Build plan:** owner started 2026-09-18; **do not** write `docs/stories/*.md` or code until Build-plan **Approve**.
+5. **Build:** one story at a time; follow [build-plan.md](build-plan.md) §6 graph; rename to `DONE-` when finished.
 
 ## Checklist for the next agent
 
-- [x] Design drafted, revised, and **APPROVED**
-- [x] Owner said **start** Build plan; [docs/build-plan.md](docs/build-plan.md) **DRAFT**
-- [x] Owner said **do not git-commit** this Build-plan start
-- [ ] Build-plan gate: Approve / Revise / Park
-- **Picked stories (Build):** none yet — after Build-plan Approve, create `docs/stories/*.md`; record in-progress filenames here; rename to `DONE-` when finished
-- [ ] After Build-plan **Approve**: compress; write stories; owner Initializr → implement slice
-- [ ] After Build ready: draft [docs/verify.md](docs/verify.md)
+- [x] Build plan **APPROVED**; stories `01`–`14` written under `docs/stories/`
+- **Picked stories (Build):** none in progress — **next** [`01-compose-config.md`](stories/01-compose-config.md)
+- [ ] Owner Initializr: unzip into `auth-service/` and `catalog-service/` (Java 25 on site, then `<java.version>26</java.version>`) before stories **02** / **06**
+- [ ] Implement **01**, then follow graph; tests >80% LoC + behaviour on coding stories
+- [ ] After all stories `DONE-`: draft [docs/verify.md](verify.md)
 
-## Steps (detail) — next stage focus: Build-plan gate
+## Steps (detail) — next stage focus: Build
 
-### A. Now (Build-plan DRAFT)
+### A. Now
 
-1. Owner reviews [docs/build-plan.md](docs/build-plan.md).
-2. Do **not** write story files or application code until **Approve**.
-3. Do **not** git-commit unless the owner confirms (this start: no commit).
+1. Implement [`docs/stories/01-compose-config.md`](stories/01-compose-config.md). Record this filename here as in progress.
+2. **Ask** before git commit.
+3. Owner runs Initializr (checklist in [build-plan.md](build-plan.md) §4) into sibling folders.
 
-### B. After Build-plan Approve
+### B. After 01 is `DONE-`
 
-1. Compress Build-plan into Past stages; refresh for Build.
-2. Write ordered stories under `docs/stories/` (see [build-plan.md](build-plan.md) §4); record the picked file(s) in this handoff.
-3. Owner Initializr → implement **one story at a time** with tests.
+1. **02** (auth Initializr required) and **06** (catalog Initializr required) may proceed independently.
+2. Then **03→04→05** on auth; **07** after **03** and **06**; never start **08** before **07**.
 
 ### C. After Build ready for Verify
 
-1. Draft [docs/verify.md](docs/verify.md); Verify gate.
+1. Draft [docs/verify.md](verify.md); Verify gate.
 
 ## Locked product highlights (do not rediscover)
 
@@ -96,15 +100,17 @@ Process: [docs/hifl-playbook.md](hifl-playbook.md) · Decisions: [docs/project-c
 - Stories under `docs/stories/` before coding (playbook)
 - Full Dockerize; OpenAPI/Swagger; tests (mock ports); AGENTS.md at Build
 - DB Compose names: **`auth-db`**, **`catalog-db`** (engine still PostgreSQL in v1)
+- Maven: `com.createyourpizza` / `auth-service` + `catalog-service`
 
 ## What NOT to do
 
-- Do **not** write `docs/stories/0*.md` or application code until Build-plan **Approve**
+- Do not skip the §6 story graph
 - Do not git-commit unless the owner confirms
 - Do not blank-rewrite this handoff
 - Do not add Cursor rules for HIFL handoff
 - Do not call **`/auth/validate`** per catalog request — JWKS + local verify
 - Do not share one Postgres across auth and catalog
-- Do not start coding without `docs/stories/` files (after Build-plan Approve)
+- Do not start a coding story without its markdown file (rename to `DONE-` when finished)
 - Do not put API secrets in JWT claims
 - Do not give trusted systems a catalog API-key handler — JWT only after `/auth/token`
+- Do not add a parent POM

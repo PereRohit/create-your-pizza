@@ -10,8 +10,8 @@
 | [intent.md](intent.md) | Stage 1 Intent — **APPROVED** |
 | [spec.md](spec.md) | Stage 2 Spec / PRD — **APPROVED** (aligned 2026-09-18) |
 | [design.md](design.md) | Stage 3 Design / TRD — **APPROVED** 2026-09-18 |
-| [build-plan.md](build-plan.md) | Stage 4 — **DRAFT** 2026-09-18 (awaiting gate) |
+| [build-plan.md](build-plan.md) | Stage 4 — **APPROVED** 2026-09-18 |
 | `verify.md` | Stage 6 — after Build |
-| [stories/README.md](stories/README.md) | Build-stage user stories — after Build-plan Approve |
+| [stories/README.md](stories/README.md) | Build-stage user stories **01–14** |
 
-**Git:** do not commit unless the owner confirms. Design work is on **`feat/design`**. Owner asked **no commit** for this Build-plan start.
+**Git:** do not commit unless the owner confirms.

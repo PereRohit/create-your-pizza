@@ -1,12 +1,12 @@
 # Build plan — CreateYourPizza
 
-**Status:** DRAFT — revised 2026-09-18 (owner Revise: story dependency graph). Awaiting Build-plan gate: **Approve** / **Revise: …** / **Park**.
+**Status:** APPROVED — 2026-09-18 (owner HIFL Approve). Build-plan gate passed. **Build** is next: stories exist under `docs/stories/`; implement one story at a time (graph in §6).
 
 **Upstream:** [Intent](intent.md) (**APPROVED**) · [Spec / PRD](spec.md) (**APPROVED**) · [Design / TRD](design.md) (**APPROVED**)
 
 **Related:** [Project context](project-context.md) · [HIFL playbook](hifl-playbook.md) · [Handoff](handoff.md) · [Stories](stories/README.md)
 
-**Not in this stage:** Application code, `docs/stories/*.md` files (except README), Spring Initializr zips, `AGENTS.md`, OpenAPI YAML. Those start **after** this plan is **APPROVED**.
+**Not in this stage:** Application implementation (that is Stage 5 Build). Stories: [stories/README.md](stories/README.md).
 
 ---
 
@@ -337,7 +337,6 @@ Then Stage 6: draft [docs/verify.md](verify.md).
 
 ## 10. What NOT to do
 
-- Do not write `docs/stories/0*.md` until this plan is **APPROVED**
 - Do not git-commit unless the owner confirms
 - Do not scaffold Java before owner Initializr (except waiting)
 - Do not add a parent POM
@@ -355,12 +354,6 @@ Then Stage 6: draft [docs/verify.md](verify.md).
 
 ## 11. Gate
 
-Build plan is **DRAFT** (revised).
+Build plan is **APPROVED** (2026-09-18).
 
-Please respond with exactly one of:
-
-- **Approve** — accepted; next: write `docs/stories/` in the table above, then owner Initializr → implement story 01…
-- **Revise: \<feedback\>** — this file only; no stories, no code
-- **Park** — pause
-
-**Git:** no commit unless you confirm.
+**Build:** follow [stories](stories/README.md) and the §6 graph. Next story: `01-compose-config.md`. Owner Initializr before `02` / `06`.

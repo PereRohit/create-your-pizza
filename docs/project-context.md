@@ -130,7 +130,7 @@ Former Intent mention of a distinct CUSTOMER principal for PDF access is **super
 
 Also locked for runtime: **PostgreSQL** engines named **`auth-db`** and **`catalog-db`** (PDF **history** version+bytea, option entities, user/roles/status, **DB-only JWT public keys**), **Redis** (catalog cache **TTL 3 min** + **latest** PDF — **not** JWT keys, **not** historical PDF), **JWT** (local verify via Resource Server + JWKS; admin login vs trusted token), **OpenAPI/Swagger**, **tests** (mock ports), Docker Compose. Paginated JSON uses envelope + **`pagination` sibling**; public GET PDF = **raw binary** (optional `version`).
 
-Do not start application code until Design and Build plan are approved **and** `docs/stories/` exists. Spec and Design are **APPROVED**. Build plan is **DRAFT** (2026-09-18). **One Postgres per service**; catalog verifies JWT via **JWKS**, not auth DB and not `/validate`.
+Do not start application code until Design and Build plan are approved **and** `docs/stories/` exists. Spec, Design, and Build plan are **APPROVED**. Next story: `01-compose-config.md`. **One Postgres per service**; catalog verifies JWT via **JWKS**, not auth DB and not `/validate`.
 
 **Process (agent resume):** after every stage **Approve**, update [`handoff.md`](handoff.md): **compress** completed stages into past memory, then refresh next-stage checklist/steps — do not wipe and fully rewrite. Repo docs (playbook + handoff) are the durable memory — not Cursor rules. **Do not git-commit** unless the owner confirms; preferred doc branch when committing: `cursor/sync-spec-prd-revise-efa1`.
 
@@ -190,7 +190,7 @@ Do not start application code until Design and Build plan are approved **and** `
 | 2026-09-18 | **Design Revise:** options **pizzas only**; shared catalog + pizza **`optionsEnabled`**; PDF pizza note **options available**; options section stays separate | Locked (HIFL Design Revise) |
 | 2026-09-18 | **Design APPROVED** (owner HIFL Approve); Design gate passed; **Build plan on hold** until owner says start; **do not write build-plan.md** | Locked (process) — **superseded** by Build-plan start below |
 | 2026-09-18 | **Build plan started** (owner go-ahead); [build-plan.md](build-plan.md) **DRAFT**; no git commit for this start; no stories/code until Approve | Locked (process) |
-| 2026-09-18 | **Build-plan Revise:** Boot **4.1.1**, Java **26** (Initializr 25 then pin), JAR, properties, Lombok both apps, independent Maven siblings **`com.createyourpizza`** / **`auth-service`** + **`catalog-service`**, DB names **`auth-db`** / **`catalog-db`**, catalog OAuth2 Resource Server, tests via **mocked ports** | Locked (HIFL Build-plan Revise) |
+| 2026-09-18 | **Build plan APPROVED** (owner HIFL Approve); stories `01`–`14` under `docs/stories/`; next implement `01-compose-config.md`; owner Initializr before `02`/`06` | Locked (process) |
 
 ## Document map
 
@@ -203,6 +203,6 @@ Do not start application code until Design and Build plan are approved **and** `
 | [handoff.md](handoff.md) | Living resume — compressed past stages + next-stage handoff |
 | This file | Durable decisions and decision log |
 | [design.md](design.md) | Stage 3 — **APPROVED** 2026-09-18 |
-| [build-plan.md](build-plan.md) | Stage 4 — **DRAFT** 2026-09-18 |
+| [build-plan.md](build-plan.md) | Stage 4 — **APPROVED** 2026-09-18 |
 | `AGENTS.md` | Build-stage delivery artifact (not created yet) |
 <!-- local-sync-stamp: 2026-09-17-handoff-process -->
