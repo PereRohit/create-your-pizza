@@ -43,7 +43,7 @@ Each **story** is implemented on its **own** branch. The branch holds **only** t
 
 | File | Status |
 |------|--------|
-| [01-compose-config.md](01-compose-config.md) | ready — **next** (parallel with 02) |
+| [DONE-01-compose-config.md](DONE-01-compose-config.md) | done |
 | [02-OWNER-maven-initializr.md](02-OWNER-maven-initializr.md) | ready — **owner** enabler (parallel with 01) |
 | [03-auth-schema-bootstrap.md](03-auth-schema-bootstrap.md) | ready |
 | [04-auth-jwks-jwt.md](04-auth-jwks-jwt.md) | ready |
