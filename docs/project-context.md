@@ -126,9 +126,9 @@ Former Intent mention of a distinct CUSTOMER principal for PDF access is **super
 
 ## Tech direction (locked stack; Build owns scaffolding)
 
-**Locked:** **Java Spring Boot** with **Maven**. Owner creates the initial project via **Spring Initializr**. Agent supplies suggested Initializr dependencies as a **Build-stage** task — **do not scaffold now**.
+**Locked:** **Java Spring Boot 4.1.1** with **Maven**, JAR, Java **26** (Initializr generate as 25, pin POM). Owner creates two sibling projects via **Spring Initializr**. Dependencies listed in [build-plan.md](build-plan.md).
 
-Also locked for runtime: **Postgres** (PDF **history** version+bytea, option entities, **minimal** `pdf_generation` status row, user/roles/status, **DB-only JWT public keys**), **Redis** (catalog cache **TTL 3 min** + **latest** PDF — **not** JWT keys, **not** historical PDF), **JWT** (local verify; admin login vs trusted token), **OpenAPI/Swagger**, **tests**, Docker Compose. Paginated JSON uses envelope + **`pagination` sibling**; public GET PDF = **raw binary** (optional `version`).
+Also locked for runtime: **PostgreSQL** engines named **`auth-db`** and **`catalog-db`** (PDF **history** version+bytea, option entities, user/roles/status, **DB-only JWT public keys**), **Redis** (catalog cache **TTL 3 min** + **latest** PDF — **not** JWT keys, **not** historical PDF), **JWT** (local verify via Resource Server + JWKS; admin login vs trusted token), **OpenAPI/Swagger**, **tests** (mock ports), Docker Compose. Paginated JSON uses envelope + **`pagination` sibling**; public GET PDF = **raw binary** (optional `version`).
 
 Do not start application code until Design and Build plan are approved **and** `docs/stories/` exists. Spec and Design are **APPROVED**. Build plan is **DRAFT** (2026-09-18). **One Postgres per service**; catalog verifies JWT via **JWKS**, not auth DB and not `/validate`.
 
@@ -190,6 +190,7 @@ Do not start application code until Design and Build plan are approved **and** `
 | 2026-09-18 | **Design Revise:** options **pizzas only**; shared catalog + pizza **`optionsEnabled`**; PDF pizza note **options available**; options section stays separate | Locked (HIFL Design Revise) |
 | 2026-09-18 | **Design APPROVED** (owner HIFL Approve); Design gate passed; **Build plan on hold** until owner says start; **do not write build-plan.md** | Locked (process) — **superseded** by Build-plan start below |
 | 2026-09-18 | **Build plan started** (owner go-ahead); [build-plan.md](build-plan.md) **DRAFT**; no git commit for this start; no stories/code until Approve | Locked (process) |
+| 2026-09-18 | **Build-plan Revise:** Boot **4.1.1**, Java **26** (Initializr 25 then pin), JAR, properties, Lombok both apps, independent Maven siblings **`com.createyourpizza`** / **`auth-service`** + **`catalog-service`**, DB names **`auth-db`** / **`catalog-db`**, catalog OAuth2 Resource Server, tests via **mocked ports** | Locked (HIFL Build-plan Revise) |
 
 ## Document map
 

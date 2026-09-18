@@ -133,14 +133,14 @@ Separate section of catalog product rules. Options are **for pizzas only**. Each
 | ID | Requirement |
 |----|-------------|
 | **NFR-1** | **Read-heavy:** Redis catalog cache (**TTL from config, default 3 minutes**; Redis-first, DB fallback, write Redis on DB fetch; **no** invalidation-on-write) and **latest menu PDF** (Redis-first, DB fallback). Historical PDFs are catalog-DB only. Redis also holds **PDF/write locks**. |
-| **NFR-2** | **auth-postgres** stores users/roles/credentials/public JWKs. **catalog-postgres** stores products, option entities, PDF history, dirty meta. **No shared database. No status-table lock rows.** |
+| **NFR-2** | **auth-db** stores users/roles/credentials/public JWKs. **catalog-db** stores products, option entities, PDF history, dirty meta. **No shared database. No status-table lock rows.** |
 | **NFR-3** | **JWT TTL from config, default 30 minutes**; no live JWT denylist; **credential revoke** for trusted systems is in v1. |
 | **NFR-4** | **OpenAPI/Swagger** is a release artifact, kept consistent with implemented endpoints; suitable for Postman import. |
 | **NFR-5** | **Tests** are part of Definition of Done for Build/Verify. |
 | **NFR-6** | **PDF job:** async; interval **from config (default 5 min)**; skip when not dirty; **skip if write in progress (not queued)**; 503 on writes during generation; version **only** on successful generate. Redis lock TTLs **MUST** be config: PDF lock **default 120s**, write lock **default 30s** (`finally` DEL + Redis expiry so a crash cannot hold generation forever). |
 | **NFR-7** | Catalog Redis keys expire via **config TTL (default 3 minutes)**. Latest PDF Redis key is replaced on successful generation. |
 | **NFR-8** | **Stack:** **Java Spring Boot** with **Maven**. Owner creates the initial project via **Spring Initializr**. Suggested Spring dependencies for Initializr packaging are a **Build-stage development task** (document in Build plan when Build starts; **do not scaffold application code now**). |
-| **NFR-9** | **Ops:** Docker Compose one-command bring-up: **auth-postgres**, **catalog-postgres**, Redis, both apps, volumes, sample catalog data. |
+| **NFR-9** | **Ops:** Docker Compose one-command bring-up: **auth-db**, **catalog-db**, Redis, both apps, volumes, sample catalog data. |
 | **NFR-10** | **AGENTS.md** ships with the built repo for agent-assisted setup/dev (see FR-23). |
 | **NFR-11** | Consumer list default **page size = 10**; **every JSON list** (catalog **and** `/auth/users`) uses flat `data` + **`pagination` sibling**; get-by-id has no `pagination`. |
 | **NFR-12** | All success and error **JSON** API responses use the **standard envelope**; paginated lists include `pagination`; 503 busy responses omit `data` and `pagination`. Public GET PDF is **raw binary**, not the envelope. |
@@ -202,7 +202,7 @@ Design/Build must use these strings unchanged unless a later Spec Revise changes
 
 ### Locked product decision — JWT verification key material
 
-**Decision (product):** **One Postgres per service.** Public JWKs live **only in auth-postgres**. Catalog **never** reads auth tables.
+**Decision (product):** **One Postgres per service.** Public JWKs live **only in auth-db**. Catalog **never** reads auth tables.
 
 **Rules:**
 
@@ -464,7 +464,7 @@ Not full SQL DDL — Design owns schema detail. Conceptual entities:
 | **CatalogVersion / DirtyFlag** | Marker on catalog mutation; PDF job checks dirty |
 | **MenuPdfArtifact** | **History**: numeric version PK + bytea; PDF shows **vN**; **latest** also in Redis `create-your-pizza/menu`; past versions DB-only |
 | **SystemStatus** | **Removed.** Redis locks on catalog-service. |
-| **VerificationKeyMaterial** | Public JWKs in **auth-postgres only**; published as **JWKS HTTP**; catalog memory cache |
+| **VerificationKeyMaterial** | Public JWKs in **auth-db only**; published as **JWKS HTTP**; catalog memory cache |
 
 **PDF job (product behavior):** On Admin write → Redis write lock → set dirty (**do not** bump PDF version) → drop write lock. Every interval: if write lock → **skip (not queued)**; if not dirty → no-op; else Redis PDF lock → generate → insert **next** version+bytea + Redis latest → clear dirty → drop PDF lock. Writes during PDF lock → **503**. Lock TTLs 120s / 30s self-heal if `DEL` never runs.
 
@@ -517,7 +517,7 @@ Resolved by Spec Revises (see §4 and decision log in project-context) — **not
 - Combo pricing → **admin-set**, not sum
 - PDF layout minimum → header **Create Your Pizza**; **vN**; sellable table + pizza **options available** note; pizza-spec in **own space**
 - PDF/catalog concurrency → Redis locks; writes 503; job skips if write in progress; **no status table**
-- Key material → **auth-postgres + JWKS HTTP**; catalog memory; **no shared DB**; **no /validate**
+- Key material → **auth-db + JWKS HTTP**; catalog memory; **no shared DB**; **no /validate**
 - One Postgres per service
 - Config MUST exist for PDF interval (default 5m), catalog TTL (default 3m), JWT TTL (default 30m)
 - PDF storage → **version history + bytea**; Redis **latest only**; `GET ?version=` numeric; default latest raw binary
@@ -554,7 +554,7 @@ When Build starts (after Design + Build plan Approve):
 
 - Owner creates the initial project via **Spring Initializr** (Java, Spring Boot, **Maven**).
 - Agent provides **suggested Spring dependencies** for Initializr packaging as a Build-stage task.
-- Produce **OpenAPI/Swagger**, **AGENTS.md**, Docker Compose (**auth-postgres** + **catalog-postgres** + Redis + apps), tests, **`docs/stories/`** before coding.
+- Produce **OpenAPI/Swagger**, **AGENTS.md**, Docker Compose (**auth-db** + **catalog-db** + Redis + apps), tests, **`docs/stories/`** before coding.
 - Do **not** scaffold application code in Intent/Spec/Design stages.
 
 ---

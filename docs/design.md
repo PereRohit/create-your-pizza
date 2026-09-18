@@ -43,20 +43,20 @@ Two Spring Boot + Maven applications. Owner scaffolds via Spring Initializr at *
 Public                 GET /api/menu.pdf[?version=N]
         |
         v
-catalog-service  --R/W-->  catalog-postgres   (products, options, PDF history, dirty)
+catalog-service  --R/W-->  catalog-db   (products, options, PDF history, dirty)
         |            --cache/lock-->  Redis   (catalog TTL, latest menu, PDF/write locks)
         |
         |   JWT local verify using public keys from memory
         |   (filled by GET /auth/.well-known/jwks.json — not auth DB)
         |
-auth-service     --R/W-->  auth-postgres      (users, credentials, verification_keys)
+auth-service     --R/W-->  auth-db      (users, credentials, verification_keys)
                          private signing keys stay in auth process only
 ```
 
 | Service | Database | Responsibility |
 |---------|----------|----------------|
-| **auth-service** | **auth-postgres** | Bootstrap first admin; trusted register/approve; admin login; `/auth/token`; JWKS publish; user admin APIs. Owns users + hashed secrets + **public** JWK rows. Private keys never leave auth. |
-| **catalog-service** | **catalog-postgres** | Catalog CRUD, queries, PDF job + GET. **Never** opens auth-postgres. Verifies JWT **locally** with JWKS cached in memory. |
+| **auth-service** | **auth-db** | Bootstrap first admin; trusted register/approve; admin login; `/auth/token`; JWKS publish; user admin APIs. Owns users + hashed secrets + **public** JWK rows. Private keys never leave auth. |
+| **catalog-service** | **catalog-db** | Catalog CRUD, queries, PDF job + GET. **Never** opens auth-db. Verifies JWT **locally** with JWKS cached in memory. |
 
 **Why not catalog reading `verification_keys`:** that shared-DB shortcut breaks one-DB-per-service. **Why not `/validate` on every catalog request:** it re-couples catalog availability to auth on the hot path and contradicts local JWT verify. **It is not needed.** Industry pattern: auth exposes **JWKS** (public keys only); catalog fetches and verifies signatures itself.
 
@@ -82,19 +82,19 @@ Each service has its **own Postgres**. Table names below live in that service’
 
 | Database | Purpose | Who reads | Who writes |
 |----------|---------|-----------|------------|
-| **auth-postgres** | Identity, roles, passwords, trusted credentials + approval/revoke, **public** JWKs | **auth-service only** (JWKS is served as HTTP, not as DB access) | **auth-service only** |
-| **catalog-postgres** | Products, combo membership, option entities, PDF **history**, dirty meta | **catalog-service only** | **catalog-service only** |
+| **auth-db** | Identity, roles, passwords, trusted credentials + approval/revoke, **public** JWKs | **auth-service only** (JWKS is served as HTTP, not as DB access) | **auth-service only** |
+| **catalog-db** | Products, combo membership, option entities, PDF **history**, dirty meta | **catalog-service only** | **catalog-service only** |
 
 **Access patterns (typical)**
 
 | Pattern | Path |
 |---------|------|
-| Admin login | auth-postgres `users` by username, `ADMIN`+`ACTIVE` → JWT |
+| Admin login | auth-db `users` by username, `ADMIN`+`ACTIVE` → JWT |
 | Trusted register | Insert `TRUSTED_SYSTEM` `PENDING` + empty credentials |
 | Admin approve | `ACTIVE` + generate api_key/secret; secret **once** in HTTP `data` |
 | Trusted token | api_key + secret hash → JWT |
 | Catalog JWKS | catalog **HTTP GET** auth JWKS → memory map by `kid` (not SQL) |
-| Catalog list/get | Redis `create-your-pizza/catalog:*` (TTL from config, default 3 min) → miss → catalog-postgres → write Redis |
+| Catalog list/get | Redis `create-your-pizza/catalog:*` (TTL from config, default 3 min) → miss → catalog-db → write Redis |
 | Latest PDF | Redis menu key → miss → `menu_pdf` max(version) → backfill Redis |
 | Historical PDF | `menu_pdf` by version — never Redis |
 | Catalog write | If Redis PDF-generation lock → 503; else take write lock, mutate, set dirty, drop write lock |
@@ -102,7 +102,7 @@ Each service has its **own Postgres**. Table names below live in that service’
 
 ### 3.1 Entity relationship (visual)
 
-Yes — ERDs stay in this TRD. Two diagrams: **auth-postgres** and **catalog-postgres**.
+Yes — ERDs stay in this TRD. Two diagrams: **auth-db** and **catalog-db**.
 
 ```mermaid
 erDiagram
@@ -180,7 +180,7 @@ erDiagram
 
 `option_entities` are a **shared pizza-only** spec catalog (no FK from `products`). Pizzas opt in with `options_enabled`. `menu_pdf` is history. **No `system_status` table.**
 
-### 3.2 Database `auth-postgres`
+### 3.2 Database `auth-db`
 
 #### `users`
 
@@ -210,7 +210,7 @@ Future CUSTOMER columns (`phone`, `name`, `email`) are **not** added in v1.
 
 #### `verification_keys`
 
-Public JWK material for JWKS. **Auth-postgres only.** Catalog does not replicate this table.
+Public JWK material for JWKS. **auth-db only.** Catalog does not replicate this table.
 
 | Column | Type | Notes |
 |--------|------|--------|
@@ -223,7 +223,7 @@ Public JWK material for JWKS. **Auth-postgres only.** Catalog does not replicate
 
 Private keys: auth-service process/config only. Never inserted here. Never sent to catalog except as **public** JWKS JSON over HTTP.
 
-### 3.3 Database `catalog-postgres`
+### 3.3 Database `catalog-db`
 
 #### `products`
 
@@ -357,7 +357,7 @@ Future customer (not v1)
 
 On **auth-service** startup:
 
-1. Count `users` where `role = 'ADMIN'` in **auth-postgres**.
+1. Count `users` where `role = 'ADMIN'` in **auth-db**.
 2. If count ≥ 1 → do nothing.
 3. If count = 0 → insert one `ADMIN` / `ACTIVE` with a generated username + password; **print both to the process stdout / terminal** (one-time). Operators copy them; they are not written to Redis or PDF.
 
@@ -400,7 +400,7 @@ Payload: `sub`, `iss`, `aud`, `exp`, `iat`, `scope`, `roles`, `client_id` when t
 3. Verify signature, `exp`, `iss`, `aud` **in catalog**.
 4. Authorize: required `scope`; write routes also require `roles` contains `ADMIN`.
 
-**Do not** call `POST /auth/validate` (v1 **does not** expose it). **Do not** query auth-postgres. Redis is not used for keys or tokens. Catalog does **not** re-check `users.status` on each request. Revoke is enforced at **token issuance**.
+**Do not** call `POST /auth/validate` (v1 **does not** expose it). **Do not** query auth-db. Redis is not used for keys or tokens. Catalog does **not** re-check `users.status` on each request. Revoke is enforced at **token issuance**.
 
 If auth is down, catalog can still verify tokens whose `kid` is already cached.
 
@@ -750,11 +750,11 @@ Used by **catalog-service only**.
 
 | Service | Notes |
 |---------|--------|
-| `auth-postgres` | Volume; auth tables only |
-| `catalog-postgres` | Volume; catalog tables + sample products/options |
+| `auth-db` | Volume; auth tables only |
+| `catalog-db` | Volume; catalog tables + sample products/options |
 | `redis` | Volume; catalog cache + locks |
-| `auth-service` | Depends on auth-postgres; bootstrap admin; JWKS |
-| `catalog-service` | Depends on catalog-postgres + redis; `AUTH_JWKS_URL` |
+| `auth-service` | Depends on auth-db; bootstrap admin; JWKS |
+| `catalog-service` | Depends on catalog-db + redis; `AUTH_JWKS_URL` |
 
 **Seed:** no SQL first-admin if bootstrap is used. Sample simple/combo/pizza + option entities. `catalog_meta` dirty=true so first job can produce **v1**. **No** `system_status` seed.
 

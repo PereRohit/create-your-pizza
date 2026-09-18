@@ -26,4 +26,4 @@ Full checklist and locked product highlights: [docs/handoff.md](docs/handoff.md)
 
 ## Stack (not scaffolded yet)
 
-Locked for later Build: **Java Spring Boot + Maven**; owner creates via Spring Initializr; agent suggests Initializr deps at Build. Postgres + Redis + Docker Compose (volumes + sample data). This repo currently holds HIFL docs only.
+Locked for later Build: **Java 26**, **Spring Boot 4.1.1**, **Maven**, JAR, `application.properties`. Owner Initializr (Java **25** on the site, then `<java.version>26</java.version>`). Two sibling folders `auth-service` / `catalog-service`. Compose: `auth-db`, `catalog-db`, Redis, both apps. This repo currently holds HIFL docs only.

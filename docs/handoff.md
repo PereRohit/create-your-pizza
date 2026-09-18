@@ -2,7 +2,7 @@
 
 **Audience:** Next agent continuing HIFL — Design **APPROVED**; Build plan **DRAFT** (owner started 2026-09-18).  
 **Owner:** PereRohit  
-**As of:** 2026-09-18 (Build-plan draft)  
+**As of:** 2026-09-18 (Build-plan Revise)  
 **Repo root:** local `create-your-pizza`  
 **Git:** last Design work on **`feat/design`**; owner said **do not commit** this Build-plan start.
 
@@ -39,7 +39,7 @@ Process: [docs/hifl-playbook.md](hifl-playbook.md) · Decisions: [docs/project-c
 
 ### 3 Design / TRD — APPROVED 2026-09-18
 
-- Two services: **auth-service** + **catalog-service**; **one Postgres each**; catalog Redis (cache, latest PDF, locks); Compose those five.
+- Two services: **auth-service** + **catalog-service**; **one Postgres each** (Compose/DB names **`auth-db`**, **`catalog-db`**); catalog Redis (cache, latest PDF, locks); Compose those five.
 - Auth: admin login vs trusted `POST /auth/register` → PENDING → approve (API key+secret once) → `POST /auth/token`; bootstrap first admin; **cannot DELETE self**; paginated `/auth/users`; principal type from **URL**; JWKS `GET /auth/.well-known/jwks.json`; **no** `/validate`; **no** catalog reading auth DB.
 - Catalog: `product_type` simple|combo|pizza; **option_entities** pizza-only; shared catalog; pizza **`optionsEnabled`**; combo price admin-set; veg/non-veg all three.
 - PDF: header Create Your Pizza; vN; sellable name+price; pizza with options: note **options available**; pizza-spec in **own space**; history in catalog DB; Redis latest only; GET raw PDF; `?version=` history; version **only on successful generate**.
@@ -53,7 +53,7 @@ Process: [docs/hifl-playbook.md](hifl-playbook.md) · Decisions: [docs/project-c
 
 1. **Git commits:** Do **not** commit unless the owner **confirms**. After changes, **ask**.
 2. **Stage-end handoff:** On every stage **Approve**, **compress** past stages and refresh next-agent sections — do not blank-rewrite.
-3. **Stack:** Java Spring Boot + Maven; owner Initializr; Initializr deps suggested at **Build** only.
+3. **Stack:** Java Spring Boot **4.1.1** + Maven + JAR; Java **26** (Initializr **25** then pin POM); independent siblings `auth-service` / `catalog-service`; Lombok; properties files; owner Initializr.
 4. **Gate language:** Approve / Revise: … / Park — no silent skips.
 5. **Build plan:** owner started 2026-09-18; **do not** write `docs/stories/*.md` or code until Build-plan **Approve**.
 
@@ -94,7 +94,8 @@ Process: [docs/hifl-playbook.md](hifl-playbook.md) · Decisions: [docs/project-c
 - Redis locks: PDF **120s**, write **30s** (`finally` + expiry); writes 503; job **skips not queued**; version **only on generate**
 - Config MUST: PDF interval (default 5m), catalog TTL (default 3m), JWT TTL (default 30m), lock TTLs 120s / 30s
 - Stories under `docs/stories/` before coding (playbook)
-- Full Dockerize; OpenAPI/Swagger; tests; AGENTS.md at Build
+- Full Dockerize; OpenAPI/Swagger; tests (mock ports); AGENTS.md at Build
+- DB Compose names: **`auth-db`**, **`catalog-db`** (engine still PostgreSQL in v1)
 
 ## What NOT to do
 
