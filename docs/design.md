@@ -1,12 +1,12 @@
 # Design / TRD — CreateYourPizza
 
-**Status:** DRAFT — revised 2026-09-18 (pizza `optionsEnabled` + PDF note). Awaiting Design gate (**Approve / Revise / Park**).
+**Status:** APPROVED — 2026-09-18 (owner HIFL Approve). Design gate passed. **Build plan on hold until owner says start.**
 
-**Upstream:** [Intent](intent.md) (**APPROVED**) · [Spec / PRD](spec.md) (**APPROVED**, aligned to this Design Revise)
+**Upstream:** [Intent](intent.md) (**APPROVED**) · [Spec / PRD](spec.md) (**APPROVED**, aligned to this TRD)
 
 **Related:** [Project context](project-context.md) · [HIFL playbook](hifl-playbook.md) · [Handoff](handoff.md)
 
-**Not in this stage:** Spring Boot scaffold, Initializr dependency lists, `AGENTS.md`, full OpenAPI YAML, or application code. Those follow Design **Approve** then Build-plan **Approve**. DTOs are **coding-time** (Spec lock); this TRD locks tables, wire JSON, and mapping rules.
+**Not in this stage:** Spring Boot scaffold, Initializr dependency lists, `AGENTS.md`, full OpenAPI YAML, or application code. Those follow Build-plan **Approve**. DTOs are **coding-time** (Spec lock); this TRD locks tables, wire JSON, and mapping rules.
 
 ---
 
@@ -837,12 +837,6 @@ Optional later: JWT denylist on revoke; customer self-register; purge old `menu_
 
 ## 12. Gate
 
-Design / TRD is **DRAFT** (revised 2026-09-18, pass 2).
+Design / TRD is **APPROVED** (2026-09-18).
 
-Please respond with one of:
-
-- **Approve** — accept this TRD; next stage is Build plan (`docs/build-plan.md`)
-- **Revise: …** — specific feedback; this file is updated, Design does not advance
-- **Park** — pause Design
-
-Do not start Build-plan or application code until Design **Approve**.
+**Build plan** (`docs/build-plan.md`) is **on hold** until the owner says start. Do not draft Build plan or application code until that go-ahead. After Build-plan Approve: write `docs/stories/` then owner Initializr.

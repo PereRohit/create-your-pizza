@@ -1,10 +1,10 @@
 # CreateYourPizza — Agentic SDLC handoff
 
-**Audience:** Next agent continuing HIFL — Design DRAFT (revised).  
-**Owner:** PereRohit
-**As of:** 2026-09-18 (Design Revise pass 2)  
+**Audience:** Next agent continuing HIFL — Design **APPROVED**; Build plan **on hold**.  
+**Owner:** PereRohit  
+**As of:** 2026-09-18 (Design Approve)  
 **Repo root:** local `create-your-pizza`  
-**Git branch until Design Approve:** **`feat/design`**
+**Git:** last Design work on **`feat/design`**; do not commit unless owner confirms.
 
 **How to resume:** read [docs/hifl-playbook.md](hifl-playbook.md) → this file → open linked artifacts as needed. After every stage **Approve**: **compress** completed stages here, then refresh next-stage items — do **not** wipe and fully rewrite.
 
@@ -13,13 +13,13 @@
 | Stage | Artifact | Status |
 |-------|----------|--------|
 | 1 Intent | [docs/intent.md](docs/intent.md) | **APPROVED** (aligned 2026-09-18) |
-| 2 Spec / PRD | [docs/spec.md](docs/spec.md) | **APPROVED** (aligned 2026-09-18 to Design Revise) |
-| 3 Design / TRD | [docs/design.md](docs/design.md) | **DRAFT — revised 2026-09-18 pass 2**; awaiting **Approve / Revise / Park** |
-| 4 Build plan | [docs/build-plan.md](docs/build-plan.md) | Not started (after Design Approve) |
+| 2 Spec / PRD | [docs/spec.md](docs/spec.md) | **APPROVED** (aligned 2026-09-18) |
+| 3 Design / TRD | [docs/design.md](docs/design.md) | **APPROVED** 2026-09-18 |
+| 4 Build plan | [docs/build-plan.md](docs/build-plan.md) | **On hold** — do **not** draft until owner says start |
 | 5 Build | Spring Boot code in this repo | Not started (after Build-plan Approve) |
 | 6 Verify | [docs/verify.md](docs/verify.md) | Not started (after Build) |
 
-Process: [docs/hifl-playbook.md](docs/hifl-playbook.md) · Decisions: [docs/project-context.md](docs/project-context.md) · Docs index: [docs/README.md](docs/README.md)
+Process: [docs/hifl-playbook.md](hifl-playbook.md) · Decisions: [docs/project-context.md](docs/project-context.md) · Docs index: [docs/README.md](docs/README.md)
 
 ## Past stages (compressed)
 
@@ -33,47 +33,55 @@ Process: [docs/hifl-playbook.md](docs/hifl-playbook.md) · Decisions: [docs/proj
 ### 2 Spec / PRD — APPROVED 2026-09-17 (revise c); **aligned 2026-09-18**
 
 - FRs/NFRs + acceptance for catalog, option entities, queries, PDF, auth, Docker/OpenAPI/tests.
-- Binding: JWT claims/scopes; DB-only public keys; envelope + pagination; page size 10; types `simple`/`combo`/`pizza-base`/`pizza-spec`.
-- **2026-09-18 alignment:** trusted pending+approve+token; bootstrap admin; PDF history + `?version=`; pizza-spec on PDF and list API; `pdf_generation` only; catalog Redis TTL 3 min.
+- Binding: JWT claims/scopes; envelope + pagination; page size 10 max 100; types `simple`/`combo`/`pizza-base`/`pizza-spec`.
+- **2026-09-18 alignment:** trusted pending+approve+token; bootstrap admin; PDF history + `?version=`; pizza-spec on PDF and list API; Redis locks; one DB per service; JWKS.
 - Detail: [docs/spec.md](docs/spec.md) · log: [docs/project-context.md](docs/project-context.md)
+
+### 3 Design / TRD — APPROVED 2026-09-18
+
+- Two services: **auth-service** + **catalog-service**; **one Postgres each**; catalog Redis (cache, latest PDF, locks); Compose those five.
+- Auth: admin login vs trusted `POST /auth/register` → PENDING → approve (API key+secret once) → `POST /auth/token`; bootstrap first admin; **cannot DELETE self**; paginated `/auth/users`; principal type from **URL**; JWKS `GET /auth/.well-known/jwks.json`; **no** `/validate`; **no** catalog reading auth DB.
+- Catalog: `product_type` simple|combo|pizza; **option_entities** pizza-only; shared catalog; pizza **`optionsEnabled`**; combo price admin-set; veg/non-veg all three.
+- PDF: header Create Your Pizza; vN; sellable name+price; pizza with options: note **options available**; pizza-spec in **own space**; history in catalog DB; Redis latest only; GET raw PDF; `?version=` history; version **only on successful generate**.
+- Locks: Redis `create-your-pizza/lock:pdf-generation` TTL **120s**, `create-your-pizza/lock:catalog-write` TTL **30s**; `finally` DEL + expiry; writes during PDF lock → 503 + Retry-After 60; job **skips not queued** if write lock; dirty stays true.
+- Catalog Redis `create-your-pizza/catalog:*` TTL 3m Redis-first; no invalidation-on-write. Menu key `create-your-pizza/menu`.
+- Config MUST: `app.pdf.interval` 5m, `app.cache.catalog-ttl` 3m, `app.jwt.ttl` 30m, lock TTLs. Test `POST /test/pdf/generate` test profile only.
+- Stories: `docs/stories/{priority}-{slug}.md` after Build-plan Approve; coding stories >80% LoC + full behaviour tests.
+- Detail: [docs/design.md](docs/design.md)
 
 ## Owner preferences (must follow)
 
-1. **Design/TRD:** Stay on **`feat/design`** until Design **Approve**. Then follow owner git instructions.
-2. **Git commits:** Do **not** commit unless the owner **confirms**. After changes, **ask**.
-3. **Stage-end handoff:** On every stage **Approve**, **compress** past stages and refresh next-agent sections — do not blank-rewrite.
-4. **Stack:** Java Spring Boot + Maven; owner Initializr; Initializr deps suggested at **Build** only.
-5. **Gate language:** Approve / Revise: … / Park — no silent skips.
+1. **Git commits:** Do **not** commit unless the owner **confirms**. After changes, **ask**.
+2. **Stage-end handoff:** On every stage **Approve**, **compress** past stages and refresh next-agent sections — do not blank-rewrite.
+3. **Stack:** Java Spring Boot + Maven; owner Initializr; Initializr deps suggested at **Build** only.
+4. **Gate language:** Approve / Revise: … / Park — no silent skips.
+5. **Build plan:** wait for owner **start** (same hold pattern as Design after Spec Approve).
 
 ## Checklist for the next agent
 
-- [x] Read playbook + handoff; Design started
-- [x] Draft / revise [docs/design.md](docs/design.md); Design gate
-- [ ] Owner **Approve / Revise / Park** Design
-- [ ] **Ask** whether to git-commit this Revise on `feat/design`
-- [ ] After Design **Approve**: compress Design; draft Build plan; **ask** about commit
+- [x] Design drafted, revised, and **APPROVED**
+- [ ] **Ask** whether to git-commit Design Approve paperwork on `feat/design`
+- [ ] Owner says **start** Build plan → draft [docs/build-plan.md](docs/build-plan.md); Build-plan gate; **ask** about commit
 - **Picked stories (Build):** none yet — after Build-plan Approve, create `docs/stories/*.md`; record in-progress filenames here; rename to `DONE-` when finished
-- [ ] After Build-plan **Approve**: compress; owner Initializr → implement slice
+- [ ] After Build-plan **Approve**: compress; write stories; owner Initializr → implement slice
 - [ ] After Build ready: draft [docs/verify.md](docs/verify.md)
 
-## Steps (detail) — next stage focus: Design gate
+## Steps (detail) — next stage focus: wait for Build-plan start
 
-### A. Now (Design DRAFT revised)
+### A. Now (hold)
 
-1. Owner reviews [docs/design.md](docs/design.md).
-2. Gate: Approve / Revise / Park.
-3. Ask before commit on **`feat/design`**.
+1. Do **not** create `docs/build-plan.md` until the owner says start.
+2. Ask before commit of this Design Approve paperwork.
 
-### B. After Design Approve
+### B. After owner starts Build plan
 
-1. Mark [docs/design.md](docs/design.md) APPROVED.
-2. **Compress Design** into **Past stages**; refresh for Build plan.
-3. Draft [docs/build-plan.md](docs/build-plan.md).
-4. Build-plan gate. **Ask** before commit.
+1. Draft [docs/build-plan.md](docs/build-plan.md) from APPROVED Design + Spec.
+2. Build-plan gate: Approve / Revise / Park.
+3. **Ask** before commit.
 
 ### C. After Build-plan Approve
 
-1. Compress Build-plan; refresh for Build.
+1. Compress Build-plan into Past stages; refresh for Build.
 2. Write ordered stories under `docs/stories/`; record the picked file(s) in this handoff.
 3. Owner Initializr → implement **one story at a time** with tests.
 
@@ -94,9 +102,8 @@ Process: [docs/hifl-playbook.md](docs/hifl-playbook.md) · Decisions: [docs/proj
 
 ## What NOT to do
 
-- Do not start Build-plan or Spring Boot until Design **Approve**
+- Do **not** draft Build-plan until the owner says start
 - Do not git-commit unless the owner confirms
-- Do not leave `feat/design` for Design work until Approve (unless owner says otherwise)
 - Do not blank-rewrite this handoff
 - Do not add Cursor rules for HIFL handoff
 - Do not call **`/auth/validate`** per catalog request — JWKS + local verify

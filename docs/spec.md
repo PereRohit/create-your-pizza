@@ -1,6 +1,6 @@
 # Spec / PRD — CreateYourPizza pizza catalog
 
-**Status:** APPROVED 2026-09-17. **Aligned 2026-09-18** (Design Revise pass 2: one DB per service + JWKS, Redis locks, registration/login flows). Design remains DRAFT.
+**Status:** APPROVED 2026-09-17. **Aligned 2026-09-18** (Design Revise: one DB per service + JWKS, Redis locks, registration/login flows). Design is **APPROVED**.
 
 **Upstream:** [Intent](intent.md) (**APPROVED** 2026-09-17)
 
@@ -537,7 +537,7 @@ Resolved by Spec Revises (see §4 and decision log in project-context) — **not
 - Dockerize + volumes + sample data → required
 - AGENTS.md + OpenAPI/Swagger → delivery artifacts
 
-Still for Design (implementation detail only) — **answered in [design.md](design.md) DRAFT**:
+Implementation detail (locked in [design.md](design.md) **APPROVED**):
 
 1. Pagination max → **100**
 2. Status columns + `Retry-After: 60`
@@ -559,6 +559,6 @@ When Build starts (after Design + Build plan Approve):
 
 ---
 
-## 12. Approved — aligned to Design Revise
+## 12. Approved — aligned to Design
 
-Spec is **APPROVED** (2026-09-17). Product locks **updated 2026-09-18** (Design Revise pass 2). Design/TRD is **DRAFT** ([design.md](design.md)) — awaiting **Approve / Revise / Park**. Do not start Build-plan or application code until Design Approve.
+Spec is **APPROVED** (2026-09-17). Product locks **updated 2026-09-18**. Design/TRD is **APPROVED** ([design.md](design.md)). Build plan is **on hold** until the owner says start. Do not start application code until Build-plan Approve.

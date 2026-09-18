@@ -91,7 +91,7 @@ Incorporated from the owner brief and HIFL Revises (first + second):
 
 ## Open ideas (truly unresolved only)
 
-Product decisions are locked in Spec + Design DRAFT (2026-09-18 Design Revise). No remaining Intent open ideas.
+Product decisions are locked in Spec + Design **APPROVED** (2026-09-18). No remaining Intent open ideas.
 
 ## Risks / unknowns
 
@@ -104,4 +104,4 @@ Product decisions are locked in Spec + Design DRAFT (2026-09-18 Design Revise). 
 
 ## Approved — do not edit without new Revise gate
 
-Intent is **APPROVED** (2026-09-17). Light consistency edits **2026-09-18** for owner Design Revise. Spec is **APPROVED** (aligned same date). Design is **DRAFT** ([design.md](design.md)).
+Intent is **APPROVED** (2026-09-17). Light consistency edits **2026-09-18** for owner Design Revise. Spec is **APPROVED** (aligned same date). Design is **APPROVED** ([design.md](design.md)). Build plan is **on hold** until the owner says start.

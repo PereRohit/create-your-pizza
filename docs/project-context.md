@@ -130,7 +130,7 @@ Former Intent mention of a distinct CUSTOMER principal for PDF access is **super
 
 Also locked for runtime: **Postgres** (PDF **history** version+bytea, option entities, **minimal** `pdf_generation` status row, user/roles/status, **DB-only JWT public keys**), **Redis** (catalog cache **TTL 3 min** + **latest** PDF — **not** JWT keys, **not** historical PDF), **JWT** (local verify; admin login vs trusted token), **OpenAPI/Swagger**, **tests**, Docker Compose. Paginated JSON uses envelope + **`pagination` sibling**; public GET PDF = **raw binary** (optional `version`).
 
-Do not start application code until Design and Build plan are approved **and** `docs/stories/` exists. Spec is **APPROVED** (aligned 2026-09-18). Design/TRD is **DRAFT** awaiting gate. **One Postgres per service**; catalog verifies JWT via **JWKS**, not auth DB and not `/validate`.
+Do not start application code until Design and Build plan are approved **and** `docs/stories/` exists. Spec and Design are **APPROVED**. Build plan is **on hold** until the owner says start. **One Postgres per service**; catalog verifies JWT via **JWKS**, not auth DB and not `/validate`.
 
 **Process (agent resume):** after every stage **Approve**, update [`handoff.md`](handoff.md): **compress** completed stages into past memory, then refresh next-stage checklist/steps — do not wipe and fully rewrite. Repo docs (playbook + handoff) are the durable memory — not Cursor rules. **Do not git-commit** unless the owner confirms; preferred doc branch when committing: `cursor/sync-spec-prd-revise-efa1`.
 
@@ -188,6 +188,7 @@ Do not start application code until Design and Build plan are approved **and** `
 | 2026-09-17 | **Process:** do **not** git-commit unless owner confirms; preferred doc branch when committing: `cursor/sync-spec-prd-revise-efa1` | Locked (owner) |
 | 2026-09-17 | Design started on owner go-ahead; draft on branch **`feat/design`** until Design Approve | Locked (owner) |
 | 2026-09-18 | **Design Revise:** options **pizzas only**; shared catalog + pizza **`optionsEnabled`**; PDF pizza note **options available**; options section stays separate | Locked (HIFL Design Revise) |
+| 2026-09-18 | **Design APPROVED** (owner HIFL Approve); Design gate passed; **Build plan on hold** until owner says start; **do not write build-plan.md** | Locked (process) |
 
 ## Document map
 
@@ -199,6 +200,6 @@ Do not start application code until Design and Build plan are approved **and** `
 | [spec.md](spec.md) | Stage 2 Spec / PRD — **APPROVED** 2026-09-17; aligned 2026-09-18 |
 | [handoff.md](handoff.md) | Living resume — compressed past stages + next-stage handoff |
 | This file | Durable decisions and decision log |
-| [design.md](design.md) | Stage 3 — **DRAFT** (revised 2026-09-18); awaiting Design gate |
+| [design.md](design.md) | Stage 3 — **APPROVED** 2026-09-18 |
 | `AGENTS.md` | Build-stage delivery artifact (not created yet) |
 <!-- local-sync-stamp: 2026-09-17-handoff-process -->
