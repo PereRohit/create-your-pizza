@@ -1,6 +1,6 @@
 # Build plan — CreateYourPizza
 
-**Status:** DRAFT — revised 2026-09-18 (owner Revise). Awaiting Build-plan gate: **Approve** / **Revise: …** / **Park**.
+**Status:** DRAFT — revised 2026-09-18 (owner Revise: story dependency graph). Awaiting Build-plan gate: **Approve** / **Revise: …** / **Park**.
 
 **Upstream:** [Intent](intent.md) (**APPROVED**) · [Spec / PRD](spec.md) (**APPROVED**) · [Design / TRD](design.md) (**APPROVED**)
 
@@ -208,6 +208,49 @@ Controllers and use-cases stay testable without a database. Flyway + real Postgr
 
 Filenames under `docs/stories/`. Implement **one story at a time**. Record the in-progress file in [handoff.md](handoff.md). Rename to `DONE-` when finished. Every **coding** story: **>80% LoC** of that story’s new/changed code **and** full behaviour tests of its acceptance criteria (via mocks/fakes above).
 
+An arrow **A → B** means **B starts only after A is `DONE-`**. After **01**, auth (**02–05**) and catalog schema (**06**) may proceed independently. **07** waits for **both** **03** (JWKS exists) and **06** (catalog schema). After **08**, queries/cache (**09→10**) and PDF (**11→12** and **11→13**) may proceed independently. **14** waits for **05**, **12**, and **13**. Numeric order **01 through 14** is a valid total order if you do not want to interleave.
+
+Owner Initializr for `auth-service` is required before **02**. Owner Initializr for `catalog-service` is required before **06**.
+
+```mermaid
+flowchart TB
+  s01["01 compose-config"]
+
+  subgraph auth ["auth-service"]
+    s02["02 auth-schema-bootstrap"]
+    s03["03 auth-jwks-jwt"]
+    s04["04 login-register-token"]
+    s05["05 auth-admin-users"]
+    s02 --> s03 --> s04 --> s05
+  end
+
+  subgraph catalog ["catalog-service"]
+    s06["06 catalog-schema-seed"]
+    s07["07 catalog-jwt-jwks"]
+    s08["08 catalog-writes"]
+    s09["09 catalog-queries"]
+    s10["10 catalog-redis-cache"]
+    s11["11 pdf-job-locks"]
+    s12["12 public-pdf"]
+    s13["13 test-pdf-trigger"]
+    s06 --> s07 --> s08
+    s08 --> s09 --> s10
+    s08 --> s11
+    s06 --> s11
+    s11 --> s12
+    s11 --> s13
+  end
+
+  s14["14 openapi-agents"]
+
+  s01 --> s02
+  s01 --> s06
+  s03 --> s07
+  s05 --> s14
+  s12 --> s14
+  s13 --> s14
+```
+
 | File | Depends on | Outcome |
 |------|------------|---------|
 | `01-compose-config.md` | — | Root Compose: `auth-db`, `catalog-db`, `redis`, both apps (stubs OK); volumes; env; **MUST** properties with defaults (PDF 5m, catalog TTL 3m, JWT 30m, lock 120s/30s) |
@@ -225,7 +268,7 @@ Filenames under `docs/stories/`. Implement **one story at a time**. Record the i
 | `13-test-pdf-trigger.md` | 11 | `POST /test/pdf/generate` unauthenticated; **test/dev profile only**; same job algorithm |
 | `14-openapi-agents.md` | 05, 12, 13 | springdoc both services; `AGENTS.md` (compose, first-admin **logs**, Swagger URLs, JWKS URL) |
 
-Stories 08–13 are catalog-service; 02–05 are auth-service. Do not start 08 before 07.
+Stories 08–13 are catalog-service; 02–05 are auth-service. Do not start **08** before **07**. Do not start a story until every incoming arrow in the graph is `DONE-`.
 
 ---
 
