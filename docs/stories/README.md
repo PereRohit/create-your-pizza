@@ -34,4 +34,4 @@ As a [type of user], I want [some goal] so that [some reason].
 Environment setup / Docker / config properties as needed.
 ```
 
-No story files yet — Build plan will list the first batch.
+No story files yet — ordered list is in [build-plan.md](../build-plan.md) §4. Create those files only after Build-plan **Approve**.

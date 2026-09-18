@@ -1,6 +1,6 @@
 # Design / TRD — CreateYourPizza
 
-**Status:** APPROVED — 2026-09-18 (owner HIFL Approve). Design gate passed. **Build plan on hold until owner says start.**
+**Status:** APPROVED — 2026-09-18 (owner HIFL Approve). Design gate passed. Build plan: [build-plan.md](build-plan.md) **DRAFT**.
 
 **Upstream:** [Intent](intent.md) (**APPROVED**) · [Spec / PRD](spec.md) (**APPROVED**, aligned to this TRD)
 
@@ -839,4 +839,4 @@ Optional later: JWT denylist on revoke; customer self-register; purge old `menu_
 
 Design / TRD is **APPROVED** (2026-09-18).
 
-**Build plan** (`docs/build-plan.md`) is **on hold** until the owner says start. Do not draft Build plan or application code until that go-ahead. After Build-plan Approve: write `docs/stories/` then owner Initializr.
+**Build plan** (`docs/build-plan.md`) is **DRAFT**. Do not write `docs/stories/` or application code until Build-plan **Approve**. Then: stories, then owner Initializr.

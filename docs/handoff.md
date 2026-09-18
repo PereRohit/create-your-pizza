@@ -1,10 +1,10 @@
 # CreateYourPizza — Agentic SDLC handoff
 
-**Audience:** Next agent continuing HIFL — Design **APPROVED**; Build plan **on hold**.  
+**Audience:** Next agent continuing HIFL — Design **APPROVED**; Build plan **DRAFT** (owner started 2026-09-18).  
 **Owner:** PereRohit  
-**As of:** 2026-09-18 (Design Approve)  
+**As of:** 2026-09-18 (Build-plan draft)  
 **Repo root:** local `create-your-pizza`  
-**Git:** last Design work on **`feat/design`**; do not commit unless owner confirms.
+**Git:** last Design work on **`feat/design`**; owner said **do not commit** this Build-plan start.
 
 **How to resume:** read [docs/hifl-playbook.md](hifl-playbook.md) → this file → open linked artifacts as needed. After every stage **Approve**: **compress** completed stages here, then refresh next-stage items — do **not** wipe and fully rewrite.
 
@@ -15,7 +15,7 @@
 | 1 Intent | [docs/intent.md](docs/intent.md) | **APPROVED** (aligned 2026-09-18) |
 | 2 Spec / PRD | [docs/spec.md](docs/spec.md) | **APPROVED** (aligned 2026-09-18) |
 | 3 Design / TRD | [docs/design.md](docs/design.md) | **APPROVED** 2026-09-18 |
-| 4 Build plan | [docs/build-plan.md](docs/build-plan.md) | **On hold** — do **not** draft until owner says start |
+| 4 Build plan | [docs/build-plan.md](docs/build-plan.md) | **DRAFT** 2026-09-18 — awaiting Approve / Revise / Park |
 | 5 Build | Spring Boot code in this repo | Not started (after Build-plan Approve) |
 | 6 Verify | [docs/verify.md](docs/verify.md) | Not started (after Build) |
 
@@ -55,37 +55,33 @@ Process: [docs/hifl-playbook.md](hifl-playbook.md) · Decisions: [docs/project-c
 2. **Stage-end handoff:** On every stage **Approve**, **compress** past stages and refresh next-agent sections — do not blank-rewrite.
 3. **Stack:** Java Spring Boot + Maven; owner Initializr; Initializr deps suggested at **Build** only.
 4. **Gate language:** Approve / Revise: … / Park — no silent skips.
-5. **Build plan:** wait for owner **start** (same hold pattern as Design after Spec Approve).
+5. **Build plan:** owner started 2026-09-18; **do not** write `docs/stories/*.md` or code until Build-plan **Approve**.
 
 ## Checklist for the next agent
 
 - [x] Design drafted, revised, and **APPROVED**
-- [ ] **Ask** whether to git-commit Design Approve paperwork on `feat/design`
-- [ ] Owner says **start** Build plan → draft [docs/build-plan.md](docs/build-plan.md); Build-plan gate; **ask** about commit
+- [x] Owner said **start** Build plan; [docs/build-plan.md](docs/build-plan.md) **DRAFT**
+- [x] Owner said **do not git-commit** this Build-plan start
+- [ ] Build-plan gate: Approve / Revise / Park
 - **Picked stories (Build):** none yet — after Build-plan Approve, create `docs/stories/*.md`; record in-progress filenames here; rename to `DONE-` when finished
 - [ ] After Build-plan **Approve**: compress; write stories; owner Initializr → implement slice
 - [ ] After Build ready: draft [docs/verify.md](docs/verify.md)
 
-## Steps (detail) — next stage focus: wait for Build-plan start
+## Steps (detail) — next stage focus: Build-plan gate
 
-### A. Now (hold)
+### A. Now (Build-plan DRAFT)
 
-1. Do **not** create `docs/build-plan.md` until the owner says start.
-2. Ask before commit of this Design Approve paperwork.
+1. Owner reviews [docs/build-plan.md](docs/build-plan.md).
+2. Do **not** write story files or application code until **Approve**.
+3. Do **not** git-commit unless the owner confirms (this start: no commit).
 
-### B. After owner starts Build plan
-
-1. Draft [docs/build-plan.md](docs/build-plan.md) from APPROVED Design + Spec.
-2. Build-plan gate: Approve / Revise / Park.
-3. **Ask** before commit.
-
-### C. After Build-plan Approve
+### B. After Build-plan Approve
 
 1. Compress Build-plan into Past stages; refresh for Build.
-2. Write ordered stories under `docs/stories/`; record the picked file(s) in this handoff.
+2. Write ordered stories under `docs/stories/` (see [build-plan.md](build-plan.md) §4); record the picked file(s) in this handoff.
 3. Owner Initializr → implement **one story at a time** with tests.
 
-### D. After Build ready for Verify
+### C. After Build ready for Verify
 
 1. Draft [docs/verify.md](docs/verify.md); Verify gate.
 
@@ -102,7 +98,7 @@ Process: [docs/hifl-playbook.md](hifl-playbook.md) · Decisions: [docs/project-c
 
 ## What NOT to do
 
-- Do **not** draft Build-plan until the owner says start
+- Do **not** write `docs/stories/0*.md` or application code until Build-plan **Approve**
 - Do not git-commit unless the owner confirms
 - Do not blank-rewrite this handoff
 - Do not add Cursor rules for HIFL handoff

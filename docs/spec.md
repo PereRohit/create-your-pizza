@@ -561,4 +561,4 @@ When Build starts (after Design + Build plan Approve):
 
 ## 12. Approved — aligned to Design
 
-Spec is **APPROVED** (2026-09-17). Product locks **updated 2026-09-18**. Design/TRD is **APPROVED** ([design.md](design.md)). Build plan is **on hold** until the owner says start. Do not start application code until Build-plan Approve.
+Spec is **APPROVED** (2026-09-17). Product locks **updated 2026-09-18**. Design/TRD is **APPROVED** ([design.md](design.md)). Build plan is **DRAFT** ([build-plan.md](build-plan.md)). Do not start application code until Build-plan Approve.
