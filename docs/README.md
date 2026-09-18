@@ -8,9 +8,10 @@
 | [hifl-playbook.md](hifl-playbook.md) | HIFL stages, gates, hard rules, stage-end handoff |
 | [project-context.md](project-context.md) | Durable product decisions and decision log |
 | [intent.md](intent.md) | Stage 1 Intent — **APPROVED** |
-| [spec.md](spec.md) | Stage 2 Spec / PRD — **APPROVED** (Design on hold until owner says start) |
-| `design.md` | Stage 3 Design / TRD — not started |
-| `build-plan.md` | Stage 4 — after Design Approve |
+| [spec.md](spec.md) | Stage 2 Spec / PRD — **APPROVED** (aligned 2026-09-18) |
+| [design.md](design.md) | Stage 3 Design / TRD — **APPROVED** 2026-09-18 |
+| `build-plan.md` | Stage 4 — **on hold** until owner says start |
 | `verify.md` | Stage 6 — after Build |
+| [stories/README.md](stories/README.md) | Build-stage user stories — after Build-plan Approve |
 
-**Git:** do not commit unless the owner confirms. Preferred doc branch when committing: `cursor/sync-spec-prd-revise-efa1`.
+**Git:** do not commit unless the owner confirms. Design Approve paperwork is on **`feat/design`**.

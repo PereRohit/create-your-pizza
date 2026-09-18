@@ -10,16 +10,16 @@ Durable product decisions for the CreateYourPizza pizza store catalog. Update th
 
 ## Problem statement
 
-A pizza delivery store needs one catalog of **Simple**, **Combo**, and **Pizza** products that admins maintain; customers open a **public unauthenticated PDF** menu card (**raw binary** HTTP); and **trusted registered systems** (and **admins** on the same query APIs) consume filtered, paginated catalog REST APIs after central-auth JWT login — without orders, payments, delivery, or live-session revocation in v1. Auth stays **generic and extensible** (same user table + roles) for future customer login when order flow arrives. Veg/non-veg applies to all product types; pizza options are **option entities**; consumer listing is a **flat `data` array** with **`pagination` sibling**; PDF is **version + bytea** with Redis key/JSON locked in Spec; JWT public keys are **DB only**.
+A pizza delivery store needs one catalog of **Simple**, **Combo**, and **Pizza** products that admins maintain; customers open a **public unauthenticated PDF** menu card (**raw binary**, default latest, optional numeric `version`); and **trusted systems** (after **admin approve** + `/auth/token` JWT) plus **admins** (login JWT) consume the **same** filtered catalog REST APIs — without orders, payments, delivery, or JWT denylist in v1. Auth stays **generic and extensible**. Veg/non-veg on all product types; pizza options are **option entities** (also on PDF and `GET /api/products`); envelope + `pagination` sibling; PDF **history** in DB, Redis **latest only**; JWT public keys **DB only**; catalog Redis **TTL 3 min**.
 
 ## Actors and capabilities
 
 | Actor | Capability (v1) |
 |-------|-----------------|
-| **Admin** | Maintain catalog: products, prices, combos, pizzas, **option entities** (CRUD) with Admin JWT; **same catalog query APIs** as Trusted (`catalog:read` / `catalog:write`) |
-| **Public customer** | Open/download PDF menu card — **no authentication** |
-| **Trusted registered system** | Authenticate via central auth (incl. API key/secret → JWT with locked claims + scopes); query catalog with filters + pagination |
-| **Future customer** | Same **user table + roles**; profile fields phone/name/email later; orders **separate** later — **not implemented** in v1 |
+| **Admin** | Login JWT; catalog CRUD; **same query APIs** as Trusted; paginated user list; **approve/deny/revoke** trusted; create/delete **other** admins (**cannot delete self**) |
+| **Public customer** | Open/download PDF — **no authentication** (latest or `?version=`) |
+| **Trusted registered system** | **No login.** Register pending → admin approve → API key+secret → `/auth/token` JWT; catalog **read** only |
+| **Future customer** | Same user table; **self-register without approval**; visible to admins; delete later — **not implemented** in v1 |
 
 ## Locked facts
 
@@ -85,12 +85,33 @@ A pizza delivery store needs one catalog of **Simple**, **Combo**, and **Pizza**
 | JWT key material | **DB only** for public verify keys — **not Redis**; **no JWKS refresh interval**; private signing keys on auth only; local verify preserved |
 | GET PDF | HTTP response = **raw binary PDF** (`application/pdf`) only — **not** JSON envelope; Redis/DB internal storage shapes unchanged |
 
+### From owner HIFL Design Revise (2026-09-18)
+
+| Fact | Detail |
+|------|--------|
+| Admin vs trusted | Admins **login**; trusted **do not login**. Trusted get API key **only after admin approve**. All catalog auth is **JWT** (`/auth/token` for trusted). |
+| Trusted registration | Public register → **PENDING**; admin sees pending, **approve/deny**; **revoke** later. Secret shown once on approve. |
+| Bootstrap admin | If **zero** admins at auth startup, create one and **print credentials to terminal**; if ≥1 admin, skip. |
+| Future customer | Self-register **without** approval; visible to admins; admin delete later (not v1). |
+| `product_type` | DB column `product_type`: `simple` \| `combo` \| `pizza` (not `admin_type`) |
+| PDF history | Every generation **inserts** a numeric version + bytea. GET default **latest** raw binary; `?version=` for history. PDF prints **v1/v2/…**. Redis **latest only**; past → DB. |
+| Pizza-spec on PDF | Options listed in **their own space** (name + option price). Pizza product rows with options enabled add note **options available**. |
+| Pizza options | **Pizzas only.** Shared catalog. Per-pizza **`optionsEnabled`** flag. **No** per-pizza option subset. |
+| Option price | Each option row has **`price`**; `kind` still only `CRUST_SIZE` / `CRUST_TYPE` / `TOPPING`. |
+| Self-delete | Admin **cannot** delete own user record (403). |
+| List pagination | All JSON lists including **`GET /auth/users`**; not get-by-id. |
+| Empty JSON in docs | Examples omit empty keys — **not** a Build omit-empty rule. |
+| Options API | External systems get options as **`GET /api/products`** rows (`type=pizza-spec`). |
+| Lock | Redis: PDF lock TTL **120s**, write lock TTL **30s** (`finally` + expiry). Writes **503** during gen; job **skips** (not queued) if write in progress. |
+| PDF version | Tied to **successful generation** only — not to each admin product write. |
+| Catalog Redis | **TTL 3 min**; Redis-first; write on DB fetch; **no** invalidation on write. |
+
 ## Auth principals (v1)
 
-- **ADMIN** — same user table; `roles: ["ADMIN"]`; scopes `catalog:read catalog:write menu:read`; `sub` = admin user id; may use **same** catalog query APIs as Trusted
-- **TRUSTED_SYSTEM** (registered client) — same user table; `roles: ["TRUSTED_SYSTEM"]`; scopes `catalog:read menu:read`; `sub` + `client_id`; may authenticate via API key + secret exchange
-- **PUBLIC** — PDF menu only (no account required for menu)
-- **CUSTOMER** — **future** same user table; profile **phone / name / email** later; orders **separate** later; not shipped in v1
+- **ADMIN** — login; `roles: ["ADMIN"]`; scopes `catalog:read catalog:write menu:read`; user admin APIs; same catalog query APIs as Trusted
+- **TRUSTED_SYSTEM** — no login; pending → approve → `/auth/token`; `roles: ["TRUSTED_SYSTEM"]`; scopes `catalog:read menu:read`
+- **PUBLIC** — PDF menu only
+- **CUSTOMER** — **future**; self-register no approval; visible to admins
 
 Former Intent mention of a distinct CUSTOMER principal for PDF access is **superseded**: PDF is public. Customer accounts for ordering remain out of scope for v1 but are **provisioned** in auth extensibility.
 
@@ -98,18 +119,18 @@ Former Intent mention of a distinct CUSTOMER principal for PDF access is **super
 
 - Orders / checkout / payments / delivery / franchising
 - Implementing customer register/login flows (extensibility only)
-- Invalidating live user sessions / JWT revocation as a product feature
+- Invalidating outstanding JWTs / denylist (trusted **credential revoke** is in v1)
 - Application implementation before Design + Build plan approval
 - Spring Initializr dependency packaging / scaffold before Build
-- Writing `design.md` before Spec Approve; writing AGENTS.md before Build
+- Writing AGENTS.md before Build
 
 ## Tech direction (locked stack; Build owns scaffolding)
 
 **Locked:** **Java Spring Boot** with **Maven**. Owner creates the initial project via **Spring Initializr**. Agent supplies suggested Initializr dependencies as a **Build-stage** task — **do not scaffold now**.
 
-Also locked for runtime: **Postgres** (incl. version+bytea PDF, option entities, **minimal** status table, user/roles, **DB-only JWT public keys**), **Redis** (catalog cache + current PDF key — **not** JWT key material), **JWT** (local verify from DB public keys; binding claims + scopes; **no JWKS refresh interval**), **OpenAPI/Swagger**, **tests**, async PDF behavior, **Docker Compose** full-stack bring-up with volumes and sample data. Paginated JSON uses envelope + **`pagination` sibling**; public GET PDF = **raw binary**.
+Also locked for runtime: **Postgres** (PDF **history** version+bytea, option entities, **minimal** `pdf_generation` status row, user/roles/status, **DB-only JWT public keys**), **Redis** (catalog cache **TTL 3 min** + **latest** PDF — **not** JWT keys, **not** historical PDF), **JWT** (local verify; admin login vs trusted token), **OpenAPI/Swagger**, **tests**, Docker Compose. Paginated JSON uses envelope + **`pagination` sibling**; public GET PDF = **raw binary** (optional `version`).
 
-Do not start application code until Design and Build plan are approved. Spec is **APPROVED**; Design/TRD is **on hold** until the owner says go — do not draft `design.md` yet.
+Do not start application code until Design and Build plan are approved **and** `docs/stories/` exists. Spec and Design are **APPROVED**. Build plan is **on hold** until the owner says start. **One Postgres per service**; catalog verifies JWT via **JWKS**, not auth DB and not `/validate`.
 
 **Process (agent resume):** after every stage **Approve**, update [`handoff.md`](handoff.md): **compress** completed stages into past memory, then refresh next-stage checklist/steps — do not wipe and fully rewrite. Repo docs (playbook + handoff) are the durable memory — not Cursor rules. **Do not git-commit** unless the owner confirms; preferred doc branch when committing: `cursor/sync-spec-prd-revise-efa1`.
 
@@ -165,6 +186,9 @@ Do not start application code until Design and Build plan are approved. Spec is 
 | 2026-09-17 | **Spec APPROVED** (owner HIFL Approve); Spec gate passed; Design/TRD **on hold** until owner says go; **do not write design.md** | Locked (process) |
 | 2026-09-17 | **Process:** after every stage **Approve**, update `docs/handoff.md` — compress past stages + refresh next-stage handoff (no blank rewrite; no Cursor rule for HIFL handoff) | Locked (owner) |
 | 2026-09-17 | **Process:** do **not** git-commit unless owner confirms; preferred doc branch when committing: `cursor/sync-spec-prd-revise-efa1` | Locked (owner) |
+| 2026-09-17 | Design started on owner go-ahead; draft on branch **`feat/design`** until Design Approve | Locked (owner) |
+| 2026-09-18 | **Design Revise:** options **pizzas only**; shared catalog + pizza **`optionsEnabled`**; PDF pizza note **options available**; options section stays separate | Locked (HIFL Design Revise) |
+| 2026-09-18 | **Design APPROVED** (owner HIFL Approve); Design gate passed; **Build plan on hold** until owner says start; **do not write build-plan.md** | Locked (process) |
 
 ## Document map
 
@@ -173,9 +197,9 @@ Do not start application code until Design and Build plan are approved. Spec is 
 | [hifl-playbook.md](hifl-playbook.md) | Process: stages, gates, stage-end handoff hard rules |
 | [README.md](README.md) | Docs index + how to resume |
 | [intent.md](intent.md) | Stage 1 Intent — **APPROVED** 2026-09-17 |
-| [spec.md](spec.md) | Stage 2 Spec / PRD — **APPROVED** 2026-09-17; Design on hold |
+| [spec.md](spec.md) | Stage 2 Spec / PRD — **APPROVED** 2026-09-17; aligned 2026-09-18 |
 | [handoff.md](handoff.md) | Living resume — compressed past stages + next-stage handoff |
 | This file | Durable decisions and decision log |
-| `design.md` | Stage 3 — **on hold** until owner says go (not started) |
+| [design.md](design.md) | Stage 3 — **APPROVED** 2026-09-18 |
 | `AGENTS.md` | Build-stage delivery artifact (not created yet) |
 <!-- local-sync-stamp: 2026-09-17-handoff-process -->
