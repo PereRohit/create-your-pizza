@@ -1,7 +1,7 @@
 # 11 — Catalog Redis cache
 
 **Status:** ready  
-**Depends on:** `10-catalog-queries.md`  
+**Depends on:** `10-catalog-queries.md` (`DONE-` includes §5.1 catalog read-path smoke)  
 **Links:** [Intent](../intent.md) · [Spec](../spec.md) · [Design](../design.md) · [Build plan](../build-plan.md)
 
 ## Story
@@ -23,4 +23,4 @@ As a catalog reader, I want list/detail JSON served Redis-first with a 3-minute 
 
 ## Notes
 
-Catalog-service only.
+Catalog-service only. Do not start until **10** is `DONE-` (Catalog read-path service-ready smoke is that story’s last task).

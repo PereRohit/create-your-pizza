@@ -195,8 +195,9 @@ Do not start application code until Design and Build plan are approved **and** `
 | 2026-09-18 | **Build plan APPROVED** (owner HIFL Approve); stories under `docs/stories/`; owner Initializr before coding auth/catalog schema | Locked (process) |
 | 2026-09-18 | **Stories:** `{id}-OWNER-{slug}.md` when the owner must act; enabler `02-OWNER-maven-initializr`; tasks on parent story; Definition of Ready is not a story; graph **01–15** | Locked (HIFL Revise) |
 | 2026-09-18 | **Playbook Revise:** each Build story on its own branch `feat/<story-id>-<max-5-word-summary>`; branch contains **only** that story’s changes; still ask before commit | Locked (HIFL Revise) |
-| 2026-09-21 | **Process:** candid review loop on every HIFL stage and each Build story — fresh reviewer, then fresh fix agent; ephemeral handoff is prompt-only; later stages/stories are not findings; loop does not replace Approve / Revise / Park | Locked (owner) |
+| 2026-09-21 | **Process:** candid review loop on every HIFL stage and each Build story — fresh reviewer, then fresh fix agent; ephemeral handoff is prompt-only; later stages/stories are not findings; loop does not replace Approve / Revise / Park; **loop cap = 3** review→fix cycles | Locked (owner) |
 | 2026-09-21 | **Build style:** no reinventing the wheel — prefer Spring Boot / Security / Data / Hibernate / Lombok / JDK and Build-plan libraries over hand-rolled boilerplate; reuse framework injection and annotations | Locked (owner) |
+| 2026-09-21 | **Build-plan Revise APPROVED:** Auth service-ready after **06**; Catalog read-path service-ready after **10** (**11–14** still later); story `mvn test` stays mocked; Stage 6 Verify remains full residual pack; **08** waits for **06** `DONE-`; **11** waits for **10** `DONE-`; PDF **12** may follow **09** without waiting on **10** | Locked (owner HIFL Approve) |
 
 ## Document map
 
@@ -209,6 +210,6 @@ Do not start application code until Design and Build plan are approved **and** `
 | [handoff.md](handoff.md) | Living resume — compressed past stages + next-stage handoff |
 | This file | Durable decisions and decision log |
 | [design.md](design.md) | Stage 3 — **APPROVED** 2026-09-18 |
-| [build-plan.md](build-plan.md) | Stage 4 — **APPROVED** 2026-09-18 |
+| [build-plan.md](build-plan.md) | Stage 4 — **APPROVED** 2026-09-18; **Revise APPROVED** 2026-09-21 (§5.1 service-ready / catalog read-path smoke) |
 | `AGENTS.md` | Build-stage delivery artifact (not created yet) |
 <!-- local-sync-stamp: 2026-09-17-handoff-process -->
