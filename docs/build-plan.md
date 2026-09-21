@@ -206,7 +206,7 @@ Controllers and use-cases stay testable without a database. Flyway + real Postgr
 
 ## 6. Story order (create files after Approve)
 
-Filenames under `docs/stories/`. Implement **one story at a time** on a **dedicated git branch** `feat/<story-id>-<max-5-word-summary>` that contains **only** that story’s changes ([playbook](hifl-playbook.md)). Record the in-progress file in [handoff.md](handoff.md). Rename to `DONE-` when finished. Every **coding** story: **>80% LoC** of that story’s new/changed code **and** full behaviour tests of its acceptance criteria (via mocks/fakes above).
+Filenames under `docs/stories/`. Implement **one story at a time** on a **dedicated git branch** `feat/<story-id>-<max-5-word-summary>` that contains **only** that story’s changes ([playbook](hifl-playbook.md)). Record the in-progress file in [handoff.md](handoff.md). Run the playbook **candid review loop** before renaming to `DONE-` (story graph is the scope fence). Every **coding** story: **>80% LoC** of that story’s new/changed code **and** full behaviour tests of its acceptance criteria (via mocks/fakes above).
 
 An arrow **A → B** means **B starts only after A is `DONE-`**. **01** and **02** may proceed in parallel. Auth (**03–06**) needs **01** and **02**. Catalog schema (**07**) needs **01** and **02**. **08** waits for **04** and **07**. After **09**, queries/cache (**10→11**) and PDF (**12→13** and **12→14**) may proceed independently. **15** waits for **06**, **13**, and **14**. Numeric order **01 through 15** is a valid total order.
 
@@ -276,6 +276,7 @@ Stories **03–06** are auth-service; **07–14** catalog-service plus **15** bo
 
 ## 7. Implementation notes (do not rediscover)
 
+- **No reinventing the wheel:** Prefer Spring Boot / Security / Data / Hibernate / Lombok / JDK and Build-plan libraries over hand-written boilerplate. Prefer annotations and injection over custom constructors, getters, id/timestamp callbacks, and wrappers that duplicate framework behaviour.
 - Envelope + pagination as Spec/Design; docs omit empty keys — **coding may still emit** success `error: ""`.
 - DTOs invented at coding time; wire JSON locked. Lombok is allowed on DTOs/entities.
 - Principal type from **URL** (`/auth/register` vs `/auth/admins` vs bootstrap).
@@ -325,7 +326,7 @@ Cover Design §9 inside the story that introduces the behaviour.
 
 ## 9. Definition of Done (Build, after stories)
 
-- [ ] All `docs/stories/` coding stories `DONE-` with tests as required
+- [ ] All `docs/stories/` coding stories `DONE-` with tests as required, each after the playbook candid review loop
 - [ ] `docker compose up` from repo root brings `auth-db`, `catalog-db`, `redis`, both apps
 - [ ] First admin visible in **auth-service logs**
 - [ ] Sample catalog + options in `catalog-db`; first PDF job can produce **v1**
@@ -343,6 +344,8 @@ Then Stage 6: draft [docs/verify.md](verify.md).
 - Do not scaffold Java before story **02** is `DONE-` (owner Initializr)
 - Do not add a parent POM
 - Do not put two stories on one git branch; use `feat/<story-id>-<max-5-word-summary>`
+- Do not rename a story `DONE-` before the playbook candid review loop; do not treat later stories as review findings
+- Do not reinvent Spring, Hibernate, Lombok, or Build-plan library features as hand-written boilerplate when a dependency or annotation already does the job
 - Do not select Docker Compose Support on Initializr
 - Do not implement customer register/login
 - Do not put API secrets in JWT

@@ -60,11 +60,13 @@ Process: [docs/hifl-playbook.md](hifl-playbook.md) · Decisions: [docs/project-c
 
 1. **Git commits:** Do **not** commit unless the owner **confirms**. After changes, **ask**.
 2. **Stage-end handoff:** On every stage **Approve**, **compress** past stages and refresh next-agent sections — do not blank-rewrite.
-3. **Stack:** Java Spring Boot **4.1.1** + Maven + JAR; Java **26** (Initializr **25** then pin POM); independent siblings `auth-service` / `catalog-service`; Lombok; properties files; owner Initializr.
+3. **Stack:** Java Spring Boot **4.1.1** + Maven + JAR; Java **26** (Initializr **25** then pin POM); independent siblings `auth-service` / `catalog-service`; Lombok; properties files; owner Initializr. Prefer Spring / Hibernate / Lombok / JDK and Build-plan libraries over hand-rolled boilerplate.
 4. **Gate language:** Approve / Revise: … / Park — no silent skips.
 5. **Build:** one story at a time; follow [build-plan.md](build-plan.md) §6 graph; rename to `DONE-` when finished.
 6. **Story git branches:** `feat/<story-id>-<max-5-word-summary>` (example `feat/01-compose-and-config`); **only** that story’s changes on the branch; still ask before commit.
 7. **Owner stories:** filename `{id}-OWNER-{slug}.md` when the owner must act; task lines prefixed **`Owner:`**.
+8. **Candid review loop** ([playbook](hifl-playbook.md#candid-review-loop)): before every stage gate and before a story is renamed `DONE-`. Fresh reviewer, then fresh fix agent. Ephemeral handoff is prompt-only and must not enter this file. Later stages and later stories are not findings. The loop does not replace Approve / Revise / Park.
+9. **No reinventing the wheel:** Prefer Spring Boot / Spring Security / Spring Data / Hibernate / Lombok / JDK APIs and approved libraries (Nimbus, OpenPDF, SpringDoc per Build plan) over hand-rolled equivalents. Prefer annotations and framework injection over boilerplate constructors, getters, timestamp/id callbacks, and custom wrappers when the framework already provides them. Do not invent a utility or abstraction that duplicates a library or Spring feature.
 
 ## Checklist for the next agent
 
@@ -111,6 +113,10 @@ Process: [docs/hifl-playbook.md](hifl-playbook.md) · Decisions: [docs/project-c
 - Do not git-commit unless the owner confirms
 - Do not blank-rewrite this handoff
 - Do not add Cursor rules for HIFL handoff
+- Do not skip the candid review loop, and do not pass the author’s plan or this handoff’s “how we built it” notes to the reviewer
+- Do not write the ephemeral review handoff into the repo
+- Do not treat “Findings: none” as owner **Approve**
+- Do not reinvent Spring, Hibernate, Lombok, or approved-library features as hand-written boilerplate when a dependency or annotation already does the job
 - Do not call **`/auth/validate`** per catalog request — JWKS + local verify
 - Do not share one Postgres across auth and catalog
 - Do not start a coding story without its markdown file (rename to `DONE-` when finished)

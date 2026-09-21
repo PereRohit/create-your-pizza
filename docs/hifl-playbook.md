@@ -13,7 +13,7 @@ This playbook is Stage 0 (process setup). Product content starts at Stage 1 (Int
 | Role | Who | Responsibility |
 |------|-----|----------------|
 | **Owner (human)** | Project owner | Sets goals, answers open questions, reviews each gate, chooses Approve / Revise / Park |
-| **Agent** | Cursor agent(s) | Drafts stage artifacts, incorporates feedback, implements only after Design + Build plan are approved |
+| **Agent** | Cursor agent(s) | Drafts stage artifacts, runs the [candid review loop](#candid-review-loop) (fresh reviewer, then fresh fix agent), incorporates feedback, implements only after Design + Build plan are approved |
 
 The agent does not invent locked product decisions past what the owner has stated. Open ideas stay in Intent until the owner promotes them.
 
@@ -31,11 +31,12 @@ The agent does not invent locked product decisions past what the owner has state
 ### Stage rules (each stage)
 
 1. **Agent drafts** the artifact at the path above (or updates it after Revise).
-2. **Human reviews** using the gate checklist below.
-3. **Human responds** with gate language: **Approve**, **Revise: …**, or **Park**.
-4. On **Approve**, status in the artifact becomes accepted; the agent **updates** [`docs/handoff.md`](handoff.md) for the **next** stage (see [Stage-end handoff](#stage-end-handoff--required)); then the next stage may start (subject to any owner hold, e.g. Design).
-5. On **Revise**, feedback returns to the **owning stage**; agent updates that artifact only (not the next stage).
-6. On **Park**, work on that stage pauses; no later stage starts; leave current `handoff.md` accurate for resume.
+2. **Candid review loop** runs on that draft before the owner is asked to gate it (see [Candid review loop](#candid-review-loop)).
+3. **Human reviews** using the gate checklist below.
+4. **Human responds** with gate language: **Approve**, **Revise: …**, or **Park**.
+5. On **Approve**, status in the artifact becomes accepted; the agent **updates** [`docs/handoff.md`](handoff.md) for the **next** stage (see [Stage-end handoff](#stage-end-handoff--required)); then the next stage may start (subject to any owner hold, e.g. Design).
+6. On **Revise**, feedback returns to the **owning stage**; agent updates that artifact only (not the next stage), then the candid review loop runs again before the next gate ask.
+7. On **Park**, work on that stage pauses; no later stage starts; leave current `handoff.md` accurate for resume.
 
 ## Gate language
 
@@ -46,6 +47,84 @@ Use exactly one of:
 - **Park** — pause this stage; leave a short reason if useful.
 
 Ambiguous replies (“looks ok but…”) should be clarified by the agent as Approve vs Revise before advancing.
+
+The candid review loop does **not** Approve, Revise, or Park. “Findings: none” is not owner acceptance.
+
+## Candid review loop
+
+Independent sub-agents review a stage draft, then a separate sub-agent fixes only in-scope findings. Use this on **every** HIFL stage (Intent, Spec, Design, Build plan, each Build story, Verify) and in **any** project that adopts this playbook. Product names below are examples; swap in that project’s artifact paths and its “later stage owns this” list.
+
+The author of the draft must **not** be the reviewer or the fix agent. Start each as a **new** agent. Do not resume the author’s chat.
+
+```mermaid
+flowchart LR
+  draft[Stage draft]
+  review[Review sub-agent]
+  fix[Fix sub-agent]
+  gate[Human gate]
+  draft --> review --> fix
+  fix -->|"artifact changed"| review
+  fix -->|"unchanged or cap"| gate
+```
+
+### When
+
+- After the draft (or story implementation) is ready, **before** the human gate ask.
+- On Build, **before** renaming a story to `DONE-`.
+- Again after a human **Revise**, before the next gate ask.
+
+### Review sub-agent
+
+Prompt contains **only**:
+
+1. The artifact under review (the stage doc, or the story file plus the diff for that story).
+2. The **already accepted** prior artifacts that bind this stage (not later-stage docs).
+3. An **ephemeral handoff** — scope fence written into the prompt only. Do **not** commit it, do **not** add it to `handoff.md`, and do **not** leave it in the repo.
+
+Do **not** pass the author’s plan, the implementation chat, chosen class names, or expected wording as the rubric. Do **not** say the draft is correct.
+
+Ephemeral handoff (scope fence, not a verdict):
+
+- Judge only this stage against the documents provided.
+- Name what **later** stages own, and instruct the reviewer **not** to report that work as a finding.
+- No praise. Empty findings are allowed.
+
+The reviewer returns findings only. Each finding has a **category**, a **location** (section or file), and **why** it fails a cited rule in the provided documents.
+
+| Category | Meaning |
+|----------|---------|
+| **missing implementation** | This stage’s required section, decision, or acceptance criterion is absent |
+| **incorrect behavior** | The draft contradicts a locked prior artifact or this stage’s own rule |
+| **test gap** | Acceptance is not testable, or a coding story’s required behaviour/coverage is missing |
+| **code smell** | In-scope structure that will fail the stage’s job (not a style preference) |
+| **cosmetic** | Naming, formatting, or wording that does not change behaviour or meaning |
+
+If nothing fails, the reviewer replies `Findings: none` and nothing else.
+
+### Fix sub-agent
+
+A new agent. Prompt contains the categorized findings plus the **same** artifact, prior docs, and ephemeral scope fence.
+
+- Apply **missing implementation**, **incorrect behavior**, **test gap**, and in-scope **code smell** / **cosmetic** items.
+- **Drop** any finding that only asks for a later stage. Record the drop in the fix report. Do not “complete” it by writing that later stage.
+- Re-check the stage’s own bar (re-read the artifact against the cited docs; for a coding story, re-run that story’s tests).
+
+### Loop cap
+
+1. Review, then fix.
+2. If the fix changed the artifact, review **once more**, then fix in-scope findings from that second review.
+3. Stop. If findings remain, show them to the owner with the gate ask. Do not keep looping, and do not treat a clean review as **Approve**.
+
+### What each stage is judged against
+
+| Stage | Reviewer may use | Do not report as missing |
+|-------|------------------|--------------------------|
+| Intent | Playbook stage rules and the owner’s brief | Spec endpoints, design, code |
+| Spec | **Approved** Intent | Design diagrams, stories, code |
+| Design | **Approved** Spec (and Intent locks it still cites) | Build-plan task order, code |
+| Build plan | **Approved** Design | Application code |
+| Build story | That story plus the Design/Spec sections it cites, and the build plan’s test rules | Later stories on the graph; Verify’s live-stack run |
+| Verify | **Approved** Spec acceptance and the built system | New product scope |
 
 ## Build-stage user stories (required before coding)
 
@@ -60,7 +139,7 @@ After Design **and** Build-plan **Approve**, do **not** start implementation by 
    - Owner-blocking tasks inside the file are prefixed **`Owner:`** on the checklist line.
 2. Format: **As a [type of user], I want [goal] so that [reason].** Include **acceptance criteria**, and excerpts/links to Intent / Spec / Design (and ADRs if any).
 3. Every story that involves **coding** MUST include **unit tests**: **>80% LoC coverage** and **full behaviour coverage** of that story. Environment/setup work may be its own story.
-4. [`docs/handoff.md`](handoff.md) records **which story file(s) are in progress**. When a story is done, **rename** the file with a `DONE-` prefix (e.g. `DONE-01-env-compose.md` or `DONE-02-OWNER-maven-initializr.md`) so later agents skip it.
+4. [`docs/handoff.md`](handoff.md) records **which story file(s) are in progress**. When a story is done, **rename** the file with a `DONE-` prefix (e.g. `DONE-01-env-compose.md` or `DONE-02-OWNER-maven-initializr.md`) so later agents skip it. Run the [candid review loop](#candid-review-loop) on that story **before** the rename. The story graph is the scope fence: later stories are not findings.
 5. Pick the next non-`DONE-` story in sort order unless the owner says otherwise.
 6. **One git branch per story.** Before implementing a story, create/switch to a branch that contains **only** that story’s changes. Do not mix another story, unrelated refactors, or HIFL paperwork from a different stage onto that branch.
    - Format: `feat/<story-id>-<max-5-word-summary>`
@@ -88,6 +167,7 @@ This applies to any agentic SDLC using this playbook, not only CreateYourPizza.
 8. **No git commit unless the owner confirms.** After doc or code changes, the agent **asks** whether to commit (and on which branch/message). Never assume commit.
    - **Build stories:** each story uses its own branch `feat/<story-id>-<max-5-word-summary>` (see [Build-stage user stories](#build-stage-user-stories-required-before-coding) rule 6). That branch must contain **only** that story’s changes.
    - **HIFL / docs-only syncs** (not a coding story): preferred branch `cursor/sync-spec-prd-revise-efa1` — do not invent extra branches for those doc syncs.
+9. **Candid review loop before every human gate** and before a Build story is marked `DONE-`. Reviewer and fix agent are fresh sub-agents, not the author. The ephemeral handoff is prompt-only. The loop never replaces **Approve / Revise / Park**.
 
 ## Gate review checklist (for the human)
 
@@ -155,11 +235,12 @@ For Spec/Design/Build-plan gates, also check consistency with the accepted prior
 ### Typical gate + handoff flow
 
 1. Agent writes or updates a stage artifact under `docs/`.
-2. Agent reports paths and a short summary; gate ask is clear (Approve / Revise / Park). **Ask before any git commit.**
-3. Owner replies with gate language.
-4. On Approve: agent marks the stage accepted; **compresses past stages + updates `handoff.md` for the next stage**; asks about commit; then starts the next draft (unless owner hold applies).
-5. On Revise: agent edits the same artifact and re-asks the gate.
-6. On Park: stop; leave `handoff.md` accurate for resume.
+2. Agent runs the [candid review loop](#candid-review-loop) on that artifact (ephemeral handoff only; do not commit it).
+3. Agent reports paths, a short summary, and any findings still open after the loop cap. Gate ask is clear (Approve / Revise / Park). **Ask before any git commit.**
+4. Owner replies with gate language.
+5. On Approve: agent marks the stage accepted; **compresses past stages + updates `handoff.md` for the next stage**; asks about commit; then starts the next draft (unless owner hold applies).
+6. On Revise: agent edits the same artifact, runs the candid review loop again, and re-asks the gate.
+7. On Park: stop; leave `handoff.md` accurate for resume.
 
 ## Related docs
 
