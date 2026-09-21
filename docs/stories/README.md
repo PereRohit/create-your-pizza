@@ -49,7 +49,7 @@ Each **story** is implemented on its **own** branch. The branch holds **only** t
 | [DONE-01-compose-config.md](DONE-01-compose-config.md) | done |
 | [DONE-02-OWNER-maven-initializr.md](DONE-02-OWNER-maven-initializr.md) | done |
 | [DONE-03-auth-schema-bootstrap.md](DONE-03-auth-schema-bootstrap.md) | done |
-| [04-auth-jwks-jwt.md](04-auth-jwks-jwt.md) | ready |
+| [DONE-04-auth-jwks-jwt.md](DONE-04-auth-jwks-jwt.md) | done |
 | [05-auth-login-register-token.md](05-auth-login-register-token.md) | ready |
 | [06-auth-admin-users.md](06-auth-admin-users.md) | ready |
 | [07-catalog-schema-seed.md](07-catalog-schema-seed.md) | ready |
