@@ -2,9 +2,9 @@
 
 **Audience:** Next agent continuing HIFL — Build plan **APPROVED** (incl. §5.1 revise **APPROVED** 2026-09-21); **Build** in progress.  
 **Owner:** PereRohit  
-**As of:** 2026-09-21 (Build-plan §5.1 revise approved; Build story 04 done on main; story 05 WIP may be stashed)  
+**As of:** 2026-09-21 (Build story 05 done; §5.1 revise on main)  
 **Repo root:** local `create-your-pizza`  
-**Git:** docs revise on **`cursor/sync-build-plan-service-smoke`**; story work on `feat/<id>-…`; **ask** before commit.
+**Git:** work on **`feat/05-auth-login-register-token`**; **ask** before commit.
 
 **How to resume:** read [docs/hifl-playbook.md](hifl-playbook.md) → this file → open linked artifacts as needed. After every stage **Approve**: **compress** completed stages here, then refresh next-stage items — do **not** wipe and fully rewrite.
 
@@ -16,7 +16,7 @@
 | 2 Spec / PRD | [docs/spec.md](docs/spec.md) | **APPROVED** (aligned 2026-09-18) |
 | 3 Design / TRD | [docs/design.md](docs/design.md) | **APPROVED** 2026-09-18 |
 | 4 Build plan | [docs/build-plan.md](docs/build-plan.md) | **APPROVED** 2026-09-18; **Revise APPROVED** 2026-09-21 (§5.1) |
-| 5 Build | Spring Boot + Compose in this repo | **In progress** — `DONE-01`–`DONE-04`; next **05** (needs 04) or **07** (independent); honor §5.1 smokes on **06** / **10** |
+| 5 Build | Spring Boot + Compose in this repo | **In progress** — `DONE-01`–`DONE-05`; next **06** (needs 05; §5.1 auth smoke) or **07** (independent) |
 | 6 Verify | [docs/verify.md](docs/verify.md) | Not started (after Build) |
 
 Process: [docs/hifl-playbook.md](hifl-playbook.md) · Decisions: [docs/project-context.md](docs/project-context.md) · Docs index: [docs/README.md](docs/README.md)
@@ -78,20 +78,21 @@ Process: [docs/hifl-playbook.md](hifl-playbook.md) · Decisions: [docs/project-c
 - [x] Owner **02** Initializr on `feat/02-maven-initializr` — [`DONE-02-OWNER-maven-initializr.md`](stories/DONE-02-OWNER-maven-initializr.md)
 - [x] Implement **03** on `feat/03-auth-schema-bootstrap` — [`DONE-03-auth-schema-bootstrap.md`](stories/DONE-03-auth-schema-bootstrap.md)
 - [x] Implement **04** on `feat/04-auth-jwks-jwt` — [`DONE-04-auth-jwks-jwt.md`](stories/DONE-04-auth-jwks-jwt.md)
-- **Picked stories (Build):** none in progress — **next** [`05-auth-login-register-token.md`](stories/05-auth-login-register-token.md) (after 04) or [`07-catalog-schema-seed.md`](stories/07-catalog-schema-seed.md) (independent)
+- [x] Implement **05** on `feat/05-auth-login-register-token` — [`DONE-05-auth-login-register-token.md`](stories/DONE-05-auth-login-register-token.md)
+- **Picked stories (Build):** none in progress — **next** [`06-auth-admin-users.md`](stories/06-auth-admin-users.md) (after 05; §5.1 auth smoke) or [`07-catalog-schema-seed.md`](stories/07-catalog-schema-seed.md) (independent)
 - [ ] After all stories `DONE-`: draft [docs/verify.md](verify.md)
 
 ## Steps (detail) — next stage focus: Build
 
 ### A. Now
 
-1. **01**–**04** are `DONE-`. Auth JWKS + JWT issuer exist on `feat/04-auth-jwks-jwt` (ask before commit).
+1. **01**–**05** are `DONE-`. Auth login/register/token exist on `feat/05-auth-login-register-token` (ask before commit).
 2. **Ask** before git commit.
-3. Next: pick **05** (auth login/register/token, needs 04) or **07** (catalog schema) on its own `feat/…` branch.
+3. Next: pick **06** (auth admin users + §5.1 auth service-ready smoke, needs 05) or **07** (catalog schema) on its own `feat/…` branch.
 
-### B. After picking 05 or 07
+### B. After picking 06 or 07
 
-1. **05→06** on auth (**06** `DONE-` includes §5.1 auth service-ready smoke); **07** may proceed in parallel with auth; **08** after **04**, **07**, and **06** `DONE-`; never start **09** before **08**; after **09**, **10→11** (**10** `DONE-` includes §5.1 catalog read-path smoke before **11**) and PDF **12** may follow **09** without waiting on **10**.
+1. **06** on auth (**06** `DONE-` includes §5.1 auth service-ready smoke); **07** may proceed in parallel with auth; **08** after **04**, **07**, and **06** `DONE-`; never start **09** before **08**; after **09**, **10→11** (**10** `DONE-` includes §5.1 catalog read-path smoke before **11**) and PDF **12** may follow **09** without waiting on **10**.
 
 ### C. After Build ready for Verify
 
