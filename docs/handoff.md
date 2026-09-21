@@ -2,9 +2,9 @@
 
 **Audience:** Next agent continuing HIFL — Build plan **APPROVED** (incl. §5.1 revise **APPROVED** 2026-09-21); **Build** in progress.  
 **Owner:** PereRohit  
-**As of:** 2026-09-21 (Build story 05 done; §5.1 revise approved on `cursor/sync-build-plan-service-smoke`)  
+**As of:** 2026-09-21 (Build story 05 done; §5.1 revise on main)  
 **Repo root:** local `create-your-pizza`  
-**Git:** story work on **`feat/05-auth-login-register-token`**; docs §5.1 on **`cursor/sync-build-plan-service-smoke`**; **ask** before commit.
+**Git:** work on **`feat/05-auth-login-register-token`**; **ask** before commit.
 
 **How to resume:** read [docs/hifl-playbook.md](hifl-playbook.md) → this file → open linked artifacts as needed. After every stage **Approve**: **compress** completed stages here, then refresh next-stage items — do **not** wipe and fully rewrite.
 
@@ -89,7 +89,6 @@ Process: [docs/hifl-playbook.md](hifl-playbook.md) · Decisions: [docs/project-c
 1. **01**–**05** are `DONE-`. Auth login/register/token exist on `feat/05-auth-login-register-token` (ask before commit).
 2. **Ask** before git commit.
 3. Next: pick **06** (auth admin users + §5.1 auth service-ready smoke, needs 05) or **07** (catalog schema) on its own `feat/…` branch.
-4. Merge/land **`cursor/sync-build-plan-service-smoke`** so §5.1 / loop-cap docs are on the base branch agents use.
 
 ### B. After picking 06 or 07
 

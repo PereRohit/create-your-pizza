@@ -111,9 +111,14 @@ A new agent. Prompt contains the categorized findings plus the **same** artifact
 
 ### Loop cap
 
-1. Review, then fix.
-2. If the fix changed the artifact, review **once more**, then fix in-scope findings from that second review.
-3. Stop. If findings remain, show them to the owner with the gate ask. Do not keep looping, and do not treat a clean review as **Approve**.
+Up to **3** review→fix cycles:
+
+1. Review, then fix in-scope findings.
+2. If the fix changed the artifact, review again, then fix in-scope findings from that review.
+3. If the fix changed the artifact again, review a **third** time, then fix in-scope findings from that third review.
+4. Stop. If findings remain, show them to the owner with the gate ask. Do not keep looping past three cycles, and do not treat a clean review as **Approve**.
+
+If a review returns `Findings: none`, or a fix makes no artifact change, stop the loop early (do not burn remaining cycles).
 
 ### What each stage is judged against
 
