@@ -1,10 +1,10 @@
 # CreateYourPizza — Agentic SDLC handoff
 
-**Audience:** Next agent continuing HIFL — Build plan **APPROVED**; **Build** in progress.  
+**Audience:** Next agent continuing HIFL — Build plan **APPROVED** (incl. §5.1 revise **APPROVED** 2026-09-21); **Build** in progress.  
 **Owner:** PereRohit  
-**As of:** 2026-09-21 (Build story 04 done)  
+**As of:** 2026-09-21 (Build-plan §5.1 revise approved; Build story 04 done on main; story 05 WIP may be stashed)  
 **Repo root:** local `create-your-pizza`  
-**Git:** work on **`feat/04-auth-jwks-jwt`**; **ask** before commit.
+**Git:** docs revise on **`cursor/sync-build-plan-service-smoke`**; story work on `feat/<id>-…`; **ask** before commit.
 
 **How to resume:** read [docs/hifl-playbook.md](hifl-playbook.md) → this file → open linked artifacts as needed. After every stage **Approve**: **compress** completed stages here, then refresh next-stage items — do **not** wipe and fully rewrite.
 
@@ -15,8 +15,8 @@
 | 1 Intent | [docs/intent.md](docs/intent.md) | **APPROVED** (aligned 2026-09-18) |
 | 2 Spec / PRD | [docs/spec.md](docs/spec.md) | **APPROVED** (aligned 2026-09-18) |
 | 3 Design / TRD | [docs/design.md](docs/design.md) | **APPROVED** 2026-09-18 |
-| 4 Build plan | [docs/build-plan.md](docs/build-plan.md) | **APPROVED** 2026-09-18 |
-| 5 Build | Spring Boot + Compose in this repo | **In progress** — `DONE-01`–`DONE-04`; next **05** (needs 04) or **07** (independent) |
+| 4 Build plan | [docs/build-plan.md](docs/build-plan.md) | **APPROVED** 2026-09-18; **Revise APPROVED** 2026-09-21 (§5.1) |
+| 5 Build | Spring Boot + Compose in this repo | **In progress** — `DONE-01`–`DONE-04`; next **05** (needs 04) or **07** (independent); honor §5.1 smokes on **06** / **10** |
 | 6 Verify | [docs/verify.md](docs/verify.md) | Not started (after Build) |
 
 Process: [docs/hifl-playbook.md](hifl-playbook.md) · Decisions: [docs/project-context.md](docs/project-context.md) · Docs index: [docs/README.md](docs/README.md)
@@ -49,12 +49,14 @@ Process: [docs/hifl-playbook.md](hifl-playbook.md) · Decisions: [docs/project-c
 - Stories: `docs/stories/{priority}-{slug}.md` after Build-plan Approve; coding stories >80% LoC + full behaviour tests.
 - Detail: [docs/design.md](docs/design.md)
 
-### 4 Build plan — APPROVED 2026-09-18
+### 4 Build plan — APPROVED 2026-09-18; Revise APPROVED 2026-09-21 §5.1
 
 - Stack: Spring Boot **4.1.1**, Maven JAR, Java **26** (Initializr **25** then pin POM), `.properties`, Lombok both apps.
 - Independent siblings: `groupId` **`com.createyourpizza`**; artifacts **`auth-service`**, **`catalog-service`**; packages `com.createyourpizza.auth` / `com.createyourpizza.catalog`.
 - Catalog: OAuth2 Resource Server + JWKS URL. Tests: mock ports. One root Compose. Graph of stories **01–15** (enabler **02** = owner Initializr).
-- Detail: [docs/build-plan.md](docs/build-plan.md) §6
+- **§5.1 (2026-09-21):** Auth service-ready Compose smoke = last task on **06** before `DONE-`; Catalog read-path service-ready smoke = last task on **10** before `DONE-` (**11–14** still later). **08** waits for **04**, **07**, and **06** `DONE-`; **11** waits for **10** `DONE-`. PDF **12** may follow **09** without waiting on **10**. Story `mvn test` stays mocked; Stage 6 Verify remains full residual pack.
+- Candid review **loop cap = 3** review→fix cycles ([playbook](hifl-playbook.md)).
+- Detail: [docs/build-plan.md](docs/build-plan.md) §5.1 · §6
 
 ## Owner preferences (must follow)
 
@@ -62,11 +64,12 @@ Process: [docs/hifl-playbook.md](hifl-playbook.md) · Decisions: [docs/project-c
 2. **Stage-end handoff:** On every stage **Approve**, **compress** past stages and refresh next-agent sections — do not blank-rewrite.
 3. **Stack:** Java Spring Boot **4.1.1** + Maven + JAR; Java **26** (Initializr **25** then pin POM); independent siblings `auth-service` / `catalog-service`; Lombok; properties files; owner Initializr. Prefer Spring / Hibernate / Lombok / JDK and Build-plan libraries over hand-rolled boilerplate.
 4. **Gate language:** Approve / Revise: … / Park — no silent skips.
-5. **Build:** one story at a time; follow [build-plan.md](build-plan.md) §6 graph; rename to `DONE-` when finished.
+5. **Build:** one story at a time; follow [build-plan.md](build-plan.md) §6 graph (incl. §5.1 smokes on **06** / **10**); rename to `DONE-` when finished.
 6. **Story git branches:** `feat/<story-id>-<max-5-word-summary>` (example `feat/01-compose-and-config`); **only** that story’s changes on the branch; still ask before commit.
 7. **Owner stories:** filename `{id}-OWNER-{slug}.md` when the owner must act; task lines prefixed **`Owner:`**.
-8. **Candid review loop** ([playbook](hifl-playbook.md#candid-review-loop)): before every stage gate and before a story is renamed `DONE-`. Fresh reviewer, then fresh fix agent. Ephemeral handoff is prompt-only and must not enter this file. Later stages and later stories are not findings. The loop does not replace Approve / Revise / Park.
+8. **Candid review loop** ([playbook](hifl-playbook.md#candid-review-loop)): before every stage gate and before a story is renamed `DONE-`. Fresh reviewer, then fresh fix agent. **Loop cap = 3** review→fix cycles. Ephemeral handoff is prompt-only and must not enter this file. Later stages and later stories are not findings. The loop does not replace Approve / Revise / Park.
 9. **No reinventing the wheel:** Prefer Spring Boot / Spring Security / Spring Data / Hibernate / Lombok / JDK APIs and approved libraries (Nimbus, OpenPDF, SpringDoc per Build plan) over hand-rolled equivalents. Prefer annotations and framework injection over boilerplate constructors, getters, timestamp/id callbacks, and custom wrappers when the framework already provides them. Do not invent a utility or abstraction that duplicates a library or Spring feature.
+10. **Service-ready smoke (§5.1):** last task before `DONE-` on **06** (auth) and **10** (catalog read-path); do not skip; do not require Compose for every story’s `mvn test`.
 
 ## Checklist for the next agent
 
@@ -88,7 +91,7 @@ Process: [docs/hifl-playbook.md](hifl-playbook.md) · Decisions: [docs/project-c
 
 ### B. After picking 05 or 07
 
-1. **05→06** on auth; **07** may proceed in parallel with auth; **08** after **04** and **07**; never start **09** before **08**.
+1. **05→06** on auth (**06** `DONE-` includes §5.1 auth service-ready smoke); **07** may proceed in parallel with auth; **08** after **04**, **07**, and **06** `DONE-`; never start **09** before **08**; after **09**, **10→11** (**10** `DONE-` includes §5.1 catalog read-path smoke before **11**) and PDF **12** may follow **09** without waiting on **10**.
 
 ### C. After Build ready for Verify
 
@@ -106,6 +109,7 @@ Process: [docs/hifl-playbook.md](hifl-playbook.md) · Decisions: [docs/project-c
 - Full Dockerize; OpenAPI/Swagger; tests (mock ports); AGENTS.md at Build
 - DB Compose names: **`auth-db`**, **`catalog-db`** (engine still PostgreSQL in v1)
 - Maven: `com.createyourpizza` / `auth-service` + `catalog-service`
+- §5.1: Auth service-ready smoke on **06**; Catalog read-path smoke on **10**; **08** after **06** `DONE-`; **11** after **10** `DONE-`
 
 ## What NOT to do
 
@@ -124,3 +128,5 @@ Process: [docs/hifl-playbook.md](hifl-playbook.md) · Decisions: [docs/project-c
 - Do not put API secrets in JWT claims
 - Do not give trusted systems a catalog API-key handler — JWT only after `/auth/token`
 - Do not add a parent POM
+- Do not skip §5.1 Auth service-ready smoke on **06** or Catalog read-path smoke on **10**
+- Do not start **08** before **06** `DONE-`, or **11** before **10** `DONE-`

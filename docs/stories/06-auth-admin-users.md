@@ -23,6 +23,11 @@ As an admin, I want to create other admins, list users, and approve/deny/revoke 
 - Unit tests with **>80% LoC** coverage of code added/changed for this story
 - Full **behaviour** coverage: approve secret once; deny; revoke blocks token; cannot DELETE self; list pagination `next=-1`; create admin
 
+## Tasks
+
+- [ ] Admin user APIs per acceptance criteria
+- [ ] After ACs + candid review of code, before `DONE-` rename: run [Build plan §5.1](../build-plan.md) **auth service-ready** Compose smoke; record result in Notes / handoff. If smoke fails, do **not** rename to `DONE-`.
+
 ## Notes
 
-Unblocks **15** (with 13 and 14).
+Unblocks **15** (with 13 and 14). **Auth service-ready smoke** (Build plan §5.1) is the last task before `DONE-`; **08** must not start until this story is `DONE-` (smoke folded in).

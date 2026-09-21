@@ -26,6 +26,11 @@ As an admin or trusted system, I want the same list and get APIs with filters an
 - Unit tests with **>80% LoC** coverage of code added/changed for this story
 - Full **behaviour** coverage: filters, clamp, pizza-spec, admin and trusted same reads, pagination next=-1
 
+## Tasks
+
+- [ ] Catalog query APIs per acceptance criteria
+- [ ] After ACs + candid review of code, before `DONE-` rename: run [Build plan §5.1](../build-plan.md) **Catalog read-path service-ready** Compose smoke; record result in Notes / handoff. If smoke fails, do **not** rename to `DONE-`.
+
 ## Notes
 
-Unblocks **11**.
+Unblocks **11**. **Catalog read-path service-ready** smoke (Build plan §5.1) is the last task before `DONE-`; **11** must not start until this story is `DONE-` (smoke folded in). PDF **12** may still follow the graph from **09**.
