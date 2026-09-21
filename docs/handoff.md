@@ -2,9 +2,9 @@
 
 **Audience:** Next agent continuing HIFL — Build plan **APPROVED**; **Build** in progress.  
 **Owner:** PereRohit  
-**As of:** 2026-09-18 (Build-plan Approve)  
+**As of:** 2026-09-21 (Build story 03 done)  
 **Repo root:** local `create-your-pizza`  
-**Git:** last Design work on **`feat/design`**; **ask** before commit.
+**Git:** work on **`feat/03-auth-schema-bootstrap`**; **ask** before commit.
 
 **How to resume:** read [docs/hifl-playbook.md](hifl-playbook.md) → this file → open linked artifacts as needed. After every stage **Approve**: **compress** completed stages here, then refresh next-stage items — do **not** wipe and fully rewrite.
 
@@ -16,7 +16,7 @@
 | 2 Spec / PRD | [docs/spec.md](docs/spec.md) | **APPROVED** (aligned 2026-09-18) |
 | 3 Design / TRD | [docs/design.md](docs/design.md) | **APPROVED** 2026-09-18 |
 | 4 Build plan | [docs/build-plan.md](docs/build-plan.md) | **APPROVED** 2026-09-18 |
-| 5 Build | Spring Boot + Compose in this repo | **In progress** — `DONE-01` + `DONE-02`; next **03** / **07** |
+| 5 Build | Spring Boot + Compose in this repo | **In progress** — `DONE-01`–`DONE-03`; next **04** (needs 03) or **07** (independent) |
 | 6 Verify | [docs/verify.md](docs/verify.md) | Not started (after Build) |
 
 Process: [docs/hifl-playbook.md](hifl-playbook.md) · Decisions: [docs/project-context.md](docs/project-context.md) · Docs index: [docs/README.md](docs/README.md)
@@ -71,21 +71,21 @@ Process: [docs/hifl-playbook.md](hifl-playbook.md) · Decisions: [docs/project-c
 - [x] Build plan **APPROVED**; stories `01`–`15` under `docs/stories/`
 - [x] Implement **01** on `feat/01-compose-and-config` — [`DONE-01-compose-config.md`](stories/DONE-01-compose-config.md)
 - [x] Owner **02** Initializr on `feat/02-maven-initializr` — [`DONE-02-OWNER-maven-initializr.md`](stories/DONE-02-OWNER-maven-initializr.md)
-- **Picked stories (Build):** none in progress — **next** [`03-auth-schema-bootstrap.md`](stories/03-auth-schema-bootstrap.md) or [`07-catalog-schema-seed.md`](stories/07-catalog-schema-seed.md) (independent)
+- [x] Implement **03** on `feat/03-auth-schema-bootstrap` — [`DONE-03-auth-schema-bootstrap.md`](stories/DONE-03-auth-schema-bootstrap.md)
+- **Picked stories (Build):** none in progress — **next** [`04-auth-jwks-jwt.md`](stories/04-auth-jwks-jwt.md) (after 03) or [`07-catalog-schema-seed.md`](stories/07-catalog-schema-seed.md) (independent)
 - [ ] After all stories `DONE-`: draft [docs/verify.md](verify.md)
 
 ## Steps (detail) — next stage focus: Build
 
 ### A. Now
 
-1. **01** and **02** are `DONE-`. Sibling Maven apps exist (Boot **4.1.1**, Java **26** pin).
-2. **Ask** before git commit (current work still on `feat/02-maven-initializr`).
-3. Next: pick **03** (auth schema) or **07** (catalog schema) on its own `feat/…` branch.
+1. **01**, **02**, and **03** are `DONE-`. Auth Flyway schema + first-admin bootstrap exist on `feat/03-auth-schema-bootstrap` (ask before commit).
+2. **Ask** before git commit.
+3. Next: pick **04** (auth JWKS/JWT, needs 03) or **07** (catalog schema) on its own `feat/…` branch.
 
-### B. After picking 03 or 07
+### B. After picking 04 or 07
 
-1. **03** and **07** may proceed independently.
-2. Then **04→05→06** on auth; **08** after **04** and **07**; never start **09** before **08**.
+1. **04→05→06** on auth; **07** may proceed in parallel with auth; **08** after **04** and **07**; never start **09** before **08**.
 
 ### C. After Build ready for Verify
 
