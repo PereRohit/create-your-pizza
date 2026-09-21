@@ -1,6 +1,6 @@
 # 03 — Auth schema and first-admin bootstrap
 
-**Status:** ready  
+**Status:** done  
 **Depends on:** `01-compose-config.md`, `02-OWNER-maven-initializr.md`  
 **Links:** [Intent](../intent.md) · [Spec](../spec.md) · [Design](../design.md) · [Build plan](../build-plan.md)
 
@@ -10,11 +10,11 @@ As an operator, I want auth-service to own `auth-db` schema and create the first
 
 ## Acceptance criteria
 
-- [ ] Flyway in `auth-service` creates `users`, `trusted_client_credentials`, `verification_keys` per Design
-- [ ] On startup: if count of `role = ADMIN` is 0, insert one `ADMIN` / `ACTIVE` and print username + password to stdout
-- [ ] If at least one admin exists, do not create another bootstrap admin
-- [ ] No first-admin SQL seed in Compose
-- [ ] `groupId` `com.createyourpizza`, `artifactId` `auth-service`, `<java.version>26</java.version>`
+- [x] Flyway in `auth-service` creates `users`, `trusted_client_credentials`, `verification_keys` per Design
+- [x] On startup: if count of `role = ADMIN` is 0, insert one `ADMIN` / `ACTIVE` and print username + password to stdout
+- [x] If at least one admin exists, do not create another bootstrap admin
+- [x] No first-admin SQL seed in Compose
+- [x] `groupId` `com.createyourpizza`, `artifactId` `auth-service`, `<java.version>26</java.version>`
 
 ## Tests (if coding)
 
@@ -23,8 +23,8 @@ As an operator, I want auth-service to own `auth-db` schema and create the first
 
 ## Tasks
 
-- [ ] Flyway migrations for Design auth tables
-- [ ] Bootstrap listener: create first admin only when zero admins; print credentials to stdout
+- [x] Flyway migrations for Design auth tables
+- [x] Bootstrap listener: create first admin only when zero admins; print credentials to stdout
 
 ## Notes
 
