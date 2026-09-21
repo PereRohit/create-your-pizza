@@ -62,8 +62,8 @@ Each **story** is implemented on its **own** branch. The branch holds **only** t
 | [DONE-02-OWNER-maven-initializr.md](DONE-02-OWNER-maven-initializr.md) | done |
 | [DONE-03-auth-schema-bootstrap.md](DONE-03-auth-schema-bootstrap.md) | done |
 | [DONE-04-auth-jwks-jwt.md](DONE-04-auth-jwks-jwt.md) | done |
-| [05-auth-login-register-token.md](05-auth-login-register-token.md) | ready |
-| [06-auth-admin-users.md](06-auth-admin-users.md) | ready (+ auth §5.1 smoke task) |
+| [DONE-05-auth-login-register-token.md](DONE-05-auth-login-register-token.md) | done |
+| [DONE-06-auth-admin-users.md](DONE-06-auth-admin-users.md) | done (§5.1 auth smoke PASS) |
 | [07-catalog-schema-seed.md](07-catalog-schema-seed.md) | ready |
 | [08-catalog-jwt-jwks.md](08-catalog-jwt-jwks.md) | ready (needs auth smoke via **06** `DONE-`) |
 | [09-catalog-writes.md](09-catalog-writes.md) | ready |

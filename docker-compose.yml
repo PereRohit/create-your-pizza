@@ -1,6 +1,5 @@
 # Root stack: two Postgres engines, Redis, both apps.
-# auth-service / catalog-service are alpine stubs until story 02 Initializr trees + Dockerfiles exist.
-# Then replace the stub `image`/`command` with `build: ./auth-service` and `build: ./catalog-service`.
+# auth-service builds from ./auth-service (story 06). catalog-service remains a stub until its Dockerfile lands.
 
 services:
   auth-db:
@@ -49,11 +48,12 @@ services:
       retries: 10
 
   auth-service:
-    image: alpine:3.21
-    command: ["sleep", "infinity"]
+    build: ./auth-service
     depends_on:
       auth-db:
         condition: service_healthy
+    ports:
+      - "8080:8080"
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://auth-db:5432/auth
       SPRING_DATASOURCE_USERNAME: auth
