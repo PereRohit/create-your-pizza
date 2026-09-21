@@ -1,17 +1,20 @@
 # User stories (`docs/stories/`)
 
-Created **after** Design Approve **and** Build-plan Approve — **before** application code. See [hifl-playbook.md](../hifl-playbook.md) (stories vs tasks vs Definition of Ready) and the graph in [build-plan.md](../build-plan.md) §6.
+Created **after** Design Approve **and** Build-plan Approve — **before** application code. See [hifl-playbook.md](../hifl-playbook.md) (stories vs tasks vs Definition of Ready; candid review loop) and the graph in [build-plan.md](../build-plan.md) §6.
+
+**Coding preference (this project):** Prefer Spring Boot / Security / Data / Hibernate / Lombok / JDK and Build-plan libraries over hand-rolled boilerplate. Reuse framework injection and annotations; do not invent wrappers that duplicate a library or Spring feature.
 
 ## How work is tracked (Agile)
 
 | Kind | What it is | Where | Done when |
 |------|------------|--------|-----------|
-| **Story** | User/operator increment **or** enabler that lands in git and unblocks others | `{id}-{slug}.md` or `{id}-OWNER-{slug}.md`; own branch | Rename to `DONE-…` |
+| **Story** | User/operator increment **or** enabler that lands in git and unblocks others | `{id}-{slug}.md` or `{id}-OWNER-{slug}.md`; own branch | Candid review loop, then rename to `DONE-…` |
 | **Task** | Step inside a story (pom dep, one migration) | `## Tasks` on that story | Parent story is `DONE-` |
 | **Definition of Ready** | Laptop/IDE so a story can start | Checklist below | Boxes ticked; not a story |
 | **HIFL gate / commit confirm** | Process | Chat + [handoff.md](../handoff.md) | Owner says Approve / yes commit |
+| **Candid review loop** | Fresh reviewer, then fresh fix agent, before a gate or `DONE-` | [Playbook](../hifl-playbook.md#candid-review-loop); ephemeral handoff is not a file | In-scope findings fixed or shown to the owner; later stories are not findings |
 
-Do **not** invent a story for Lombok-in-IDE, installing Docker, or “please confirm commit”. Do **not** invent a story for Nimbus/OpenPDF — those are **tasks** on **04** and **12**.
+Do **not** invent a story for Lombok-in-IDE, installing Docker, “please confirm commit”, or the candid review loop. Do **not** invent a story for Nimbus/OpenPDF — those are **tasks** on **04** and **12**.
 
 **Enabler stories in this backlog:** **01** Compose (agent), **02** Maven Initializr (**owner**). No other owner-only enabler is required for v1 Build.
 

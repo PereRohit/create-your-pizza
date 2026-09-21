@@ -1,11 +1,11 @@
 # Docs
 
-**Resume mid-process:** read [hifl-playbook.md](hifl-playbook.md), then the living [handoff.md](handoff.md) (compressed past stages + next checklist), then open APPROVED artifacts only as needed. After each stage **Approve**, compress that stage into handoff past memory and refresh next-stage items — do not blank-rewrite.
+**Resume mid-process:** read [hifl-playbook.md](hifl-playbook.md) (including the candid review loop), then the living [handoff.md](handoff.md) (compressed past stages + next checklist), then open APPROVED artifacts only as needed. After each stage **Approve**, compress that stage into handoff past memory and refresh next-stage items — do not blank-rewrite. Before every gate and before a story is `DONE-`, run the playbook’s candid review loop.
 
 | Doc | Role |
 |-----|------|
 | [handoff.md](handoff.md) | **Living resume** — compressed past stages + next-agent handoff |
-| [hifl-playbook.md](hifl-playbook.md) | HIFL stages, gates, hard rules, stage-end handoff |
+| [hifl-playbook.md](hifl-playbook.md) | HIFL stages, gates, candid review loop, hard rules, stage-end handoff |
 | [project-context.md](project-context.md) | Durable product decisions and decision log |
 | [intent.md](intent.md) | Stage 1 Intent — **APPROVED** |
 | [spec.md](spec.md) | Stage 2 Spec / PRD — **APPROVED** (aligned 2026-09-18) |

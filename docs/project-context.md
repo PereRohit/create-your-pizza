@@ -128,6 +128,8 @@ Former Intent mention of a distinct CUSTOMER principal for PDF access is **super
 
 **Locked:** **Java Spring Boot 4.1.1** with **Maven**, JAR, Java **26** (Initializr generate as 25, pin POM). Owner creates two sibling projects via **Spring Initializr**. Dependencies listed in [build-plan.md](build-plan.md).
 
+**Coding style (locked):** Do **not** reinvent the wheel. Prefer Spring Boot, Spring Security, Spring Data, Hibernate, Lombok, JDK APIs, and Build-plan libraries (Nimbus, OpenPDF, SpringDoc) over hand-rolled equivalents. Prefer framework injection and annotations over boilerplate. Do not invent wrappers that duplicate a library or Spring feature.
+
 Also locked for runtime: **PostgreSQL** engines named **`auth-db`** and **`catalog-db`** (PDF **history** version+bytea, option entities, user/roles/status, **DB-only JWT public keys**), **Redis** (catalog cache **TTL 3 min** + **latest** PDF — **not** JWT keys, **not** historical PDF), **JWT** (local verify via Resource Server + JWKS; admin login vs trusted token), **OpenAPI/Swagger**, **tests** (mock ports), Docker Compose. Paginated JSON uses envelope + **`pagination` sibling**; public GET PDF = **raw binary** (optional `version`).
 
 Do not start application code until Design and Build plan are approved **and** `docs/stories/` exists. Spec, Design, and Build plan are **APPROVED**. Next: **01** Compose and **02** owner Initializr (parallel). **One Postgres per service**; catalog verifies JWT via **JWKS**, not auth DB and not `/validate`.
@@ -193,12 +195,14 @@ Do not start application code until Design and Build plan are approved **and** `
 | 2026-09-18 | **Build plan APPROVED** (owner HIFL Approve); stories under `docs/stories/`; owner Initializr before coding auth/catalog schema | Locked (process) |
 | 2026-09-18 | **Stories:** `{id}-OWNER-{slug}.md` when the owner must act; enabler `02-OWNER-maven-initializr`; tasks on parent story; Definition of Ready is not a story; graph **01–15** | Locked (HIFL Revise) |
 | 2026-09-18 | **Playbook Revise:** each Build story on its own branch `feat/<story-id>-<max-5-word-summary>`; branch contains **only** that story’s changes; still ask before commit | Locked (HIFL Revise) |
+| 2026-09-21 | **Process:** candid review loop on every HIFL stage and each Build story — fresh reviewer, then fresh fix agent; ephemeral handoff is prompt-only; later stages/stories are not findings; loop does not replace Approve / Revise / Park | Locked (owner) |
+| 2026-09-21 | **Build style:** no reinventing the wheel — prefer Spring Boot / Security / Data / Hibernate / Lombok / JDK and Build-plan libraries over hand-rolled boilerplate; reuse framework injection and annotations | Locked (owner) |
 
 ## Document map
 
 | Doc | Role |
 |-----|------|
-| [hifl-playbook.md](hifl-playbook.md) | Process: stages, gates, stage-end handoff hard rules |
+| [hifl-playbook.md](hifl-playbook.md) | Process: stages, gates, candid review loop, stage-end handoff hard rules |
 | [README.md](README.md) | Docs index + how to resume |
 | [intent.md](intent.md) | Stage 1 Intent — **APPROVED** 2026-09-17 |
 | [spec.md](spec.md) | Stage 2 Spec / PRD — **APPROVED** 2026-09-17; aligned 2026-09-18 |
