@@ -10,4 +10,6 @@ import com.createyourpizza.auth.domain.TrustedClientCredentials;
 public interface TrustedClientCredentialsRepository extends JpaRepository<TrustedClientCredentials, UUID> {
 
 	Optional<TrustedClientCredentials> findByApiKey(String apiKey);
+
+	Optional<TrustedClientCredentials> findByUser_Id(UUID userId);
 }

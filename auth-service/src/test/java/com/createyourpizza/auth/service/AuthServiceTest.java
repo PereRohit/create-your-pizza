@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -23,7 +24,18 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.crypto.password.PasswordEncoder;
+
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Path;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
 
 import com.createyourpizza.auth.config.JwtProperties;
 import com.createyourpizza.auth.domain.TrustedClientCredentials;
@@ -207,6 +219,192 @@ class AuthServiceTest {
 
 		assertThatThrownBy(() -> authService.exchangeToken("key-1", "wrong"))
 				.isInstanceOf(AuthFailureException.class);
+	}
+
+	@Test
+	void createAdminPersistsActiveAdmin() {
+		when(userRepository.existsByUsername("chef")).thenReturn(false);
+		when(passwordEncoder.encode("secret")).thenReturn("encoded");
+		when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
+			User user = invocation.getArgument(0);
+			user.setId(UUID.randomUUID());
+			return user;
+		});
+
+		var data = authService.createAdmin("chef", "secret");
+
+		assertThat(data.username()).isEqualTo("chef");
+		assertThat(data.role()).isEqualTo(UserRole.ADMIN);
+		assertThat(data.status()).isEqualTo(UserStatus.ACTIVE);
+		assertThat(data.userId()).isNotNull();
+
+		ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
+		verify(userRepository).save(captor.capture());
+		assertThat(captor.getValue().getPasswordHash()).isEqualTo("encoded");
+	}
+
+	@Test
+	void createAdminRejectsDuplicateUsername() {
+		when(userRepository.existsByUsername("chef")).thenReturn(true);
+
+		assertThatThrownBy(() -> authService.createAdmin("chef", "secret"))
+				.isInstanceOf(AuthConflictException.class);
+		verify(userRepository, never()).save(any());
+	}
+
+	@Test
+	void approveIssuesCredentialsOnceForPendingTrusted() {
+		User user = trustedUser(UserStatus.PENDING);
+		TrustedClientCredentials credentials = credentials(user, null, null, null);
+		when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+		when(credentialsRepository.findByUser_Id(user.getId())).thenReturn(Optional.of(credentials));
+		when(passwordEncoder.encode(any())).thenReturn("secret-hash");
+		when(credentialsRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+		when(userRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+		var data = authService.approve(user.getId());
+
+		assertThat(data.status()).isEqualTo(UserStatus.ACTIVE);
+		assertThat(data.apiKey()).isNotBlank();
+		assertThat(data.apiSecret()).isNotBlank();
+		assertThat(credentials.getApiKey()).isEqualTo(data.apiKey());
+		assertThat(credentials.getSecretHash()).isEqualTo("secret-hash");
+		assertThat(user.getStatus()).isEqualTo(UserStatus.ACTIVE);
+	}
+
+	@Test
+	void approveRejectsNonPending() {
+		User user = trustedUser(UserStatus.ACTIVE);
+		when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+
+		assertThatThrownBy(() -> authService.approve(user.getId()))
+				.isInstanceOf(AuthBadRequestException.class);
+	}
+
+	@Test
+	void denySetsDeniedForPendingTrusted() {
+		User user = trustedUser(UserStatus.PENDING);
+		when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+		when(userRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+		var data = authService.deny(user.getId());
+
+		assertThat(data.status()).isEqualTo(UserStatus.DENIED);
+		assertThat(user.getStatus()).isEqualTo(UserStatus.DENIED);
+	}
+
+	@Test
+	void revokeSetsRevokedAndTimestamp() {
+		User user = trustedUser(UserStatus.ACTIVE);
+		TrustedClientCredentials credentials = credentials(user, "key-1", "hash", null);
+		when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+		when(credentialsRepository.findByUser_Id(user.getId())).thenReturn(Optional.of(credentials));
+		when(credentialsRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+		when(userRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+		var data = authService.revoke(user.getId());
+
+		assertThat(data.status()).isEqualTo(UserStatus.REVOKED);
+		assertThat(credentials.getRevokedAt()).isNotNull();
+	}
+
+	@Test
+	void deleteUserRejectsSelf() {
+		UUID id = UUID.randomUUID();
+
+		assertThatThrownBy(() -> authService.deleteUser(id, id.toString()))
+				.isInstanceOf(AuthForbiddenException.class);
+		verify(userRepository, never()).delete(any(User.class));
+	}
+
+	@Test
+	void listUsersDefaultsPageSizeAndNextWhenNoMorePages() {
+		Page<User> page = new PageImpl<>(List.of(), PageRequest.of(0, 10), 0);
+		when(userRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
+
+		AuthService.UserListPage result = authService.listUsers(null, null, null, null);
+
+		ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+		verify(userRepository).findAll(any(Specification.class), pageableCaptor.capture());
+		assertThat(pageableCaptor.getValue().getPageSize()).isEqualTo(10);
+		assertThat(pageableCaptor.getValue().getPageNumber()).isZero();
+		assertThat(result.pagination().current()).isEqualTo(1);
+		assertThat(result.pagination().next()).isEqualTo(-1);
+		assertThat(result.pagination().total()).isZero();
+	}
+
+	@Test
+	void listUsersClampsPageSizeToMax100() {
+		Page<User> page = new PageImpl<>(List.of(), PageRequest.of(0, 100), 0);
+		when(userRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
+
+		authService.listUsers(null, null, 1, 500);
+
+		ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+		verify(userRepository).findAll(any(Specification.class), pageableCaptor.capture());
+		assertThat(pageableCaptor.getValue().getPageSize()).isEqualTo(100);
+	}
+
+	@Test
+	void listUsersSetsNextPageWhenMoreResultsExist() {
+		User user = trustedUser(UserStatus.ACTIVE);
+		Page<User> page = new PageImpl<>(List.of(user), PageRequest.of(0, 10), 25);
+		when(userRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
+
+		AuthService.UserListPage result = authService.listUsers(null, null, 1, 10);
+
+		assertThat(result.pagination().next()).isEqualTo(2);
+		assertThat(result.pagination().total()).isEqualTo(25);
+		assertThat(result.items()).singleElement()
+				.satisfies(item -> {
+					assertThat(item.userId()).isEqualTo(user.getId());
+					assertThat(item.displayName()).isEqualTo("Partner");
+				});
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void listUsersAppliesRoleAndStatusFilters() {
+		Page<User> page = new PageImpl<>(List.of(), PageRequest.of(0, 10), 0);
+		when(userRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
+
+		authService.listUsers(UserRole.ADMIN, UserStatus.ACTIVE, 1, 10);
+
+		ArgumentCaptor<Specification<User>> specCaptor = ArgumentCaptor.forClass(Specification.class);
+		verify(userRepository).findAll(specCaptor.capture(), any(Pageable.class));
+
+		Root<User> root = mock(Root.class);
+		CriteriaQuery<?> query = mock(CriteriaQuery.class);
+		CriteriaBuilder cb = mock(CriteriaBuilder.class);
+		Path<Object> rolePath = mock(Path.class);
+		Path<Object> statusPath = mock(Path.class);
+		Predicate rolePredicate = mock(Predicate.class);
+		Predicate statusPredicate = mock(Predicate.class);
+		Predicate combined = mock(Predicate.class);
+
+		when(root.get("role")).thenReturn(rolePath);
+		when(root.get("status")).thenReturn(statusPath);
+		when(cb.equal(rolePath, UserRole.ADMIN)).thenReturn(rolePredicate);
+		when(cb.equal(statusPath, UserStatus.ACTIVE)).thenReturn(statusPredicate);
+		when(cb.and(any(Predicate.class), any(Predicate.class))).thenReturn(combined);
+
+		specCaptor.getValue().toPredicate(root, query, cb);
+
+		verify(cb).equal(rolePath, UserRole.ADMIN);
+		verify(cb).equal(statusPath, UserStatus.ACTIVE);
+	}
+
+	@Test
+	void deleteUserRemovesOtherUserAndCredentials() {
+		User user = trustedUser(UserStatus.PENDING);
+		TrustedClientCredentials credentials = credentials(user, null, null, null);
+		when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+		when(credentialsRepository.findByUser_Id(user.getId())).thenReturn(Optional.of(credentials));
+
+		authService.deleteUser(user.getId(), UUID.randomUUID().toString());
+
+		verify(credentialsRepository).delete(credentials);
+		verify(userRepository).delete(user);
 	}
 
 	private static User adminUser(String username, String passwordHash) {
