@@ -16,7 +16,7 @@
 | 2 Spec / PRD | [docs/spec.md](docs/spec.md) | **APPROVED** (aligned 2026-09-18) |
 | 3 Design / TRD | [docs/design.md](docs/design.md) | **APPROVED** 2026-09-18 |
 | 4 Build plan | [docs/build-plan.md](docs/build-plan.md) | **APPROVED** 2026-09-18 |
-| 5 Build | Spring Boot + Compose in this repo | **Started** — `DONE-01-compose-config`; apps still Compose stubs until **02** Initializr |
+| 5 Build | Spring Boot + Compose in this repo | **In progress** — `DONE-01` + `DONE-02`; next **03** / **07** |
 | 6 Verify | [docs/verify.md](docs/verify.md) | Not started (after Build) |
 
 Process: [docs/hifl-playbook.md](hifl-playbook.md) · Decisions: [docs/project-context.md](docs/project-context.md) · Docs index: [docs/README.md](docs/README.md)
@@ -68,23 +68,23 @@ Process: [docs/hifl-playbook.md](hifl-playbook.md) · Decisions: [docs/project-c
 
 ## Checklist for the next agent
 
-- [x] Build plan **APPROVED**; stories `01`–`15` under `docs/stories/` (enabler **02** = owner Initializr)
-- **Picked stories (Build):** none in progress — **next** [`02-OWNER-maven-initializr.md`](stories/02-OWNER-maven-initializr.md)
-- [ ] Owner completes **02** (`02-OWNER-maven-initializr.md`) on `feat/02-maven-initializr`
+- [x] Build plan **APPROVED**; stories `01`–`15` under `docs/stories/`
 - [x] Implement **01** on `feat/01-compose-and-config` — [`DONE-01-compose-config.md`](stories/DONE-01-compose-config.md)
+- [x] Owner **02** Initializr on `feat/02-maven-initializr` — [`DONE-02-OWNER-maven-initializr.md`](stories/DONE-02-OWNER-maven-initializr.md)
+- **Picked stories (Build):** none in progress — **next** [`03-auth-schema-bootstrap.md`](stories/03-auth-schema-bootstrap.md) or [`07-catalog-schema-seed.md`](stories/07-catalog-schema-seed.md) (independent)
 - [ ] After all stories `DONE-`: draft [docs/verify.md](verify.md)
 
 ## Steps (detail) — next stage focus: Build
 
 ### A. Now
 
-1. **01** is `DONE-` (root Compose + `.properties`). **02** remains owner Initializr (`02-OWNER-maven-initializr.md`, branch `feat/02-maven-initializr`).
-2. **Ask** before git commit.
-3. Do not start **03** / **07** until **01** and **02** are `DONE-`.
+1. **01** and **02** are `DONE-`. Sibling Maven apps exist (Boot **4.1.1**, Java **26** pin).
+2. **Ask** before git commit (current work still on `feat/02-maven-initializr`).
+3. Next: pick **03** (auth schema) or **07** (catalog schema) on its own `feat/…` branch.
 
-### B. After 01 and 02 are `DONE-`
+### B. After picking 03 or 07
 
-1. **03** (auth) and **07** (catalog schema) may proceed independently.
+1. **03** and **07** may proceed independently.
 2. Then **04→05→06** on auth; **08** after **04** and **07**; never start **09** before **08**.
 
 ### C. After Build ready for Verify
