@@ -1,6 +1,6 @@
 # 04 — Auth JWKS and JWT issue
 
-**Status:** ready  
+**Status:** done  
 **Depends on:** `03-auth-schema-bootstrap.md`  
 **Links:** [Intent](../intent.md) · [Spec](../spec.md) · [Design](../design.md) · [Build plan](../build-plan.md)
 
@@ -10,13 +10,13 @@ As catalog-service (and any client), I want auth to publish JWKS and issue RS256
 
 ## Acceptance criteria
 
-- [ ] Auth holds private RS256 key in process/config only
-- [ ] On boot/rotation, public JWK upserted into `verification_keys`
-- [ ] Public `GET /auth/.well-known/jwks.json` returns active keys array
-- [ ] Issued JWT: header `alg`, `kid`, `typ=JWT`; claims `sub`, `iss`, `aud`, `exp`, `iat`, `scope`, `roles`; `client_id` when trusted; optional `jti`
-- [ ] `iss` = `create-your-pizza-auth`; `aud` = `create-your-pizza-catalog`
-- [ ] TTL from `app.jwt.ttl` default 30 minutes
-- [ ] No `POST /auth/validate`
+- [x] Auth holds private RS256 key in process/config only
+- [x] On boot/rotation, public JWK upserted into `verification_keys`
+- [x] Public `GET /auth/.well-known/jwks.json` returns active keys array
+- [x] Issued JWT: header `alg`, `kid`, `typ=JWT`; claims `sub`, `iss`, `aud`, `exp`, `iat`, `scope`, `roles`; `client_id` when trusted; optional `jti`
+- [x] `iss` = `create-your-pizza-auth`; `aud` = `create-your-pizza-catalog`
+- [x] TTL from `app.jwt.ttl` default 30 minutes
+- [x] No `POST /auth/validate`
 
 ## Tests (if coding)
 
@@ -25,8 +25,8 @@ As catalog-service (and any client), I want auth to publish JWKS and issue RS256
 
 ## Tasks
 
-- [ ] Add Nimbus JOSE JWT to `auth-service/pom.xml`
-- [ ] RS256 key in process; upsert public JWK; JWKS endpoint; issue JWT with locked claims
+- [x] Add Nimbus JOSE JWT to `auth-service/pom.xml`
+- [x] RS256 key in process; upsert public JWK; JWKS endpoint; issue JWT with locked claims
 
 ## Notes
 
