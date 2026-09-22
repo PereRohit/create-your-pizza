@@ -66,7 +66,7 @@ Each **story** is implemented on its **own** branch. The branch holds **only** t
 | [DONE-06-auth-admin-users.md](DONE-06-auth-admin-users.md) | done (§5.1 auth smoke PASS) |
 | [DONE-07-catalog-schema-seed.md](DONE-07-catalog-schema-seed.md) | done |
 | [DONE-08-catalog-jwt-jwks.md](DONE-08-catalog-jwt-jwks.md) | done |
-| [09-catalog-writes.md](09-catalog-writes.md) | ready |
+| [DONE-09-catalog-writes.md](DONE-09-catalog-writes.md) | done |
 | [10-catalog-queries.md](10-catalog-queries.md) | ready (+ catalog read-path §5.1 smoke task) |
 | [11-catalog-redis-cache.md](11-catalog-redis-cache.md) | ready (needs catalog read-path smoke via **10** `DONE-`) |
 | [12-pdf-job-locks.md](12-pdf-job-locks.md) | ready |
