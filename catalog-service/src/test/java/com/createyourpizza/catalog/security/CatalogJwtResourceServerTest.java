@@ -27,6 +27,9 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
+import com.createyourpizza.catalog.menu.InMemoryLatestMenuStore;
+import com.createyourpizza.catalog.menu.LatestMenuStore;
+import com.createyourpizza.catalog.repository.MenuPdfRepository;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.RSAKey;
@@ -88,6 +91,12 @@ class CatalogJwtResourceServerTest {
 
 	@Autowired
 	private MockMvc mockMvc;
+
+	@Autowired
+	private MenuPdfRepository menuPdfRepository;
+
+	@Autowired
+	private LatestMenuStore latestMenuStore;
 
 	@AfterAll
 	static void stopJwks() {
@@ -216,6 +225,10 @@ class CatalogJwtResourceServerTest {
 
 	@Test
 	void publicMenuPdfDoesNotRequireJwt() throws Exception {
+		menuPdfRepository.deleteAll();
+		if (latestMenuStore instanceof InMemoryLatestMenuStore memory) {
+			memory.clear();
+		}
 		mockMvc.perform(get("/api/menu.pdf")).andExpect(status().isNotFound());
 	}
 

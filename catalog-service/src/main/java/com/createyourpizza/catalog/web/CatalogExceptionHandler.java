@@ -2,6 +2,7 @@ package com.createyourpizza.catalog.web;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -28,6 +29,7 @@ public class CatalogExceptionHandler {
 		HttpStatus status = HttpStatus.valueOf(ex.getStatusCode().value());
 		String reason = ex.getReason() != null ? ex.getReason() : status.getReasonPhrase();
 		return ResponseEntity.status(status)
+				.contentType(MediaType.APPLICATION_JSON)
 				.body(ApiEnvelope.error(status.value(), reason, reason));
 	}
 

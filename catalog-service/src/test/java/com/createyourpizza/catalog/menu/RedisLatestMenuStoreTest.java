@@ -43,4 +43,20 @@ class RedisLatestMenuStoreTest {
 		assertThat(json.getValue()).contains("\"updatedAt\":\"2026-01-01T00:00:00Z\"");
 		assertThat(json.getValue()).contains("\"pdf\":");
 	}
+
+	@Test
+	void getReadsJsonAndEmptyWhenMissing() {
+		when(values.get(LatestMenuKeys.LATEST)).thenReturn(null);
+		assertThat(store.get()).isEmpty();
+
+		when(values.get(LatestMenuKeys.LATEST)).thenReturn("  ");
+		assertThat(store.get()).isEmpty();
+
+		when(values.get(LatestMenuKeys.LATEST))
+				.thenReturn("{\"pdf\":\"AQID\",\"version\":2,\"updatedAt\":\"2026-01-01T00:00:00Z\"}");
+		LatestMenu menu = store.get().orElseThrow();
+		assertThat(menu.version()).isEqualTo(2);
+		assertThat(menu.pdf()).isEqualTo(new byte[] { 1, 2, 3 });
+		assertThat(menu.updatedAt()).isEqualTo(Instant.parse("2026-01-01T00:00:00Z"));
+	}
 }
