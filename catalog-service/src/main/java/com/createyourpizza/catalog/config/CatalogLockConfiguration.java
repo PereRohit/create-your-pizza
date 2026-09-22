@@ -1,7 +1,6 @@
 package com.createyourpizza.catalog.config;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -15,15 +14,14 @@ import com.createyourpizza.catalog.lock.RedisCatalogLockStore;
 @EnableConfigurationProperties(LockProperties.class)
 public class CatalogLockConfiguration {
 
+	/**
+	 * Resolved at bean-creation time: {@code StringRedisTemplate} is contributed by
+	 * auto-configuration, which runs after this application {@code @Configuration}.
+	 */
 	@Bean
-	@ConditionalOnBean(StringRedisTemplate.class)
-	CatalogLockStore redisCatalogLockStore(StringRedisTemplate redis) {
-		return new RedisCatalogLockStore(redis);
-	}
-
-	@Bean
-	@ConditionalOnMissingBean(CatalogLockStore.class)
-	CatalogLockStore inMemoryCatalogLockStore() {
-		return new InMemoryCatalogLockStore();
+	CatalogLockStore catalogLockStore(ObjectProvider<StringRedisTemplate> redis) {
+		return redis.stream().findFirst()
+				.<CatalogLockStore>map(RedisCatalogLockStore::new)
+				.orElseGet(InMemoryCatalogLockStore::new);
 	}
 }
