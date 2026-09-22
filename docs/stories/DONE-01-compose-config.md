@@ -16,6 +16,7 @@ As an operator, I want one root Docker Compose file and locked config properties
 - [x] Apps may be stubs until Initializr trees exist; Compose still names both app services
 - [x] Env/config includes datasource URLs, Redis URL, catalog JWKS URL placeholder
 - [x] These properties exist with defaults: `app.pdf.interval` = 5 minutes, `app.cache.catalog-ttl` = 3 minutes, `app.jwt.ttl` = 30 minutes, `app.lock.pdf-ttl` = 120 seconds, `app.lock.write-ttl` = 30 seconds
+- [x] Explicit HikariCP pool settings in both apps’ `application.properties` (`spring.datasource.hikari.*`; max pool 10, min idle 2; env-overridable); auth-service Compose may set `SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE` / `MINIMUM_IDLE`
 - [x] Config is `.properties` files, not YAML application config
 - [x] JWT `iss` = `create-your-pizza-auth`, `aud` = `create-your-pizza-catalog` documented in properties or constants notes
 
@@ -36,3 +37,5 @@ As an operator, I want one root Docker Compose file and locked config properties
 Graph: first enabler, parallel with **02**. Unblocks **03** and **07** together with **02**.
 
 Landed on `feat/01-compose-and-config`: root Compose (app services are alpine sleep stubs until Initializr Dockerfiles exist); `auth-service` / `catalog-service` `application.properties` with URLs and MUST defaults. Host ports: auth-db `5432`, catalog-db `5433`, redis `6379`.
+
+**Follow-up (HikariCP):** Both services now declare explicit `spring.datasource.hikari.*` (pool names `auth-pool` / `catalog-pool`). Boot already pooled via Hikari; this makes sizing visible and overridable. See [build-plan.md](../build-plan.md) §7.

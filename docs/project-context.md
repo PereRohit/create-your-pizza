@@ -198,6 +198,7 @@ Do not start application code until Design and Build plan are approved **and** `
 | 2026-09-21 | **Process:** candid review loop on every HIFL stage and each Build story — fresh reviewer, then fresh fix agent; ephemeral handoff is prompt-only; later stages/stories are not findings; loop does not replace Approve / Revise / Park; **loop cap = 3** review→fix cycles | Locked (owner) |
 | 2026-09-21 | **Build style:** no reinventing the wheel — prefer Spring Boot / Security / Data / Hibernate / Lombok / JDK and Build-plan libraries over hand-rolled boilerplate; reuse framework injection and annotations | Locked (owner) |
 | 2026-09-21 | **Build-plan Revise APPROVED:** Auth service-ready after **06**; Catalog read-path service-ready after **10** (**11–14** still later); story `mvn test` stays mocked; Stage 6 Verify remains full residual pack; **08** waits for **06** `DONE-`; **11** waits for **10** `DONE-`; PDF **12** may follow **09** without waiting on **10** | Locked (owner HIFL Approve) |
+| 2026-09-22 | **JDBC pool:** Spring Boot **HikariCP** per service; explicit `spring.datasource.hikari.*` (max pool **10**, min idle **2**, timeouts as in Build plan §7); env-overridable; no custom `DataSource` bean; no PgBouncer in v1 | Locked (Build follow-up) |
 
 ## Document map
 
