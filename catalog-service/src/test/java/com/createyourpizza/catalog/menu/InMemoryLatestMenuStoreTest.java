@@ -15,10 +15,13 @@ class InMemoryLatestMenuStoreTest {
 		LatestMenu second = new LatestMenu(new byte[] { 2 }, 2, Instant.parse("2026-01-01T00:05:00Z"));
 
 		store.put(first);
+		assertThat(store.get()).contains(first);
 		assertThat(store.getLatest()).isSameAs(first);
 		store.put(second);
+		assertThat(store.get()).contains(second);
 		assertThat(store.getLatest()).isSameAs(second);
 		store.clear();
+		assertThat(store.get()).isEmpty();
 		assertThat(store.getLatest()).isNull();
 	}
 }

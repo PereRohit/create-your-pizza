@@ -2,6 +2,7 @@ package com.createyourpizza.catalog.menu;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.Optional;
 
 import org.springframework.data.redis.core.StringRedisTemplate;
 
@@ -26,6 +27,20 @@ public class RedisLatestMenuStore implements LatestMenuStore {
 		}
 		catch (IOException ex) {
 			throw new UncheckedIOException("Failed to write latest menu Redis key", ex);
+		}
+	}
+
+	@Override
+	public Optional<LatestMenu> get() {
+		String json = redis.opsForValue().get(LatestMenuKeys.LATEST);
+		if (json == null || json.isBlank()) {
+			return Optional.empty();
+		}
+		try {
+			return Optional.of(objectMapper.readValue(json, LatestMenu.class));
+		}
+		catch (IOException ex) {
+			throw new UncheckedIOException("Failed to read latest menu Redis key", ex);
 		}
 	}
 
