@@ -69,7 +69,7 @@ Each **story** is implemented on its **own** branch. The branch holds **only** t
 | [DONE-09-catalog-writes.md](DONE-09-catalog-writes.md) | done |
 | [DONE-10-catalog-queries.md](DONE-10-catalog-queries.md) | done (§5.1 catalog read-path smoke PASS) |
 | [DONE-11-catalog-redis-cache.md](DONE-11-catalog-redis-cache.md) | done |
-| [12-pdf-job-locks.md](12-pdf-job-locks.md) | ready |
+| [DONE-12-pdf-job-locks.md](DONE-12-pdf-job-locks.md) | done |
 | [13-public-pdf.md](13-public-pdf.md) | ready |
 | [14-test-pdf-trigger.md](14-test-pdf-trigger.md) | ready |
 | [15-openapi-agents.md](15-openapi-agents.md) | ready |
