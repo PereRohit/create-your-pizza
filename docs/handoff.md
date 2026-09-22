@@ -2,9 +2,9 @@
 
 **Audience:** Next agent continuing HIFL — Build plan **APPROVED** (incl. §5.1 revise **APPROVED** 2026-09-21); **Build** in progress.  
 **Owner:** PereRohit  
-**As of:** 2026-09-22 (Build story **07** done; next **08**)  
+**As of:** 2026-09-22 (Build story **08** done; next **09**)  
 **Repo root:** local `create-your-pizza`  
-**Git:** work on **`feat/07-catalog-schema-seed`** (ready to commit — **ask** before commit).
+**Git:** work on **`feat/08-catalog-jwt-jwks`** (ready to commit — **ask** before commit).
 
 **How to resume:** read [docs/hifl-playbook.md](hifl-playbook.md) → this file → open linked artifacts as needed. After every stage **Approve**: **compress** completed stages here, then refresh next-stage items — do **not** wipe and fully rewrite.
 
@@ -16,7 +16,7 @@
 | 2 Spec / PRD | [docs/spec.md](docs/spec.md) | **APPROVED** (aligned 2026-09-18) |
 | 3 Design / TRD | [docs/design.md](docs/design.md) | **APPROVED** 2026-09-18 |
 | 4 Build plan | [docs/build-plan.md](docs/build-plan.md) | **APPROVED** 2026-09-18; **Revise APPROVED** 2026-09-21 (§5.1) |
-| 5 Build | Spring Boot + Compose in this repo | **In progress** — `DONE-01`–`DONE-07`; next **08** (catalog JWT/JWKS) |
+| 5 Build | Spring Boot + Compose in this repo | **In progress** — `DONE-01`–`DONE-08`; next **09** (catalog writes) |
 | 6 Verify | [docs/verify.md](docs/verify.md) | Not started (after Build) |
 
 Process: [docs/hifl-playbook.md](hifl-playbook.md) · Decisions: [docs/project-context.md](docs/project-context.md) · Docs index: [docs/README.md](docs/README.md)
@@ -81,20 +81,21 @@ Process: [docs/hifl-playbook.md](hifl-playbook.md) · Decisions: [docs/project-c
 - [x] Implement **05** on `feat/05-auth-login-register-token` — [`DONE-05-auth-login-register-token.md`](stories/DONE-05-auth-login-register-token.md)
 - [x] Implement **06** on `feat/06-auth-admin-users` — [`DONE-06-auth-admin-users.md`](stories/DONE-06-auth-admin-users.md) (§5.1 auth smoke **PASS**)
 - [x] Implement **07** on `feat/07-catalog-schema-seed` — [`DONE-07-catalog-schema-seed.md`](stories/DONE-07-catalog-schema-seed.md)
-- **Picked stories (Build):** none in progress — **next** [`08-catalog-jwt-jwks.md`](stories/08-catalog-jwt-jwks.md)
+- [x] Implement **08** on `feat/08-catalog-jwt-jwks` — [`DONE-08-catalog-jwt-jwks.md`](stories/DONE-08-catalog-jwt-jwks.md)
+- **Picked stories (Build):** none in progress — **next** [`09-catalog-writes.md`](stories/09-catalog-writes.md)
 - [ ] After all stories `DONE-`: draft [docs/verify.md](verify.md)
 
 ## Steps (detail) — next stage focus: Build
 
 ### A. Now
 
-1. **01**–**07** are `DONE-`. Auth is service-ready (§5.1 smoke PASS). Catalog schema+seed landed. Ask before commit of `feat/07-catalog-schema-seed`.
+1. **01**–**08** are `DONE-`. Catalog is OAuth2 Resource Server (JWKS local verify). Ask before commit of `feat/08-catalog-jwt-jwks`.
 2. **Ask** before git commit.
-3. Next: **08** (catalog JWT/JWKS Resource Server) on `feat/08-…`. Needs **04**, **07**, and **06** `DONE-` (all satisfied).
+3. Next: **09** (catalog writes) on `feat/09-…`. Needs **08** `DONE-` (satisfied).
 
-### B. After 08
+### B. After 09
 
-1. Never start **09** before **08**; after **09**, **10→11** (**10** `DONE-` includes §5.1 catalog read-path smoke before **11**) and PDF **12** may follow **09** without waiting on **10**.
+1. After **09**, **10→11** (**10** `DONE-` includes §5.1 catalog read-path smoke before **11**) and PDF **12** may follow **09** without waiting on **10**.
 
 ### C. After Build ready for Verify
 
