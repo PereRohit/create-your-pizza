@@ -13,21 +13,32 @@ import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
-final class TestJwtSupport {
+public final class TestJwtSupport {
 
 	private TestJwtSupport() {
 	}
 
-	static String jwksJson(RSAKey publicKey) {
+	public static String jwksJson(RSAKey publicKey) {
 		return "{\"keys\":[" + publicKey.toPublicJWK().toJSONString() + "]}";
 	}
 
-	static String sign(
+	public static String sign(
 			RSAKey key,
 			String kid,
 			String issuer,
 			String audience,
 			String scope,
+			Instant exp) throws Exception {
+		return sign(key, kid, issuer, audience, scope, List.of("ADMIN"), exp);
+	}
+
+	public static String sign(
+			RSAKey key,
+			String kid,
+			String issuer,
+			String audience,
+			String scope,
+			List<String> roles,
 			Instant exp) throws Exception {
 		JWTClaimsSet claims = new JWTClaimsSet.Builder()
 				.subject(UUID.randomUUID().toString())
@@ -37,7 +48,7 @@ final class TestJwtSupport {
 				.expirationTime(Date.from(exp))
 				.jwtID(UUID.randomUUID().toString())
 				.claim("scope", scope)
-				.claim("roles", List.of("ADMIN"))
+				.claim("roles", roles)
 				.build();
 
 		JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.RS256)
