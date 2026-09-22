@@ -39,7 +39,7 @@ Process: [docs/hifl-playbook.md](hifl-playbook.md) · Decisions: [docs/project-c
 
 ### 3 Design / TRD — APPROVED 2026-09-18
 
-- Two services: **auth-service** + **catalog-service**; **one Postgres each** (Compose/DB names **`auth-db`**, **`catalog-db`**); catalog Redis (cache, latest PDF, locks); Compose those five.
+- Two services: **auth-service** + **catalog-service**; **one Postgres each** (Compose/DB names **`auth-db`**, **`catalog-db`**); **HikariCP** JDBC pool per app (`spring.datasource.hikari.*`); catalog Redis (cache, latest PDF, locks); Compose those five.
 - Auth: admin login vs trusted `POST /auth/register` → PENDING → approve (API key+secret once) → `POST /auth/token`; bootstrap first admin; **cannot DELETE self**; paginated `/auth/users`; principal type from **URL**; JWKS `GET /auth/.well-known/jwks.json`; **no** `/validate`; **no** catalog reading auth DB.
 - Catalog: `product_type` simple|combo|pizza; **option_entities** pizza-only; shared catalog; pizza **`optionsEnabled`**; combo price admin-set; veg/non-veg all three.
 - PDF: header Create Your Pizza; vN; sellable name+price; pizza with options: note **options available**; pizza-spec in **own space**; history in catalog DB; Redis latest only; GET raw PDF; `?version=` history; version **only on successful generate**.
@@ -51,7 +51,7 @@ Process: [docs/hifl-playbook.md](hifl-playbook.md) · Decisions: [docs/project-c
 
 ### 4 Build plan — APPROVED 2026-09-18; Revise APPROVED 2026-09-21 §5.1
 
-- Stack: Spring Boot **4.1.1**, Maven JAR, Java **26** (Initializr **25** then pin POM), `.properties`, Lombok both apps.
+- Stack: Spring Boot **4.1.1**, Maven JAR, Java **26** (Initializr **25** then pin POM), `.properties`, Lombok both apps; **HikariCP** pool defaults in both `application.properties` (max **10**, min idle **2**); Compose may override via `SPRING_DATASOURCE_HIKARI_*`.
 - Independent siblings: `groupId` **`com.createyourpizza`**; artifacts **`auth-service`**, **`catalog-service`**; packages `com.createyourpizza.auth` / `com.createyourpizza.catalog`.
 - Catalog: OAuth2 Resource Server + JWKS URL. Tests: mock ports. One root Compose. Graph of stories **01–15** (enabler **02** = owner Initializr).
 - **§5.1 (2026-09-21):** Auth service-ready Compose smoke = last task on **06** before `DONE-`; Catalog read-path service-ready smoke = last task on **10** before `DONE-` (**11–14** still later). **08** waits for **04**, **07**, and **06** `DONE-`; **11** waits for **10** `DONE-`. PDF **12** may follow **09** without waiting on **10**. Story `mvn test` stays mocked; Stage 6 Verify remains full residual pack.

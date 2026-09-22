@@ -85,6 +85,8 @@ Each service has its **own Postgres**. Table names below live in that service’
 | **auth-db** | Identity, roles, passwords, trusted credentials + approval/revoke, **public** JWKs | **auth-service only** (JWKS is served as HTTP, not as DB access) | **auth-service only** |
 | **catalog-db** | Products, combo membership, option entities, PDF **history**, dirty meta | **catalog-service only** | **catalog-service only** |
 
+**Connection pooling:** Each app uses Spring Boot’s **HikariCP** JDBC pool (auto-configured from `spring.datasource.*`). JPA repositories borrow connections from that pool; do not open raw `DriverManager` connections. Explicit pool sizing lives in `application.properties` (`spring.datasource.hikari.*`, env-overridable). Defaults and Compose overrides are locked in [build-plan.md](build-plan.md) §7.
+
 **Access patterns (typical)**
 
 | Pattern | Path |
@@ -817,11 +819,12 @@ Used by **catalog-service only**.
 | Admin vs trusted register | **Different endpoints** (`/auth/admins` vs `/auth/register`) |
 | JWT verify | **JWKS HTTP** + memory; **no** shared DB; **no** `/validate` |
 | Databases | **One Postgres per service** |
+| JDBC pool | **HikariCP** (Boot default); explicit `spring.datasource.hikari.*` per service; no custom `DataSource` bean |
 | `kid` rotation | Startup JWKS + refetch on unknown kid; no timer |
 | GET PDF | Raw binary; default latest; `version` query; history in catalog DB; Redis latest only |
 | Catalog Redis | TTL from config default **3 min**; Redis-first; fill on DB fetch |
 | Auth bootstrap | First admin on empty admin set; stdout credentials |
-| Config | PDF interval, cache TTL, JWT TTL, **lock TTLs** **must** be properties with those defaults |
+| Config | PDF interval, cache TTL, JWT TTL, **lock TTLs**, and **HikariCP pool sizing** **must** be properties with those defaults |
 
 ---
 

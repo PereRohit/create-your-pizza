@@ -322,6 +322,19 @@ Stories **03–06** are auth-service; **07–14** catalog-service plus **15** bo
 
 Plus datasource URLs, Redis URL, JWKS URL (catalog), `iss`/`aud` matching §2.
 
+**Postgres connection pool (HikariCP)** — Spring Boot auto-configures Hikari as the JDBC pool; both services set explicit `spring.datasource.hikari.*` (env-overridable). No custom `DataSource` `@Bean`. Pool lives in each JVM, not in the Postgres container.
+
+| Property | Default | Notes |
+|----------|---------|--------|
+| `spring.datasource.hikari.pool-name` | `auth-pool` / `catalog-pool` | Per service |
+| `spring.datasource.hikari.maximum-pool-size` | `10` | Override via `SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE` |
+| `spring.datasource.hikari.minimum-idle` | `2` | Override via `SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE` |
+| `spring.datasource.hikari.connection-timeout` | `30000` (ms) | |
+| `spring.datasource.hikari.idle-timeout` | `600000` (ms) | |
+| `spring.datasource.hikari.max-lifetime` | `1800000` (ms) | |
+
+Compose may set the same overrides on app services (auth-service already does for max pool / min idle). Keep sum of all clients’ `maximum-pool-size` under Postgres `max_connections`.
+
 ---
 
 ## 8. Test plan (behaviour; mocks OK)
