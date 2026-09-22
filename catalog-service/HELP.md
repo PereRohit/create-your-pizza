@@ -11,7 +11,6 @@ For further reference, please consider the following sections:
 * [Spring Data JPA](https://docs.spring.io/spring-boot/4.1.1/reference/data/sql.html#data.sql.jpa-and-spring-data)
 * [Flyway Migration](https://docs.spring.io/spring-boot/4.1.1/how-to/data-initialization.html#howto.data-initialization.migration-tool.flyway)
 * [Validation](https://docs.spring.io/spring-boot/4.1.1/reference/io/validation.html)
-* [SpringDoc OpenAPI](https://springdoc.org/)
 * [OAuth2 Resource Server](https://docs.spring.io/spring-boot/4.1.1/reference/web/spring-security.html#web.security.oauth2.server)
 * [Spring Data Redis (Access+Driver)](https://docs.spring.io/spring-boot/4.1.1/reference/data/nosql.html#data.nosql.redis)
 
@@ -26,7 +25,6 @@ The following guides illustrate how to use some features concretely:
 * [Authenticating a User with LDAP](https://spring.io/guides/gs/authenticating-ldap/)
 * [Accessing Data with JPA](https://spring.io/guides/gs/accessing-data-jpa/)
 * [Validation](https://spring.io/guides/gs/validating-form-input/)
-* [SpringDoc OpenAPI](https://github.com/springdoc/springdoc-openapi-demos/)
 * [Messaging with Redis](https://spring.io/guides/gs/messaging-redis/)
 
 ### Maven Parent overrides

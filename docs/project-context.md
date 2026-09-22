@@ -50,7 +50,7 @@ A pizza delivery store needs one catalog of **Simple**, **Combo**, and **Pizza**
 | Stack | **Java Spring Boot + Maven**; owner uses **Spring Initializr**; dependency suggestions = **Build-stage** task |
 | Docker | Postgres + Redis **volumes** + **sample data** per product type; **full stack** dockerized; one-command bring-up |
 | AGENTS.md | Planned **delivery artifact** (create at Build) |
-| OpenAPI/Swagger | API list for integrations; **Postman-importable** |
+| OpenAPI/Swagger | API list for integrations; **Postman-importable**; **static** `docs/openapi/*` only; regenerate via `scripts/generate-openapi.sh` (**Docker-only**; no live Swagger UI) |
 
 ### From owner HIFL Revise (2026-09-17, second)
 
@@ -128,7 +128,7 @@ Former Intent mention of a distinct CUSTOMER principal for PDF access is **super
 
 **Locked:** **Java Spring Boot 4.1.1** with **Maven**, JAR, Java **26** (Initializr generate as 25, pin POM). Owner creates two sibling projects via **Spring Initializr**. Dependencies listed in [build-plan.md](build-plan.md).
 
-**Coding style (locked):** Do **not** reinvent the wheel. Prefer Spring Boot, Spring Security, Spring Data, Hibernate, Lombok, JDK APIs, and Build-plan libraries (Nimbus, OpenPDF, SpringDoc) over hand-rolled equivalents. Prefer framework injection and annotations over boilerplate. Do not invent wrappers that duplicate a library or Spring feature.
+**Coding style (locked):** Do **not** reinvent the wheel. Prefer Spring Boot, Spring Security, Spring Data, Hibernate, Lombok, JDK APIs, and Build-plan libraries (Nimbus, OpenPDF) over hand-rolled equivalents. Prefer framework injection and annotations over boilerplate. Do not invent wrappers that duplicate a library or Spring feature.
 
 Also locked for runtime: **PostgreSQL** engines named **`auth-db`** and **`catalog-db`** (PDF **history** version+bytea, option entities, user/roles/status, **DB-only JWT public keys**), **Redis** (catalog cache **TTL 3 min** + **latest** PDF — **not** JWT keys, **not** historical PDF), **JWT** (local verify via Resource Server + JWKS; admin login vs trusted token), **OpenAPI/Swagger**, **tests** (mock ports), Docker Compose. Paginated JSON uses envelope + **`pagination` sibling**; public GET PDF = **raw binary** (optional `version`).
 
@@ -199,6 +199,7 @@ Do not start application code until Design and Build plan are approved **and** `
 | 2026-09-21 | **Build style:** no reinventing the wheel — prefer Spring Boot / Security / Data / Hibernate / Lombok / JDK and Build-plan libraries over hand-rolled boilerplate; reuse framework injection and annotations | Locked (owner) |
 | 2026-09-21 | **Build-plan Revise APPROVED:** Auth service-ready after **06**; Catalog read-path service-ready after **10** (**11–14** still later); story `mvn test` stays mocked; Stage 6 Verify remains full residual pack; **08** waits for **06** `DONE-`; **11** waits for **10** `DONE-`; PDF **12** may follow **09** without waiting on **10** | Locked (owner HIFL Approve) |
 | 2026-09-22 | **JDBC pool:** Spring Boot **HikariCP** per service; explicit `spring.datasource.hikari.*` (max pool **10**, min idle **2**, timeouts as in Build plan §7); env-overridable; no custom `DataSource` bean; no PgBouncer in v1 | Locked (Build follow-up) |
+| 2026-09-22 | **Static OpenAPI (hard):** committed `docs/openapi/{auth,catalog}-service.{yaml,json}` are the **only** Postman/import contract; no runtime Swagger UI; regenerate with `./scripts/generate-openapi.sh` (**Docker-only** temporary JDK container + test-scoped SpringDoc) when APIs change | Locked (owner) |
 
 ## Document map
 
@@ -212,5 +213,6 @@ Do not start application code until Design and Build plan are approved **and** `
 | This file | Durable decisions and decision log |
 | [design.md](design.md) | Stage 3 — **APPROVED** 2026-09-18 |
 | [build-plan.md](build-plan.md) | Stage 4 — **APPROVED** 2026-09-18; **Revise APPROVED** 2026-09-21 (§5.1 service-ready / catalog read-path smoke) |
-| `AGENTS.md` | Build-stage delivery artifact (not created yet) |
+| `AGENTS.md` | Build-stage delivery artifact (repo root) |
+| [openapi/](openapi/) | Static OpenAPI YAML/JSON delivery artifacts |
 <!-- local-sync-stamp: 2026-09-17-handoff-process -->

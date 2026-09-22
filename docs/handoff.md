@@ -2,9 +2,9 @@
 
 **Audience:** Next agent continuing HIFL — Build plan **APPROVED** (incl. §5.1 revise **APPROVED** 2026-09-21); **Build** in progress.  
 **Owner:** PereRohit  
-**As of:** 2026-09-22 (Build story **14** done; next **15**)  
+**As of:** 2026-09-22 (Build stories **01–15** `DONE-`; next **Verify**)  
 **Repo root:** local `create-your-pizza`  
-**Git:** work on **`feat/14-test-pdf-trigger`** (ready to commit — **ask** before commit).
+**Git:** work on **`feat/15-openapi-agents`** (ready to commit — **ask** before commit).
 
 **How to resume:** read [docs/hifl-playbook.md](hifl-playbook.md) → this file → open linked artifacts as needed. After every stage **Approve**: **compress** completed stages here, then refresh next-stage items — do **not** wipe and fully rewrite.
 
@@ -16,8 +16,8 @@
 | 2 Spec / PRD | [docs/spec.md](docs/spec.md) | **APPROVED** (aligned 2026-09-18) |
 | 3 Design / TRD | [docs/design.md](docs/design.md) | **APPROVED** 2026-09-18 |
 | 4 Build plan | [docs/build-plan.md](docs/build-plan.md) | **APPROVED** 2026-09-18; **Revise APPROVED** 2026-09-21 (§5.1) |
-| 5 Build | Spring Boot + Compose in this repo | **In progress** — `DONE-01`–`DONE-14`; next **15** (OpenAPI + AGENTS.md) |
-| 6 Verify | [docs/verify.md](docs/verify.md) | Not started (after Build) |
+| 5 Build | Spring Boot + Compose in this repo | **Ready for Verify** — `DONE-01`–`DONE-15` |
+| 6 Verify | [docs/verify.md](docs/verify.md) | **Next** — draft after Build |
 
 Process: [docs/hifl-playbook.md](hifl-playbook.md) · Decisions: [docs/project-context.md](docs/project-context.md) · Docs index: [docs/README.md](docs/README.md)
 
@@ -68,8 +68,9 @@ Process: [docs/hifl-playbook.md](hifl-playbook.md) · Decisions: [docs/project-c
 6. **Story git branches:** `feat/<story-id>-<max-5-word-summary>` (example `feat/01-compose-and-config`); **only** that story’s changes on the branch; still ask before commit.
 7. **Owner stories:** filename `{id}-OWNER-{slug}.md` when the owner must act; task lines prefixed **`Owner:`**.
 8. **Candid review loop** ([playbook](hifl-playbook.md#candid-review-loop)): before every stage gate and before a story is renamed `DONE-`. Fresh reviewer, then fresh fix agent. **Loop cap = 3** review→fix cycles. Ephemeral handoff is prompt-only and must not enter this file. Later stages and later stories are not findings. The loop does not replace Approve / Revise / Park.
-9. **No reinventing the wheel:** Prefer Spring Boot / Spring Security / Spring Data / Hibernate / Lombok / JDK APIs and approved libraries (Nimbus, OpenPDF, SpringDoc per Build plan) over hand-rolled equivalents. Prefer annotations and framework injection over boilerplate constructors, getters, timestamp/id callbacks, and custom wrappers when the framework already provides them. Do not invent a utility or abstraction that duplicates a library or Spring feature.
+9. **No reinventing the wheel:** Prefer Spring Boot / Spring Security / Spring Data / Hibernate / Lombok / JDK APIs and approved libraries (Nimbus, OpenPDF per Build plan) over hand-rolled equivalents. Prefer annotations and framework injection over boilerplate constructors, getters, timestamp/id callbacks, and custom wrappers when the framework already provides them. Do not invent a utility or abstraction that duplicates a library or Spring feature.
 10. **Service-ready smoke (§5.1):** last task before `DONE-` on **06** (auth) and **10** (catalog read-path); do not skip; do not require Compose for every story’s `mvn test`.
+11. **Static OpenAPI (hard):** committed specs under [`docs/openapi/`](openapi/) are the **only** Postman/import contract (no Swagger UI / live `/v3/api-docs` in apps). After endpoint changes run [`scripts/generate-openapi.sh`](../scripts/generate-openapi.sh) (**Docker-only**; temporary JDK container) and commit the regenerated files.
 
 ## Checklist for the next agent
 
@@ -87,25 +88,26 @@ Process: [docs/hifl-playbook.md](hifl-playbook.md) · Decisions: [docs/project-c
 - [x] Implement **11** on `feat/11-catalog-redis-cache` — [`DONE-11-catalog-redis-cache.md`](stories/DONE-11-catalog-redis-cache.md) (merged to `main`)
 - [x] Implement **12** on `feat/12-pdf-job-locks` — [`DONE-12-pdf-job-locks.md`](stories/DONE-12-pdf-job-locks.md) (merged to `main`)
 - [x] Implement **13** on `feat/13-public-pdf` — [`DONE-13-public-pdf.md`](stories/DONE-13-public-pdf.md) (merged to `main`)
-- [x] Implement **14** on `feat/14-test-pdf-trigger` — [`DONE-14-test-pdf-trigger.md`](stories/DONE-14-test-pdf-trigger.md)
-- **Picked stories (Build):** none in progress — **next** [`15-openapi-agents.md`](stories/15-openapi-agents.md)
-- [ ] After all stories `DONE-`: draft [docs/verify.md](verify.md)
+- [x] Implement **14** on `feat/14-test-pdf-trigger` — [`DONE-14-test-pdf-trigger.md`](stories/DONE-14-test-pdf-trigger.md) (merged to `main`)
+- [x] Implement **15** on `feat/15-openapi-agents` — [`DONE-15-openapi-agents.md`](stories/DONE-15-openapi-agents.md)
+- **Picked stories (Build):** none — all `DONE-`
+- [ ] Draft [docs/verify.md](verify.md); run candid review; Verify gate
 
-## Steps (detail) — next stage focus: Build
+## Steps (detail) — next stage focus: Verify
 
 ### A. Now
 
-1. **01**–**14** are `DONE-`. `POST /test/pdf/generate` is unauthenticated, `@Profile({"test","dev"})` only (absent on default/prod), and calls `PdfGenerationService.runOnce()` (same skip-not-queue lock/dirty rules as the scheduled job). Ask before commit of `feat/14-test-pdf-trigger`.
-2. **Ask** before git commit.
-3. Next: **15** (OpenAPI + AGENTS.md) on `feat/15-…`. **15** waits for **06**, **13**, and **14**.
+1. **Ask** before commit of `feat/15-openapi-agents` (static `docs/openapi/` + `AGENTS.md`).
+2. After merge: draft [docs/verify.md](verify.md) from Spec acceptance + residual pack (Build plan / Design §9).
+3. Candid review on Verify draft → owner **Approve** / **Revise** / **Park**.
 
-### B. After 13 / 14
+### B. After Verify Approve
 
-1. After **13** and **14**, **15** may proceed (also waits for **06**).
+1. Compress Build into past stages in this handoff; mark Verify **APPROVED**.
 
-### C. After Build ready for Verify
+### C. Residual
 
-1. Draft [docs/verify.md](verify.md); Verify gate.
+1. Owner may still want README HIFL summary refreshed (cosmetic; not a story).
 
 ## Locked product highlights (do not rediscover)
 
@@ -116,10 +118,11 @@ Process: [docs/hifl-playbook.md](hifl-playbook.md) · Decisions: [docs/project-c
 - Redis locks: PDF **120s**, write **30s** (`finally` + expiry); writes 503; job **skips not queued**; version **only on generate**
 - Config MUST: PDF interval (default 5m), catalog TTL (default 3m), JWT TTL (default 30m), lock TTLs 120s / 30s
 - Stories under `docs/stories/` before coding (playbook)
-- Full Dockerize; OpenAPI/Swagger; tests (mock ports); AGENTS.md at Build
+- Full Dockerize; OpenAPI/Swagger (**static** `docs/openapi/*.yaml|json` only); tests (mock ports); AGENTS.md at Build
 - DB Compose names: **`auth-db`**, **`catalog-db`** (engine still PostgreSQL in v1)
 - Maven: `com.createyourpizza` / `auth-service` + `catalog-service`
 - §5.1: Auth service-ready smoke on **06**; Catalog read-path smoke on **10**; **08** after **06** `DONE-`; **11** after **10** `DONE-`
+- Static OpenAPI: committed `docs/openapi/*`; regenerate via `./scripts/generate-openapi.sh` (Docker-only; no live Swagger)
 
 ## What NOT to do
 
@@ -140,3 +143,5 @@ Process: [docs/hifl-playbook.md](hifl-playbook.md) · Decisions: [docs/project-c
 - Do not add a parent POM
 - Do not skip §5.1 Auth service-ready smoke on **06** or Catalog read-path smoke on **10**
 - Do not start **08** before **06** `DONE-`, or **11** before **10** `DONE-`
+- Do not change API endpoints without regenerating and committing `docs/openapi/*` (`./scripts/generate-openapi.sh`)
+- Do not add runtime SpringDoc / Swagger UI / live `/v3/api-docs` — static OpenAPI files are the only contract (test-scoped export only)
