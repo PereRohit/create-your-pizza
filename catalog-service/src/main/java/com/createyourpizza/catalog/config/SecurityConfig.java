@@ -52,6 +52,8 @@ public class SecurityConfig {
 				.authorizeHttpRequests(auth -> auth
 						.requestMatchers(HttpMethod.GET, "/api/menu.pdf")
 						.permitAll()
+						.requestMatchers(HttpMethod.POST, "/test/pdf/generate")
+						.permitAll()
 						.requestMatchers(HttpMethod.GET, "/api/**")
 						.hasAuthority("SCOPE_catalog:read")
 						.requestMatchers(HttpMethod.POST, "/api/**")

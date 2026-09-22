@@ -71,7 +71,7 @@ Each **story** is implemented on its **own** branch. The branch holds **only** t
 | [DONE-11-catalog-redis-cache.md](DONE-11-catalog-redis-cache.md) | done |
 | [DONE-12-pdf-job-locks.md](DONE-12-pdf-job-locks.md) | done |
 | [DONE-13-public-pdf.md](DONE-13-public-pdf.md) | done |
-| [14-test-pdf-trigger.md](14-test-pdf-trigger.md) | ready |
+| [DONE-14-test-pdf-trigger.md](DONE-14-test-pdf-trigger.md) | done |
 | [15-openapi-agents.md](15-openapi-agents.md) | ready |
 
 ## Template
