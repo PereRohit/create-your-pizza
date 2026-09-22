@@ -8,11 +8,16 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+
+import com.createyourpizza.catalog.cache.InMemoryCatalogCacheStore;
+import com.createyourpizza.catalog.config.CacheProperties;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -48,10 +53,14 @@ class CatalogQueryServiceTest {
 
 	@BeforeEach
 	void setUp() {
+		CacheProperties cacheProperties = new CacheProperties();
+		cacheProperties.setCatalogTtl(Duration.ofMinutes(3));
 		service = new CatalogQueryService(
 				productRepository,
 				optionEntityRepository,
-				new CatalogResponseMapper(comboItemRepository));
+				new CatalogResponseMapper(comboItemRepository),
+				new InMemoryCatalogCacheStore(Clock.systemUTC()),
+				cacheProperties);
 	}
 
 	@Test
