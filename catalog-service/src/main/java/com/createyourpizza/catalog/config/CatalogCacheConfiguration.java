@@ -2,8 +2,7 @@ package com.createyourpizza.catalog.config;
 
 import java.time.Clock;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,15 +16,14 @@ import com.createyourpizza.catalog.cache.RedisCatalogCacheStore;
 @EnableConfigurationProperties(CacheProperties.class)
 public class CatalogCacheConfiguration {
 
+	/**
+	 * Resolved at bean-creation time: {@code StringRedisTemplate} is contributed by
+	 * auto-configuration, which runs after this application {@code @Configuration}.
+	 */
 	@Bean
-	@ConditionalOnBean(StringRedisTemplate.class)
-	CatalogCacheStore redisCatalogCacheStore(StringRedisTemplate redis) {
-		return new RedisCatalogCacheStore(redis);
-	}
-
-	@Bean
-	@ConditionalOnMissingBean(CatalogCacheStore.class)
-	CatalogCacheStore inMemoryCatalogCacheStore() {
-		return new InMemoryCatalogCacheStore(Clock.systemUTC());
+	CatalogCacheStore catalogCacheStore(ObjectProvider<StringRedisTemplate> redis) {
+		return redis.stream().findFirst()
+				.<CatalogCacheStore>map(RedisCatalogCacheStore::new)
+				.orElseGet(() -> new InMemoryCatalogCacheStore(Clock.systemUTC()));
 	}
 }

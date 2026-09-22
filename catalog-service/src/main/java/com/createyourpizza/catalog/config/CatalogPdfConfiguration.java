@@ -2,11 +2,11 @@ package com.createyourpizza.catalog.config;
 
 import java.time.Clock;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Fallback;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
@@ -27,26 +27,25 @@ public class CatalogPdfConfiguration {
 	}
 
 	@Bean
-	@ConditionalOnMissingBean
+	@Fallback
 	Clock clock() {
 		return Clock.systemUTC();
 	}
 
 	@Bean
-	@ConditionalOnMissingBean(MenuPdfRenderer.class)
+	@Fallback
 	MenuPdfRenderer openPdfMenuPdfRenderer() {
 		return new OpenPdfMenuPdfRenderer();
 	}
 
+	/**
+	 * Resolved at bean-creation time: {@code StringRedisTemplate} is contributed by
+	 * auto-configuration, which runs after this application {@code @Configuration}.
+	 */
 	@Bean
-	@ConditionalOnBean(StringRedisTemplate.class)
-	LatestMenuStore redisLatestMenuStore(StringRedisTemplate redis) {
-		return new RedisLatestMenuStore(redis);
-	}
-
-	@Bean
-	@ConditionalOnMissingBean(LatestMenuStore.class)
-	LatestMenuStore inMemoryLatestMenuStore() {
-		return new InMemoryLatestMenuStore();
+	LatestMenuStore latestMenuStore(ObjectProvider<StringRedisTemplate> redis) {
+		return redis.stream().findFirst()
+				.<LatestMenuStore>map(RedisLatestMenuStore::new)
+				.orElseGet(InMemoryLatestMenuStore::new);
 	}
 }
