@@ -128,7 +128,9 @@ class CatalogJwtResourceServerTest {
 				Instant.now().plusSeconds(600));
 
 		mockMvc.perform(get("/api/products").header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
-				.andExpect(status().isMethodNotAllowed());
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.status").value(200))
+				.andExpect(jsonPath("$.pagination.next").value(-1));
 	}
 
 	@Test
@@ -249,14 +251,14 @@ class CatalogJwtResourceServerTest {
 				Instant.now().plusSeconds(600));
 
 		mockMvc.perform(get("/api/products").header(HttpHeaders.AUTHORIZATION, "Bearer " + knownKidToken))
-				.andExpect(status().isMethodNotAllowed());
+				.andExpect(status().isOk());
 
 		int hitsAfterCacheWarm = JWKS_HITS.get();
 		assertThat(hitsAfterCacheWarm).isGreaterThanOrEqualTo(0);
 
 		// Known kid must be served from the in-memory cache (no additional HTTP GET).
 		mockMvc.perform(get("/api/products").header(HttpHeaders.AUTHORIZATION, "Bearer " + knownKidToken))
-				.andExpect(status().isMethodNotAllowed());
+				.andExpect(status().isOk());
 		assertThat(JWKS_HITS.get()).isEqualTo(hitsAfterCacheWarm);
 
 		synchronized (JWKS_RESPONSES) {
@@ -273,7 +275,7 @@ class CatalogJwtResourceServerTest {
 				Instant.now().plusSeconds(600));
 
 		mockMvc.perform(get("/api/products").header(HttpHeaders.AUTHORIZATION, "Bearer " + rotatedToken))
-				.andExpect(status().isMethodNotAllowed());
+				.andExpect(status().isOk());
 
 		assertThat(JWKS_HITS.get()).isEqualTo(hitsAfterCacheWarm + 1);
 	}
