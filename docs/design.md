@@ -764,7 +764,7 @@ Used by **catalog-service only**.
 
 ## 9. OpenAPI and tests (notes for Build)
 
-**OpenAPI / Swagger** — Springdoc per service; Postman-importable; document envelope, pagination, 503, PDF binary + `version` query, auth approve/revoke.
+**OpenAPI / Swagger** — **Hard (Build delivery):** committed static YAML/JSON under `docs/openapi/` are the Postman/import contract (envelope, pagination, 503, PDF binary + `version`, auth approve/revoke, JWKS). Do **not** serve Swagger UI or live `/v3/api-docs`. Regenerate with `scripts/generate-openapi.sh` when endpoints change (**Docker-only** temporary JDK container; test-scoped SpringDoc export).
 
 **Tests**
 
@@ -794,7 +794,7 @@ Used by **catalog-service only**.
 | `app.lock.pdf-ttl` | **120 seconds** |
 | `app.lock.write-ttl` | **30 seconds** |
 
-**AGENTS.md** at Build: compose, first-admin logs, Swagger, JWKS URL.
+**AGENTS.md** at Build: compose, first-admin logs, static OpenAPI paths, JWKS URL.
 
 **Stories:** before coding, write stories under `docs/stories/` per playbook (not this TRD).
 

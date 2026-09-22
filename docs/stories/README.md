@@ -72,7 +72,7 @@ Each **story** is implemented on its **own** branch. The branch holds **only** t
 | [DONE-12-pdf-job-locks.md](DONE-12-pdf-job-locks.md) | done |
 | [DONE-13-public-pdf.md](DONE-13-public-pdf.md) | done |
 | [DONE-14-test-pdf-trigger.md](DONE-14-test-pdf-trigger.md) | done |
-| [15-openapi-agents.md](15-openapi-agents.md) | ready |
+| [DONE-15-openapi-agents.md](DONE-15-openapi-agents.md) | done |
 
 ## Template
 

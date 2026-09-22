@@ -13,5 +13,6 @@
 | [build-plan.md](build-plan.md) | Stage 4 — **APPROVED** 2026-09-18 |
 | `verify.md` | Stage 6 — after Build |
 | [stories/README.md](stories/README.md) | Build-stage user stories **01–15** |
+| [openapi/](openapi/) | **Static** OpenAPI YAML/JSON; regenerate via [`scripts/generate-openapi.sh`](../scripts/generate-openapi.sh) (Docker-only) |
 
 **Git:** do not commit unless the owner confirms.
