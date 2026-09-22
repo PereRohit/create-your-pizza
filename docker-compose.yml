@@ -1,5 +1,5 @@
 # Root stack: two Postgres engines, Redis, both apps.
-# auth-service builds from ./auth-service (story 06). catalog-service remains a stub until its Dockerfile lands.
+# auth-service builds from ./auth-service (story 06). catalog-service builds from ./catalog-service (story 10).
 
 services:
   auth-db:
@@ -63,17 +63,22 @@ services:
       SERVER_PORT: "8080"
 
   catalog-service:
-    image: alpine:3.21
-    command: ["sleep", "infinity"]
+    build: ./catalog-service
     depends_on:
       catalog-db:
         condition: service_healthy
       redis:
         condition: service_healthy
+      auth-service:
+        condition: service_started
+    ports:
+      - "8081:8081"
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://catalog-db:5432/catalog
       SPRING_DATASOURCE_USERNAME: catalog
       SPRING_DATASOURCE_PASSWORD: catalog
+      SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE: "10"
+      SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE: "1"
       SPRING_DATA_REDIS_URL: redis://redis:6379
       AUTH_JWKS_URL: http://auth-service:8080/auth/.well-known/jwks.json
       SERVER_PORT: "8081"

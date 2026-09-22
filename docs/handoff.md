@@ -2,9 +2,9 @@
 
 **Audience:** Next agent continuing HIFL — Build plan **APPROVED** (incl. §5.1 revise **APPROVED** 2026-09-21); **Build** in progress.  
 **Owner:** PereRohit  
-**As of:** 2026-09-22 (Build story **09** done; next **10**)  
+**As of:** 2026-09-22 (Build story **10** done; next **11**)  
 **Repo root:** local `create-your-pizza`  
-**Git:** work on **`feat/09-catalog-writes`** (ready to commit — **ask** before commit).
+**Git:** work on **`feat/10-catalog-queries`** (ready to commit — **ask** before commit).
 
 **How to resume:** read [docs/hifl-playbook.md](hifl-playbook.md) → this file → open linked artifacts as needed. After every stage **Approve**: **compress** completed stages here, then refresh next-stage items — do **not** wipe and fully rewrite.
 
@@ -16,7 +16,7 @@
 | 2 Spec / PRD | [docs/spec.md](docs/spec.md) | **APPROVED** (aligned 2026-09-18) |
 | 3 Design / TRD | [docs/design.md](docs/design.md) | **APPROVED** 2026-09-18 |
 | 4 Build plan | [docs/build-plan.md](docs/build-plan.md) | **APPROVED** 2026-09-18; **Revise APPROVED** 2026-09-21 (§5.1) |
-| 5 Build | Spring Boot + Compose in this repo | **In progress** — `DONE-01`–`DONE-09`; next **10** (catalog queries + §5.1 read-path smoke) |
+| 5 Build | Spring Boot + Compose in this repo | **In progress** — `DONE-01`–`DONE-10`; next **11** (Redis catalog cache) |
 | 6 Verify | [docs/verify.md](docs/verify.md) | Not started (after Build) |
 
 Process: [docs/hifl-playbook.md](hifl-playbook.md) · Decisions: [docs/project-context.md](docs/project-context.md) · Docs index: [docs/README.md](docs/README.md)
@@ -83,20 +83,21 @@ Process: [docs/hifl-playbook.md](hifl-playbook.md) · Decisions: [docs/project-c
 - [x] Implement **07** on `feat/07-catalog-schema-seed` — [`DONE-07-catalog-schema-seed.md`](stories/DONE-07-catalog-schema-seed.md)
 - [x] Implement **08** on `feat/08-catalog-jwt-jwks` — [`DONE-08-catalog-jwt-jwks.md`](stories/DONE-08-catalog-jwt-jwks.md)
 - [x] Implement **09** on `feat/09-catalog-writes` — [`DONE-09-catalog-writes.md`](stories/DONE-09-catalog-writes.md)
-- **Picked stories (Build):** none in progress — **next** [`10-catalog-queries.md`](stories/10-catalog-queries.md)
+- [x] Implement **10** on `feat/10-catalog-queries` — [`DONE-10-catalog-queries.md`](stories/DONE-10-catalog-queries.md) (§5.1 catalog read-path smoke **PASS**)
+- **Picked stories (Build):** none in progress — **next** [`11-catalog-redis-cache.md`](stories/11-catalog-redis-cache.md)
 - [ ] After all stories `DONE-`: draft [docs/verify.md](verify.md)
 
 ## Steps (detail) — next stage focus: Build
 
 ### A. Now
 
-1. **01**–**09** are `DONE-`. Catalog admin writes + Redis write/PDF locks. Ask before commit of `feat/09-catalog-writes`.
+1. **01**–**10** are `DONE-`. Catalog list/get + §5.1 catalog read-path smoke **PASS**. Ask before commit of `feat/10-catalog-queries`.
 2. **Ask** before git commit.
-3. Next: **10** (catalog queries + §5.1 catalog read-path smoke) on `feat/10-…`. Needs **09** `DONE-` (satisfied). After **09**, PDF **12** may also proceed without waiting on **10**.
+3. Next: **11** (Redis catalog cache) on `feat/11-…`. Needs **10** `DONE-` (satisfied). PDF **12** may still proceed from **09** without waiting on **10**/**11**.
 
-### B. After 10
+### B. After 11
 
-1. After **10** `DONE-` (includes §5.1 catalog read-path smoke), **11** (Redis catalog cache) may start. PDF path **12→13/14** may already be in flight from **09**.
+1. After **11**, catalog cache is in. PDF path **12→13/14** may already be in flight from **09**. **15** still waits for **06**, **13**, and **14**.
 
 ### C. After Build ready for Verify
 

@@ -42,6 +42,7 @@ public class CatalogWriteService {
 	private final ComboItemRepository comboItemRepository;
 	private final OptionEntityRepository optionEntityRepository;
 	private final CatalogMetaRepository catalogMetaRepository;
+	private final CatalogResponseMapper mapper;
 
 	public ProductResponse createProduct(ProductWriteRequest request) {
 		return withWriteLock(() -> {
@@ -50,7 +51,7 @@ public class CatalogWriteService {
 			Product saved = productRepository.save(product);
 			replaceComboMembership(saved, request.getSimpleIds());
 			markDirty();
-			return toProductResponse(saved);
+			return mapper.toProductResponse(saved);
 		});
 	}
 
@@ -62,7 +63,7 @@ public class CatalogWriteService {
 			Product saved = productRepository.save(product);
 			replaceComboMembership(saved, request.getSimpleIds());
 			markDirty();
-			return toProductResponse(saved);
+			return mapper.toProductResponse(saved);
 		});
 	}
 
@@ -84,7 +85,7 @@ public class CatalogWriteService {
 			applyOptionFields(option, request);
 			OptionEntity saved = optionEntityRepository.save(option);
 			markDirty();
-			return toOptionResponse(saved);
+			return mapper.toOptionResponse(saved);
 		});
 	}
 
@@ -95,7 +96,7 @@ public class CatalogWriteService {
 			applyOptionFields(option, request);
 			OptionEntity saved = optionEntityRepository.save(option);
 			markDirty();
-			return toOptionResponse(saved);
+			return mapper.toOptionResponse(saved);
 		});
 	}
 
@@ -204,53 +205,6 @@ public class CatalogWriteService {
 		meta.setLastCatalogChangeAt(Instant.now());
 		// Do not change lastPdfVersion on writes (Design §3.3 / story AC).
 		catalogMetaRepository.save(meta);
-	}
-
-	private ProductResponse toProductResponse(Product product) {
-		List<UUID> simpleIds = null;
-		String wireType = switch (product.getProductType()) {
-			case simple -> "simple";
-			case combo -> "combo";
-			case pizza -> "pizza-base";
-		};
-		if (product.getProductType() == ProductType.combo) {
-			simpleIds = comboItemRepository.findByComboId(product.getId()).stream()
-					.map(ComboItem::getSimpleId)
-					.toList();
-		}
-		Boolean optionsEnabled = product.getProductType() == ProductType.pizza
-				? Boolean.TRUE.equals(product.getOptionsEnabled())
-				: null;
-		String notes = product.getCustomisationNotes();
-		if (notes != null && notes.isBlank()) {
-			notes = null;
-		}
-		return ProductResponse.builder()
-				.productId(product.getId())
-				.productName(product.getName())
-				.productType(wireType)
-				.productCategory(product.getCategory().getDbValue())
-				.productPrice(product.getPrice())
-				.optionsEnabled(optionsEnabled)
-				.customisationNotes(notes)
-				.active(product.isActive())
-				.simpleIds(simpleIds)
-				.productCreatedAt(product.getCreatedAt())
-				.productUpdatedAt(product.getUpdatedAt())
-				.build();
-	}
-
-	private OptionResponse toOptionResponse(OptionEntity option) {
-		return OptionResponse.builder()
-				.productId(option.getId())
-				.productName(option.getName())
-				.productType("pizza-spec")
-				.productPrice(option.getPrice())
-				.optionKind(option.getKind().name())
-				.isBase(option.isBase())
-				.productCreatedAt(option.getCreatedAt())
-				.productUpdatedAt(option.getUpdatedAt())
-				.build();
 	}
 
 	private static ProductType parseProductType(String raw) {
