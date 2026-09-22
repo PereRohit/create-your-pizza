@@ -32,6 +32,8 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
+import com.createyourpizza.catalog.cache.CatalogCacheStore;
+import com.createyourpizza.catalog.cache.InMemoryCatalogCacheStore;
 import com.createyourpizza.catalog.domain.CatalogMeta;
 import com.createyourpizza.catalog.lock.CatalogLockKeys;
 import com.createyourpizza.catalog.lock.CatalogLockStore;
@@ -100,6 +102,9 @@ class CatalogWriteIntegrationTest {
 	private CatalogLockStore lockStore;
 
 	@Autowired
+	private CatalogCacheStore cacheStore;
+
+	@Autowired
 	private CatalogMetaRepository catalogMetaRepository;
 
 	@Autowired
@@ -133,6 +138,9 @@ class CatalogWriteIntegrationTest {
 		}
 		lockStore.release(CatalogLockKeys.PDF_GENERATION);
 		lockStore.release(CatalogLockKeys.CATALOG_WRITE);
+		if (cacheStore instanceof InMemoryCatalogCacheStore memoryCache) {
+			memoryCache.clear();
+		}
 		menuPdfRepository.deleteAll();
 		comboItemRepository.deleteAll();
 		optionEntityRepository.deleteAll();

@@ -68,7 +68,7 @@ Each **story** is implemented on its **own** branch. The branch holds **only** t
 | [DONE-08-catalog-jwt-jwks.md](DONE-08-catalog-jwt-jwks.md) | done |
 | [DONE-09-catalog-writes.md](DONE-09-catalog-writes.md) | done |
 | [DONE-10-catalog-queries.md](DONE-10-catalog-queries.md) | done (§5.1 catalog read-path smoke PASS) |
-| [11-catalog-redis-cache.md](11-catalog-redis-cache.md) | ready (needs **10** `DONE-`, includes catalog read-path smoke) |
+| [DONE-11-catalog-redis-cache.md](DONE-11-catalog-redis-cache.md) | done |
 | [12-pdf-job-locks.md](12-pdf-job-locks.md) | ready |
 | [13-public-pdf.md](13-public-pdf.md) | ready |
 | [14-test-pdf-trigger.md](14-test-pdf-trigger.md) | ready |

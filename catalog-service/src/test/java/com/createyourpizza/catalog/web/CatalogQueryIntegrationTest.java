@@ -27,6 +27,8 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
+import com.createyourpizza.catalog.cache.CatalogCacheStore;
+import com.createyourpizza.catalog.cache.InMemoryCatalogCacheStore;
 import com.createyourpizza.catalog.domain.CatalogMeta;
 import com.createyourpizza.catalog.lock.CatalogLockKeys;
 import com.createyourpizza.catalog.lock.CatalogLockStore;
@@ -95,6 +97,9 @@ class CatalogQueryIntegrationTest {
 	private CatalogLockStore lockStore;
 
 	@Autowired
+	private CatalogCacheStore cacheStore;
+
+	@Autowired
 	private CatalogMetaRepository catalogMetaRepository;
 
 	@Autowired
@@ -128,6 +133,9 @@ class CatalogQueryIntegrationTest {
 		}
 		lockStore.release(CatalogLockKeys.PDF_GENERATION);
 		lockStore.release(CatalogLockKeys.CATALOG_WRITE);
+		if (cacheStore instanceof InMemoryCatalogCacheStore memoryCache) {
+			memoryCache.clear();
+		}
 		menuPdfRepository.deleteAll();
 		comboItemRepository.deleteAll();
 		optionEntityRepository.deleteAll();
@@ -317,6 +325,38 @@ class CatalogQueryIntegrationTest {
 				.andExpect(jsonPath("$.pagination.next").value(-1))
 				.andExpect(jsonPath("$.pagination.total").value(5))
 				.andExpect(jsonPath("$.data.length()").value(1));
+	}
+
+	@Test
+	void adminWriteDoesNotInvalidateListCache() throws Exception {
+		String admin = adminToken();
+		seedCatalog(admin);
+
+		mockMvc.perform(get("/api/products")
+						.header(HttpHeaders.AUTHORIZATION, "Bearer " + admin)
+						.param("size", "100"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.pagination.total").value(5));
+
+		mockMvc.perform(post("/api/products")
+						.header(HttpHeaders.AUTHORIZATION, "Bearer " + admin)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "productName": "After Cache",
+								  "productType": "simple",
+								  "productCategory": "veg",
+								  "productPrice": 12.00
+								}
+								"""))
+				.andExpect(status().isCreated());
+
+		mockMvc.perform(get("/api/products")
+						.header(HttpHeaders.AUTHORIZATION, "Bearer " + admin)
+						.param("size", "100"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.pagination.total").value(5))
+				.andExpect(jsonPath("$.data[?(@.productName == 'After Cache')]").isEmpty());
 	}
 
 	@Test
