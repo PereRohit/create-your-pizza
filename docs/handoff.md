@@ -2,9 +2,9 @@
 
 **Audience:** Next agent continuing HIFL — Build plan **APPROVED** (incl. §5.1 revise **APPROVED** 2026-09-21); **Build** in progress.  
 **Owner:** PereRohit  
-**As of:** 2026-09-22 (Build story **13** done; next **14**)  
+**As of:** 2026-09-22 (Build story **14** done; next **15**)  
 **Repo root:** local `create-your-pizza`  
-**Git:** work on **`feat/13-public-pdf`** (ready to commit — **ask** before commit).
+**Git:** work on **`feat/14-test-pdf-trigger`** (ready to commit — **ask** before commit).
 
 **How to resume:** read [docs/hifl-playbook.md](hifl-playbook.md) → this file → open linked artifacts as needed. After every stage **Approve**: **compress** completed stages here, then refresh next-stage items — do **not** wipe and fully rewrite.
 
@@ -16,7 +16,7 @@
 | 2 Spec / PRD | [docs/spec.md](docs/spec.md) | **APPROVED** (aligned 2026-09-18) |
 | 3 Design / TRD | [docs/design.md](docs/design.md) | **APPROVED** 2026-09-18 |
 | 4 Build plan | [docs/build-plan.md](docs/build-plan.md) | **APPROVED** 2026-09-18; **Revise APPROVED** 2026-09-21 (§5.1) |
-| 5 Build | Spring Boot + Compose in this repo | **In progress** — `DONE-01`–`DONE-13`; next **14** (test-only PDF trigger) |
+| 5 Build | Spring Boot + Compose in this repo | **In progress** — `DONE-01`–`DONE-14`; next **15** (OpenAPI + AGENTS.md) |
 | 6 Verify | [docs/verify.md](docs/verify.md) | Not started (after Build) |
 
 Process: [docs/hifl-playbook.md](hifl-playbook.md) · Decisions: [docs/project-context.md](docs/project-context.md) · Docs index: [docs/README.md](docs/README.md)
@@ -86,17 +86,18 @@ Process: [docs/hifl-playbook.md](hifl-playbook.md) · Decisions: [docs/project-c
 - [x] Implement **10** on `feat/10-catalog-queries` — [`DONE-10-catalog-queries.md`](stories/DONE-10-catalog-queries.md) (§5.1 catalog read-path smoke **PASS**; merged to `main`)
 - [x] Implement **11** on `feat/11-catalog-redis-cache` — [`DONE-11-catalog-redis-cache.md`](stories/DONE-11-catalog-redis-cache.md) (merged to `main`)
 - [x] Implement **12** on `feat/12-pdf-job-locks` — [`DONE-12-pdf-job-locks.md`](stories/DONE-12-pdf-job-locks.md) (merged to `main`)
-- [x] Implement **13** on `feat/13-public-pdf` — [`DONE-13-public-pdf.md`](stories/DONE-13-public-pdf.md)
-- **Picked stories (Build):** none in progress — **next** [`14-test-pdf-trigger.md`](stories/14-test-pdf-trigger.md)
+- [x] Implement **13** on `feat/13-public-pdf` — [`DONE-13-public-pdf.md`](stories/DONE-13-public-pdf.md) (merged to `main`)
+- [x] Implement **14** on `feat/14-test-pdf-trigger` — [`DONE-14-test-pdf-trigger.md`](stories/DONE-14-test-pdf-trigger.md)
+- **Picked stories (Build):** none in progress — **next** [`15-openapi-agents.md`](stories/15-openapi-agents.md)
 - [ ] After all stories `DONE-`: draft [docs/verify.md](verify.md)
 
 ## Steps (detail) — next stage focus: Build
 
 ### A. Now
 
-1. **01**–**13** are `DONE-`. Public `GET /api/menu.pdf` is unauthenticated raw PDF; latest is Redis-first with DB `max(version)` fallback + backfill; `?version=` historical is DB only; missing/no rows → JSON 404 envelope (including `Accept: application/pdf`). Ask before commit of `feat/13-public-pdf`.
+1. **01**–**14** are `DONE-`. `POST /test/pdf/generate` is unauthenticated, `@Profile({"test","dev"})` only (absent on default/prod), and calls `PdfGenerationService.runOnce()` (same skip-not-queue lock/dirty rules as the scheduled job). Ask before commit of `feat/14-test-pdf-trigger`.
 2. **Ask** before git commit.
-3. Next: **14** (test-only PDF trigger) on `feat/14-…`. **15** waits for **06**, **13**, and **14**.
+3. Next: **15** (OpenAPI + AGENTS.md) on `feat/15-…`. **15** waits for **06**, **13**, and **14**.
 
 ### B. After 13 / 14
 
