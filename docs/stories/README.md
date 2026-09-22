@@ -2,6 +2,8 @@
 
 Created **after** Design Approve **and** Build-plan Approve — **before** application code. See [hifl-playbook.md](../hifl-playbook.md) (stories vs tasks vs Definition of Ready; candid review loop) and the graph in [build-plan.md](../build-plan.md) §6.
 
+**Bug tickets** are numbered into the same sequence after the v1 backlog (**16+**). They are raised from the [defect register](../bugs.md) when a check fails at Verify, and they close on stricter criteria than a story — full regression, not just their own tests. See [Defects found at Verify](../hifl-playbook.md#defects-found-at-verify-bug-tickets).
+
 **Coding preference (this project):** Prefer Spring Boot / Security / Data / Hibernate / Lombok / JDK and Build-plan libraries over hand-rolled boilerplate. Reuse framework injection and annotations; do not invent wrappers that duplicate a library or Spring feature.
 
 ## How work is tracked (Agile)
@@ -9,6 +11,7 @@ Created **after** Design Approve **and** Build-plan Approve — **before** appli
 | Kind | What it is | Where | Done when |
 |------|------------|--------|-----------|
 | **Story** | User/operator increment **or** enabler that lands in git and unblocks others | `{id}-{slug}.md` or `{id}-OWNER-{slug}.md`; own branch | Implement ACs (and non-smoke tasks), candid review of code, then §5.1 smoke as last task on **06**/**10**, then rename to `DONE-…` |
+| **Bug ticket** | Defect found after its story is already `DONE-` — RCA in [bugs.md](../bugs.md), same template, **Type:** bug | `{id}-{slug}.md`; own branch, **`fix/`** prefix not `feat/` | ACs + tasks, candid review, then **full regression** (both service suites + entire live residual pack on a fresh stack, including the evidence that exposed the bug), then `DONE-` rename and register row closed. See [playbook](../hifl-playbook.md#defects-found-at-verify-bug-tickets) |
 | **Task** | Step inside a story (pom dep, one migration) | `## Tasks` on that story | Parent story is `DONE-` |
 | **Definition of Ready** | Laptop/IDE so a story can start | Checklist below | Boxes ticked; not a story |
 | **Service-ready smoke** | Compose checkpoint: auth after **06**; catalog read-path after **10** | [Build plan §5.1](../build-plan.md); last task on **06** / **10** before `DONE-` | Smoke steps pass; then `DONE-` rename; note in story/handoff |
@@ -48,10 +51,11 @@ Story `mvn test` stays mocked (no Docker required). At each service-ready checkp
 
 Each **story** is implemented on its **own** branch. The branch holds **only** that story’s changes.
 
-- Format: `feat/<story-id>-<max-5-word-summary>`
+- Format: `feat/<story-id>-<max-5-word-summary>` — or **`fix/`** for a bug ticket
 - `<story-id>` is the **number only** (`02` from `02-OWNER-maven-initializr.md`)
 - Example for `01-compose-config.md`: `feat/01-compose-and-config`
 - Example for `02-OWNER-maven-initializr.md`: `feat/02-maven-initializr`
+- Example for `16-fix-redis-wiring.md` (**bug**): `fix/16-redis-bean-wiring`
 - Still **ask** the owner before any commit.
 
 ## Files
@@ -73,6 +77,8 @@ Each **story** is implemented on its **own** branch. The branch holds **only** t
 | [DONE-13-public-pdf.md](DONE-13-public-pdf.md) | done |
 | [DONE-14-test-pdf-trigger.md](DONE-14-test-pdf-trigger.md) | done |
 | [DONE-15-openapi-agents.md](DONE-15-openapi-agents.md) | done |
+| [DONE-16-fix-redis-wiring.md](DONE-16-fix-redis-wiring.md) | **bug** — [BUG-01](../bugs.md#bug-01--catalog-redis-beans-never-wired); done 2026-09-22 (`fix/16-redis-bean-wiring`, full regression) |
+| [17-openapi-error-responses.md](17-openapi-error-responses.md) | **bug** — [BUG-02](../bugs.md#bug-02--static-openapi-omits-503-and-all-error-responses); ready |
 
 ## Template
 

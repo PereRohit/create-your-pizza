@@ -26,7 +26,7 @@ The agent does not invent locked product decisions past what the owner has state
 | 3 | Design | Architecture, data model, security, PDF/API design | `docs/design.md` | Approve / Revise / Park |
 | 4 | Build plan | Tasks, order, test plan, stack confirmation | `docs/build-plan.md` | Approve / Revise / Park |
 | 5 | Build | Application code per approved plan | repo (after gate) | Checkpoint reviews as agreed |
-| 6 | Verify | Test evidence, demo notes, residual risks | `docs/verify.md` | Approve / Revise / Park |
+| 6 | Verify | Test evidence, demo notes, residual risks; **defect register entries** for anything that fails | `docs/verify.md` + [`docs/bugs.md`](bugs.md) | Approve / Revise / Park |
 
 ### Stage rules (each stage)
 
@@ -34,8 +34,8 @@ The agent does not invent locked product decisions past what the owner has state
 2. **Candid review loop** runs on that draft before the owner is asked to gate it (see [Candid review loop](#candid-review-loop)).
 3. **Human reviews** using the gate checklist below.
 4. **Human responds** with gate language: **Approve**, **Revise: …**, or **Park**.
-5. On **Approve**, status in the artifact becomes accepted; the agent **updates** [`docs/handoff.md`](handoff.md) for the **next** stage (see [Stage-end handoff](#stage-end-handoff--required)); then the next stage may start (subject to any owner hold, e.g. Design).
-6. On **Revise**, feedback returns to the **owning stage**; agent updates that artifact only (not the next stage), then the candid review loop runs again before the next gate ask.
+5. On **Approve**, status in the artifact becomes accepted; the agent **updates** [`docs/handoff.md`](handoff.md) for the **next** stage (see [Stage-end handoff](#stage-end-handoff-required)); then the next stage may start (subject to any owner hold, e.g. Design).
+6. On **Revise**, feedback returns to the **owning stage**; agent updates that artifact only (not the next stage), then the candid review loop runs again before the next gate ask. At **Verify**, a Revise caused by a *failing check* is not fixed by editing `verify.md` — it routes through a bug ticket (see [Defects found at Verify](#defects-found-at-verify-bug-tickets)).
 7. On **Park**, work on that stage pauses; no later stage starts; leave current `handoff.md` accurate for resume.
 
 ## Gate language
@@ -130,6 +130,7 @@ If a review returns `Findings: none`, or a fix makes no artifact change, stop th
 | Build plan | **Approved** Design | Application code |
 | Build story | That story plus the Design/Spec sections it cites, and the build plan’s test rules | Later stories on the graph; Verify’s live-stack run |
 | Verify | **Approved** Spec acceptance and the built system | New product scope |
+| Bug ticket | That bug’s [register](bugs.md) entry (RCA + closure criteria) and the Spec/Design clauses it cites | New product scope; unrelated defects — those get their own register entry |
 
 ## Build-stage user stories (required before coding)
 
@@ -151,6 +152,7 @@ After Design **and** Build-plan **Approve**, do **not** start implementation by 
    - `<story-id>` is the **numeric prefix only** (`02` from `02-OWNER-maven-initializr.md`). `OWNER` is a filename token, not part of the branch name.
    - `<max-5-word-summary>` is lowercase hyphenated English, **at most five words** (five hyphen-separated tokens).
    - Example: `feat/01-compose-and-config`
+   - **Bug tickets** keep everything above but swap the prefix to **`fix/`**: `fix/<ticket-id>-<max-5-word-summary>`, e.g. `fix/16-redis-bean-wiring`. Prefix by kind of work, not by stage that found it.
    - **Ask** before commit (hard rule 8). The branch name is not permission to commit.
 7. **Stories vs tasks vs ready vs gates** (Agile tracking):
    - **Story** (backlog item, own file, `DONE-` rename, own git branch): a slice that delivers user/operator value **or** an **enabler** that produces a durable repo increment and unblocks other stories (e.g. owner Initializr). Enablers still use the story template; mark **Type:** enabler when the actor is the owner or the increment is infrastructure.
@@ -159,6 +161,67 @@ After Design **and** Build-plan **Approve**, do **not** start implementation by 
    - **HIFL gates** (Approve / Revise / Park) and “ask before commit” stay **process**, not stories or tasks.
 
 This applies to any agentic SDLC using this playbook, not only CreateYourPizza.
+
+## Defects found at Verify (bug tickets)
+
+Stage 6 exists to compare the built system against **approved** Spec acceptance. When a check fails, the failure is a **defect**, not new scope — the behaviour was already locked and already shipped under a `DONE-` story. Do **not** fix it inline while drafting Verify, and do **not** quietly reclassify it as a residual note or a product decision.
+
+Every bug or deviation found at Verify goes through these steps, in order:
+
+```mermaid
+flowchart LR
+  found[Verify check fails]
+  rca[RCA in bugs.md]
+  ticket[Ticket in stories/]
+  fix[Fix sub-agent on own branch]
+  review[Candid review loop]
+  reg[Full regression]
+  close[DONE- rename + register closed]
+  found --> rca --> ticket --> fix --> review --> reg --> close
+  review -->|findings| fix
+  reg -->|any failure| fix
+```
+
+1. **Record the RCA in the defect register** [`docs/bugs.md`](bugs.md) — fault, root cause, evidence, blast radius, why the existing tests missed it, recommended fix, and the Spec/Design clauses breached. `verify.md` keeps only the evidence and a **link** to the register entry; it is not where analysis lives.
+2. **Raise a ticket** under [`docs/stories/`](stories/README.md) using the normal story template and the next number in sequence. A bug ticket is not a special case: same template, same `## Acceptance criteria` / `## Tests` / `## Tasks` sections, same one-branch-per-ticket rule, same `DONE-` rename. The only difference is the branch prefix — **`fix/<id>-<max-5-word-summary>`** instead of `feat/`, so a defect fix is distinguishable from a feature at a glance in branch and PR lists. Mark **Type:** bug and link both directions — register entry ↔ ticket.
+3. **Implement on that branch** with unit tests at **>80% LoC** of changed code and full behaviour coverage of the ticket's criteria. If the defect was invisible to the existing suite, the ticket **must** add the test that would have caught it.
+4. **Candid review loop** (fresh reviewer, then fresh fix agent, cap 3) as for any story, **before** the `DONE-` rename. The bug's register entry is the scope fence.
+5. **Full regression** — see below. Not the touched paths; the whole suite.
+6. **Close:** rename to `DONE-…`, flip the register row to **closed** with its closing evidence, update the `verify.md` defect table row with its **fix branch** and **resolution date**, refresh the evidence and acceptance rows the regression re-ran, update [`handoff.md`](handoff.md), then re-ask the Verify gate.
+
+### Full regression on every bug ticket completion
+
+A bug ticket is **never** closed on a green unit test alone. Closure requires, on every bug ticket without exception:
+
+- **Every** service's mocked suite, not only the service that changed.
+- The **entire** Stage 6 live residual pack re-run end to end on a **fresh** stack (volumes down, rebuild), not a spot check of the fixed behaviour.
+- The **specific live evidence that first exposed the defect**, now passing, quoted in the register entry.
+- No regression in checks that were already passing; a previously green line that goes red blocks closure.
+
+Rationale: these defects are, by definition, ones the existing tests could not see. A narrow re-test re-uses the blind spot that let the bug ship.
+
+### Verify stays open until the defect table is clear
+
+`verify.md` is a **living** artifact for the duration of the stage, not a snapshot written once. It carries a single **defect table** — every bug found in this stage, one row each, in tabular form — and the stage cannot be Approved while any row is open.
+
+| Column | Contents |
+|--------|----------|
+| Bug | Register id (`BUG-nn`) |
+| Title | One line |
+| Severity | Blocking / non-blocking against Spec acceptance |
+| RCA | Link to the [`bugs.md`](bugs.md) entry — never the analysis inline |
+| Ticket | Link to the ticket under `stories/` |
+| **Branch** | The fix branch `fix/<id>-<…>` |
+| Status | open / closed |
+| **Resolved** | Date the ticket reached `DONE-` after full regression; `—` while open |
+
+As each bug is fixed, update its row **in the same pass** as the `DONE-` rename: set status to closed, fill in the branch and resolution date, and refresh the affected evidence rows and acceptance verdicts above it from the regression re-run. Keep an open/closed tally under the table so the gate state is readable at a glance. Do not delete closed rows — the table is the stage's audit trail of what was found and when it was cleared.
+
+The gate ask is re-issued only once the table shows no open blocking rows. Non-blocking rows may be carried to the owner with the gate ask, explicitly listed, for an Approve-with-residuals decision.
+
+### Deviations that are not bugs
+
+A Verify finding is a **deviation to document**, not a bug, only when the built behaviour matches an approved artifact and the mismatch is with an expectation that was never locked. Record those in `verify.md` under product decisions with the citation that authorises them. If Spec or Design is what is wrong, do not patch code — reopen the owning stage per hard rule 2.
 
 ## Hard rules
 
@@ -170,9 +233,10 @@ This applies to any agentic SDLC using this playbook, not only CreateYourPizza.
 6. Artifacts live in **`docs/`**; stage status is tracked with the project coordinator. Do not scatter decisions only in chat.
 7. **Stage-end handoff required:** after every stage **Approve**, update [`docs/handoff.md`](handoff.md) before drafting the next stage: **compress** completed stages into a short past-memory section, then refresh next-stage checklist/steps. Do **not** wipe and fully rewrite from scratch. That file is the durable resume memory for the next agent — not chat, not Cursor rules.
 8. **No git commit unless the owner confirms.** After doc or code changes, the agent **asks** whether to commit (and on which branch/message). Never assume commit.
-   - **Build stories:** each story uses its own branch `feat/<story-id>-<max-5-word-summary>` (see [Build-stage user stories](#build-stage-user-stories-required-before-coding) rule 6). That branch must contain **only** that story’s changes.
+   - **Build stories:** each story uses its own branch `feat/<story-id>-<max-5-word-summary>`; **bug tickets** use `fix/<ticket-id>-<max-5-word-summary>` (see [Build-stage user stories](#build-stage-user-stories-required-before-coding) rule 6). That branch must contain **only** that ticket’s changes.
    - **HIFL / docs-only syncs** (not a coding story): preferred branch `cursor/sync-spec-prd-revise-efa1` — do not invent extra branches for those doc syncs.
 9. **Candid review loop before every human gate** and before a Build story is marked `DONE-`. Reviewer and fix agent are fresh sub-agents, not the author. The ephemeral handoff is prompt-only. The loop never replaces **Approve / Revise / Park**.
+10. **Defects go through a ticket, never an inline fix.** Anything that fails a Verify check is RCA'd in [`docs/bugs.md`](bugs.md), raised as a numbered ticket under `docs/stories/` on its own `fix/<id>-<…>` branch, and closed only after the candid review loop **and** a full regression — every service suite plus the entire live residual pack on a fresh stack, including the evidence that first exposed the defect (see [Defects found at Verify](#defects-found-at-verify-bug-tickets)). A green unit test is not closure.
 
 ## Gate review checklist (for the human)
 
@@ -196,6 +260,7 @@ For Spec/Design/Build-plan gates, also check consistency with the accepted prior
 | Process + product docs | `docs/` (this playbook, `project-context.md`, `intent.md`, `spec.md`, `handoff.md`, etc.) |
 | **Resume memory for next agent** | [`docs/handoff.md`](handoff.md) — living file; **compress + update** after every stage Approve |
 | Stage status / checklist | Also mirrored in `handoff.md` status table; coordinator may track separately |
+| **Defects + RCA** | [`docs/bugs.md`](bugs.md) — register; each entry links to its ticket under `docs/stories/` |
 | Application code | Workspace repo — **only after** Design + Build plan Approve |
 
 ### Stage-end handoff (required)
@@ -254,4 +319,5 @@ For Spec/Design/Build-plan gates, also check consistency with the accepted prior
 - [Spec (Stage 2)](spec.md) — APPROVED
 - [Handoff](handoff.md) — living resume: compressed past + next-stage handoff
 - [Stories](stories/README.md) — Build-stage user stories (after Build-plan Approve)
+- [Bugs](bugs.md) — defect register: RCA per bug, link to its ticket, closure criteria
 - [Docs index](README.md) — how to pick up mid-process

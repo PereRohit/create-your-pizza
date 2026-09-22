@@ -100,8 +100,8 @@ Defaults: auth JDBC `localhost:5432/auth`, catalog JDBC `localhost:5433/catalog`
 ## HIFL / git
 
 - Resume: [docs/handoff.md](docs/handoff.md) → [docs/hifl-playbook.md](docs/hifl-playbook.md)
-- One story per branch `feat/<id>-<summary>`; **ask before commit**
-- Stories under [docs/stories/](docs/stories/)
+- One ticket per branch: `feat/<id>-<summary>` for stories, `fix/<id>-<summary>` for bugs; **ask before commit**
+- Stories under [docs/stories/](docs/stories/); defects + RCA in [docs/bugs.md](docs/bugs.md)
 
 ## Locked highlights (v1)
 
