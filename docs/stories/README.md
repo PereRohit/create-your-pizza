@@ -78,7 +78,7 @@ Each **story** is implemented on its **own** branch. The branch holds **only** t
 | [DONE-14-test-pdf-trigger.md](DONE-14-test-pdf-trigger.md) | done |
 | [DONE-15-openapi-agents.md](DONE-15-openapi-agents.md) | done |
 | [DONE-16-fix-redis-wiring.md](DONE-16-fix-redis-wiring.md) | **bug** — [BUG-01](../bugs.md#bug-01--catalog-redis-beans-never-wired); done 2026-09-22 (`fix/16-redis-bean-wiring`, full regression) |
-| [17-openapi-error-responses.md](17-openapi-error-responses.md) | **bug** — [BUG-02](../bugs.md#bug-02--static-openapi-omits-503-and-all-error-responses); ready |
+| [DONE-17-openapi-error-responses.md](DONE-17-openapi-error-responses.md) | **bug** — [BUG-02](../bugs.md#bug-02--static-openapi-omits-503-and-all-error-responses); done 2026-09-23 (`fix/17-openapi-error-responses`, full regression) |
 
 ## Template
 

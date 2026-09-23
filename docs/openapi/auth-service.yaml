@@ -34,9 +34,17 @@ paths:
         "200":
           description: OK
           content:
-            '*/*':
+            application/json:
               schema:
                 $ref: "#/components/schemas/ApiEnvelopeUserStatusData"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /auth/users/{id}/deny:
     post:
       tags:
@@ -53,9 +61,17 @@ paths:
         "200":
           description: OK
           content:
-            '*/*':
+            application/json:
               schema:
                 $ref: "#/components/schemas/ApiEnvelopeUserStatusData"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /auth/users/{id}/approve:
     post:
       tags:
@@ -72,9 +88,17 @@ paths:
         "200":
           description: OK
           content:
-            '*/*':
+            application/json:
               schema:
                 $ref: "#/components/schemas/ApiEnvelopeApproveData"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /auth/token:
     post:
       tags:
@@ -90,9 +114,13 @@ paths:
         "200":
           description: OK
           content:
-            '*/*':
+            application/json:
               schema:
                 $ref: "#/components/schemas/ApiEnvelopeAccessTokenData"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
   /auth/register:
     post:
       tags:
@@ -105,12 +133,14 @@ paths:
               $ref: "#/components/schemas/RegisterRequest"
         required: true
       responses:
-        "200":
-          description: OK
+        "201":
+          description: Created
           content:
-            '*/*':
+            application/json:
               schema:
                 $ref: "#/components/schemas/ApiEnvelopeRegisterData"
+        "400":
+          $ref: "#/components/responses/BadRequest"
   /auth/login:
     post:
       tags:
@@ -126,9 +156,13 @@ paths:
         "200":
           description: OK
           content:
-            '*/*':
+            application/json:
               schema:
                 $ref: "#/components/schemas/ApiEnvelopeAccessTokenData"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
   /auth/admins:
     post:
       tags:
@@ -141,12 +175,20 @@ paths:
               $ref: "#/components/schemas/CreateAdminRequest"
         required: true
       responses:
-        "200":
-          description: OK
+        "201":
+          description: Created
           content:
-            '*/*':
+            application/json:
               schema:
                 $ref: "#/components/schemas/ApiEnvelopeAdminData"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
   /auth/users:
     get:
       tags:
@@ -187,9 +229,13 @@ paths:
         "200":
           description: OK
           content:
-            '*/*':
+            application/json:
               schema:
                 $ref: "#/components/schemas/ApiEnvelopeListUserListItem"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /auth/.well-known/jwks.json:
     get:
       tags:
@@ -223,9 +269,15 @@ paths:
         "200":
           description: OK
           content:
-            '*/*':
+            application/json:
               schema:
                 $ref: "#/components/schemas/ApiEnvelopeVoid"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
 components:
   schemas:
     Pagination:
@@ -492,6 +544,70 @@ components:
         data: {}
         pagination:
           $ref: "#/components/schemas/Pagination"
+    ApiEnvelope:
+      type: object
+      description: Standard JSON response envelope
+      properties:
+        status:
+          type: integer
+          format: int32
+          description: HTTP status code echoed in body
+        message:
+          type: string
+          description: Human-readable message; success → "success"
+        error:
+          type: string
+          description: Error detail; empty string on success
+        data:
+          type: object
+          description: Payload; null on pure errors
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+          description: Present only on list JSON responses
+  responses:
+    BadRequest:
+      description: "Request body failed validation, or the user is not in a state\
+        \ that allows this transition"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiEnvelope"
+          example: "{\"status\":400,\"message\":\"Validation failed\",\"error\":\"\
+            Validation failed\"}"
+    Unauthorized:
+      description: "Invalid credentials, or a missing / malformed / expired admin\
+        \ JWT"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiEnvelope"
+          example: "{\"status\":401,\"message\":\"Unauthorized\",\"error\":\"Unauthorized\"\
+            }"
+    Forbidden:
+      description: "Authenticated but not an admin, or an admin attempting to delete\
+        \ their own account"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiEnvelope"
+          example: "{\"status\":403,\"message\":\"Forbidden\",\"error\":\"Forbidden\"\
+            }"
+    NotFound:
+      description: No such user or trusted-system credentials
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiEnvelope"
+          example: "{\"status\":404,\"message\":\"User not found\",\"error\":\"User\
+            \ not found\"}"
+    Conflict:
+      description: Username already exists
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiEnvelope"
+          example: "{\"status\":409,\"message\":\"Username already exists\",\"error\"\
+            :\"Username already exists\"}"
   securitySchemes:
     bearerAdminJwt:
       type: http

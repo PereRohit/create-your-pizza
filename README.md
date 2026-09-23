@@ -18,13 +18,13 @@ Repo docs are the memory — do not rely on chat or Cursor rules for HIFL handof
 | Spec / PRD | **APPROVED** — [docs/spec.md](docs/spec.md) |
 | Design / TRD | **APPROVED** 2026-09-18 — [docs/design.md](docs/design.md) |
 | Build plan | **APPROVED** 2026-09-18 — [docs/build-plan.md](docs/build-plan.md) |
-| Build | **Started** — stories `docs/stories/` **01–15**; next **01** and/or **02** (Initializr); no application code yet |
-| Verify | Not started |
+| Build | **DONE** — stories **01–15** in `docs/stories/`, all `DONE-` and merged to `main` |
+| Verify | **APPROVED** 2026-09-23 — [docs/verify.md](docs/verify.md); defect register clear (BUG-01, BUG-02 both closed) |
 
-Full checklist and locked product highlights: [docs/handoff.md](docs/handoff.md). Decisions log: [docs/project-context.md](docs/project-context.md). Docs index: [docs/README.md](docs/README.md).
+**v1 is delivered and verified.** Full checklist and locked product highlights: [docs/handoff.md](docs/handoff.md). Decisions log: [docs/project-context.md](docs/project-context.md). Docs index: [docs/README.md](docs/README.md). Build and run instructions: [AGENTS.md](AGENTS.md).
 
 **Hard rule:** implement **one** story at a time after Design + Build plan Approve (graph in the build plan).
 
-## Stack (not scaffolded yet)
+## Stack
 
-Locked for later Build: **Java 26**, **Spring Boot 4.1.1**, **Maven**, JAR, `application.properties`. Owner Initializr (Java **25** on the site, then `<java.version>26</java.version>`). Two sibling folders `auth-service` / `catalog-service`. Compose: `auth-db`, `catalog-db`, Redis, both apps. This repo currently holds HIFL docs only.
+**Java 26**, **Spring Boot 4.1.1**, **Maven**, JAR, `application.properties`. Two independent sibling services `auth-service` / `catalog-service` with **no parent POM**. Compose: `auth-db`, `catalog-db`, Redis, both apps.

@@ -1,5 +1,6 @@
 package com.createyourpizza.auth.openapi;
 
+import org.springdoc.core.customizers.OpenApiCustomizer;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Profile;
@@ -10,7 +11,6 @@ import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.media.IntegerSchema;
 import io.swagger.v3.oas.models.media.ObjectSchema;
 import io.swagger.v3.oas.models.media.Schema;
-import io.swagger.v3.oas.models.media.StringSchema;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 
 /** OpenAPI info/components for Docker export ({@code ./scripts/generate-openapi.sh}). */
@@ -19,6 +19,11 @@ import io.swagger.v3.oas.models.security.SecurityScheme;
 class OpenApiExportConfig {
 
 	static final String BEARER_ADMIN_JWT = "bearerAdminJwt";
+
+	@Bean
+	OpenApiCustomizer authErrorResponses() {
+		return new AuthErrorResponsesCustomizer();
+	}
 
 	@Bean
 	OpenAPI authOpenAPI() {
@@ -54,20 +59,11 @@ class OpenApiExportConfig {
 								.scheme("bearer")
 								.bearerFormat("JWT")
 								.description("Admin JWT from POST /auth/login"))
-						.addSchemas("ApiEnvelope", envelopeSchema())
 						.addSchemas("Pagination", paginationSchema()));
 	}
 
-	private static Schema<?> envelopeSchema() {
-		return new ObjectSchema()
-				.description("Standard JSON response envelope")
-				.addProperty("status", new IntegerSchema().description("HTTP status code echoed in body"))
-				.addProperty("message", new StringSchema().description("Human-readable message; success → \"success\""))
-				.addProperty("error", new StringSchema().description("Error detail; empty string on success"))
-				.addProperty("data", new ObjectSchema().description("Payload; null on pure errors"))
-				.addProperty("pagination", new Schema<>().$ref("#/components/schemas/Pagination")
-						.description("Present only on list JSON responses"));
-	}
+	// ApiEnvelope was declared here; AuthErrorResponsesCustomizer registers it instead,
+	// because a schema declared on the bean above is pruned before customisers run.
 
 	private static Schema<?> paginationSchema() {
 		return new ObjectSchema()

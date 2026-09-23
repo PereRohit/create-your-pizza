@@ -1,20 +1,16 @@
 package com.createyourpizza.catalog.openapi;
 
+import org.springdoc.core.customizers.OpenApiCustomizer;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Profile;
 
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
-import io.swagger.v3.oas.models.headers.Header;
 import io.swagger.v3.oas.models.info.Info;
-import io.swagger.v3.oas.models.media.Content;
 import io.swagger.v3.oas.models.media.IntegerSchema;
-import io.swagger.v3.oas.models.media.MediaType;
 import io.swagger.v3.oas.models.media.ObjectSchema;
 import io.swagger.v3.oas.models.media.Schema;
-import io.swagger.v3.oas.models.media.StringSchema;
-import io.swagger.v3.oas.models.responses.ApiResponse;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 
@@ -24,7 +20,11 @@ import io.swagger.v3.oas.models.security.SecurityScheme;
 class OpenApiExportConfig {
 
 	static final String BEARER_JWT = "bearerJwt";
-	static final String RESPONSE_SERVICE_BUSY = "ServiceBusy";
+
+	@Bean
+	OpenApiCustomizer catalogErrorResponses() {
+		return new CatalogErrorResponsesCustomizer();
+	}
 
 	@Bean
 	OpenAPI catalogOpenAPI() {
@@ -62,21 +62,11 @@ class OpenApiExportConfig {
 								.scheme("bearer")
 								.bearerFormat("JWT")
 								.description("JWT from auth-service (admin login or trusted /auth/token)"))
-						.addSchemas("ApiEnvelope", envelopeSchema())
-						.addSchemas("Pagination", paginationSchema())
-						.addResponses(RESPONSE_SERVICE_BUSY, serviceBusyResponse()));
+						.addSchemas("Pagination", paginationSchema()));
 	}
 
-	private static Schema<?> envelopeSchema() {
-		return new ObjectSchema()
-				.description("Standard JSON response envelope")
-				.addProperty("status", new IntegerSchema().description("HTTP status code echoed in body"))
-				.addProperty("message", new StringSchema().description("Human-readable message; success → \"success\""))
-				.addProperty("error", new StringSchema().description("Error detail; empty string on success"))
-				.addProperty("data", new ObjectSchema().description("Payload; null on pure errors"))
-				.addProperty("pagination", new Schema<>().$ref("#/components/schemas/Pagination")
-						.description("Present only on list JSON responses"));
-	}
+	// ApiEnvelope was declared here; CatalogErrorResponsesCustomizer registers it instead,
+	// because a schema declared on the bean above is pruned before customisers run.
 
 	private static Schema<?> paginationSchema() {
 		return new ObjectSchema()
@@ -84,18 +74,5 @@ class OpenApiExportConfig {
 				.addProperty("current", new IntegerSchema().description("Current page (0-based)"))
 				.addProperty("next", new IntegerSchema().description("Next page index, or -1 if none"))
 				.addProperty("total", new IntegerSchema().format("int64").description("Total matching items"));
-	}
-
-	private static ApiResponse serviceBusyResponse() {
-		return new ApiResponse()
-				.description("PDF generation lock held — try again after Retry-After seconds")
-				.addHeaderObject("Retry-After", new Header()
-						.description("Seconds to wait before retry (always 60)")
-						.schema(new IntegerSchema()._default(60)))
-				.content(new Content().addMediaType("application/json", new MediaType()
-						.schema(new Schema<>().$ref("#/components/schemas/ApiEnvelope"))
-						.example("""
-								{"status":503,"message":"please try after sometime","error":"system busy"}
-								""")));
 	}
 }
