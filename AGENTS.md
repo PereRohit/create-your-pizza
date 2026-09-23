@@ -9,7 +9,7 @@ Guidance for agents and humans cloning this repo. Stack: **Java 26**, **Spring B
 | `auth-service/` | Auth + JWKS + admin/trusted principals (port **8080**) |
 | `catalog-service/` | Catalog CRUD/queries, Redis cache/locks, menu PDF (port **8081**) |
 | `docker-compose.yml` | Root Compose: `auth-db`, `catalog-db`, `redis`, both apps |
-| `docs/` | HIFL artifacts (`handoff.md`, playbook, stories, …) |
+| `docs/` | HIFL artifacts (`handoff.md`, playbook, stories, …). `hifl-playbook.md` is the stack-agnostic Agentic SDLC process — do not add this product’s stack or domain to it. |
 
 There is **no** parent POM. Build each sibling with Maven `-f`.
 
