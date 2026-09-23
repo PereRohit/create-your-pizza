@@ -174,7 +174,7 @@ class PdfGenerationServiceTest {
 		assertThat(meta.getLastPdfVersion()).isEqualTo(2);
 		ArgumentCaptor<MenuPdf> saved = ArgumentCaptor.forClass(MenuPdf.class);
 		verify(menuPdfRepository, org.mockito.Mockito.times(2)).save(saved.capture());
-		assertThat(saved.getAllValues()).extracting(MenuPdf::getVersion).containsExactly(1, 2);
+		assertThat(saved.getAllValues()).extracting(m -> m.getVersion()).containsExactly(1, 2);
 		assertThat(latestMenuStore.getLatest().version()).isEqualTo(2);
 	}
 

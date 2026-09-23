@@ -59,7 +59,7 @@ class CatalogErrorResponsesCustomizerTest {
 			assertThat(responses(write).get("503"))
 					.describedAs(write)
 					.isNotNull()
-					.extracting(ApiResponse::get$ref)
+					.extracting(r -> r.get$ref())
 					.isEqualTo("#/components/responses/ServiceBusy");
 		}
 	}

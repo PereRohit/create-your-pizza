@@ -2,7 +2,6 @@ package com.createyourpizza.catalog.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -22,6 +21,7 @@ import com.createyourpizza.catalog.config.CacheProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.jpa.domain.Specification;
@@ -68,8 +68,8 @@ class CatalogQueryServiceTest {
 		Product later = product("Later", Instant.parse("2026-01-02T00:00:00Z"), ProductType.simple);
 		Product earlier = product("Earlier", Instant.parse("2026-01-01T00:00:00Z"), ProductType.simple);
 		OptionEntity option = option("Thin", Instant.parse("2026-01-01T12:00:00Z"), "15.00");
-		when(productRepository.findAll(any(Specification.class))).thenReturn(List.of(later, earlier));
-		when(optionEntityRepository.findAll(any(Specification.class))).thenReturn(List.of(option));
+		when(productRepository.findAll(ArgumentMatchers.<Specification<Product>>any())).thenReturn(List.of(later, earlier));
+		when(optionEntityRepository.findAll(ArgumentMatchers.<Specification<OptionEntity>>any())).thenReturn(List.of(option));
 
 		CatalogQueryService.CatalogListPage page = service.list(null, null, null, null, null);
 
@@ -84,47 +84,47 @@ class CatalogQueryServiceTest {
 
 	@Test
 	void categoryOnUntypedListExcludesPizzaSpec() {
-		when(productRepository.findAll(any(Specification.class))).thenReturn(List.of(
+		when(productRepository.findAll(ArgumentMatchers.<Specification<Product>>any())).thenReturn(List.of(
 				product("Veg", Instant.parse("2026-01-01T00:00:00Z"), ProductType.simple)));
 
 		CatalogQueryService.CatalogListPage veg = service.list("veg", null, null, 1, 10);
 
 		assertThat(veg.items()).hasSize(1);
-		verify(optionEntityRepository, never()).findAll(any(Specification.class));
+		verify(optionEntityRepository, never()).findAll(ArgumentMatchers.<Specification<OptionEntity>>any());
 	}
 
 	@Test
 	void typePizzaSpecIgnoresCategoryAndSkipsProducts() {
-		when(optionEntityRepository.findAll(any(Specification.class))).thenReturn(List.of(
+		when(optionEntityRepository.findAll(ArgumentMatchers.<Specification<OptionEntity>>any())).thenReturn(List.of(
 				option("Olive", Instant.parse("2026-01-01T00:00:00Z"), "15.00")));
 
 		CatalogQueryService.CatalogListPage specs = service.list("veg", "pizza-spec", null, 1, 10);
 
 		assertThat(specs.items()).hasSize(1);
 		assertThat(((OptionResponse) specs.items().getFirst()).getProductType()).isEqualTo("pizza-spec");
-		verify(productRepository, never()).findAll(any(Specification.class));
+		verify(productRepository, never()).findAll(ArgumentMatchers.<Specification<Product>>any());
 	}
 
 	@Test
 	void typedListSelectsOnlyThatSource() {
-		when(productRepository.findAll(any(Specification.class))).thenReturn(List.of(
+		when(productRepository.findAll(ArgumentMatchers.<Specification<Product>>any())).thenReturn(List.of(
 				product("Pie", Instant.parse("2026-01-01T00:00:00Z"), ProductType.pizza)));
 
 		CatalogQueryService.CatalogListPage bases = service.list(null, "pizza-base", null, 1, 10);
 
 		assertThat(bases.items()).hasSize(1);
 		assertThat(((ProductResponse) bases.items().getFirst()).getProductType()).isEqualTo("pizza-base");
-		verify(optionEntityRepository, never()).findAll(any(Specification.class));
+		verify(optionEntityRepository, never()).findAll(ArgumentMatchers.<Specification<OptionEntity>>any());
 	}
 
 	@Test
 	void comboAndSimpleTypesQueryProductsOnly() {
-		when(productRepository.findAll(any(Specification.class))).thenReturn(List.of());
+		when(productRepository.findAll(ArgumentMatchers.<Specification<Product>>any())).thenReturn(List.of());
 
 		service.list(null, "combo", null, 1, 10);
 		service.list(null, "simple", null, 1, 10);
 
-		verify(optionEntityRepository, never()).findAll(any(Specification.class));
+		verify(optionEntityRepository, never()).findAll(ArgumentMatchers.<Specification<OptionEntity>>any());
 	}
 
 	@Test
@@ -134,7 +134,7 @@ class CatalogQueryServiceTest {
 		for (int i = 0; i < 101; i++) {
 			products.add(product("P" + i, start.plusSeconds(i), ProductType.simple));
 		}
-		when(productRepository.findAll(any(Specification.class))).thenReturn(products);
+		when(productRepository.findAll(ArgumentMatchers.<Specification<Product>>any())).thenReturn(products);
 
 		CatalogQueryService.CatalogListPage page1 = service.list(null, "simple", null, 1, 200);
 		assertThat(page1.items()).hasSize(100);
@@ -154,7 +154,7 @@ class CatalogQueryServiceTest {
 		for (int i = 0; i < 12; i++) {
 			products.add(product("P" + i, start.plusSeconds(i), ProductType.simple));
 		}
-		when(productRepository.findAll(any(Specification.class))).thenReturn(products);
+		when(productRepository.findAll(ArgumentMatchers.<Specification<Product>>any())).thenReturn(products);
 
 		CatalogQueryService.CatalogListPage page = service.list(null, "simple", null, null, null);
 
@@ -183,13 +183,13 @@ class CatalogQueryServiceTest {
 
 	@Test
 	void maxPriceIsPassedThroughToBothSourcesOnUntypedList() {
-		when(productRepository.findAll(any(Specification.class))).thenReturn(List.of());
-		when(optionEntityRepository.findAll(any(Specification.class))).thenReturn(List.of());
+		when(productRepository.findAll(ArgumentMatchers.<Specification<Product>>any())).thenReturn(List.of());
+		when(optionEntityRepository.findAll(ArgumentMatchers.<Specification<OptionEntity>>any())).thenReturn(List.of());
 
 		service.list(null, null, new BigDecimal("100.00"), 1, 10);
 
-		verify(productRepository).findAll(any(Specification.class));
-		verify(optionEntityRepository).findAll(any(Specification.class));
+		verify(productRepository).findAll(ArgumentMatchers.<Specification<Product>>any());
+		verify(optionEntityRepository).findAll(ArgumentMatchers.<Specification<OptionEntity>>any());
 	}
 
 	@Test
@@ -219,8 +219,8 @@ class CatalogQueryServiceTest {
 
 	@Test
 	void blankFiltersAreUntypedAndPageBelowOneBecomesFirstPage() {
-		when(productRepository.findAll(any(Specification.class))).thenReturn(List.of());
-		when(optionEntityRepository.findAll(any(Specification.class))).thenReturn(List.of());
+		when(productRepository.findAll(ArgumentMatchers.<Specification<Product>>any())).thenReturn(List.of());
+		when(optionEntityRepository.findAll(ArgumentMatchers.<Specification<OptionEntity>>any())).thenReturn(List.of());
 
 		CatalogQueryService.CatalogListPage page = service.list("  ", "  ", null, 0, 0);
 

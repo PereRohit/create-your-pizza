@@ -5,7 +5,6 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Component;
 
-import com.createyourpizza.catalog.domain.ComboItem;
 import com.createyourpizza.catalog.domain.OptionEntity;
 import com.createyourpizza.catalog.domain.Product;
 import com.createyourpizza.catalog.domain.ProductType;
@@ -30,7 +29,7 @@ public class CatalogResponseMapper {
 		};
 		if (product.getProductType() == ProductType.combo) {
 			simpleIds = comboItemRepository.findByComboId(product.getId()).stream()
-					.map(ComboItem::getSimpleId)
+					.map(c -> c.getSimpleId())
 					.toList();
 		}
 		Boolean optionsEnabled = product.getProductType() == ProductType.pizza

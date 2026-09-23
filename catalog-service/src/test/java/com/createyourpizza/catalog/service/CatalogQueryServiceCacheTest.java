@@ -2,7 +2,6 @@ package com.createyourpizza.catalog.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -22,6 +21,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.jpa.domain.Specification;
@@ -90,8 +90,8 @@ class CatalogQueryServiceCacheTest {
 	@Test
 	void listMissLoadsDbThenFillsCacheWithConfiguredTtl() {
 		Product product = product("Garlic", Instant.parse("2026-01-01T00:00:00Z"), ProductType.simple);
-		when(productRepository.findAll(any(Specification.class))).thenReturn(List.of(product));
-		when(optionEntityRepository.findAll(any(Specification.class))).thenReturn(List.of());
+		when(productRepository.findAll(ArgumentMatchers.<Specification<Product>>any())).thenReturn(List.of(product));
+		when(optionEntityRepository.findAll(ArgumentMatchers.<Specification<OptionEntity>>any())).thenReturn(List.of());
 
 		CatalogQueryService.CatalogListPage page = service.list(null, null, null, 1, 10);
 
@@ -108,14 +108,14 @@ class CatalogQueryServiceCacheTest {
 	@Test
 	void listHitSkipsRepositories() {
 		Product product = product("Garlic", Instant.parse("2026-01-01T00:00:00Z"), ProductType.simple);
-		when(productRepository.findAll(any(Specification.class))).thenReturn(List.of(product));
+		when(productRepository.findAll(ArgumentMatchers.<Specification<Product>>any())).thenReturn(List.of(product));
 
 		service.list("veg", "simple", new BigDecimal("100.00"), 1, 10);
 		CatalogQueryService.CatalogListPage hit = service.list("veg", "simple", new BigDecimal("100.0"), 1, 10);
 
 		assertThat(((ProductResponse) hit.items().getFirst()).getProductName()).isEqualTo("Garlic");
-		verify(productRepository, times(1)).findAll(any(Specification.class));
-		verify(optionEntityRepository, never()).findAll(any(Specification.class));
+		verify(productRepository, times(1)).findAll(ArgumentMatchers.<Specification<Product>>any());
+		verify(optionEntityRepository, never()).findAll(ArgumentMatchers.<Specification<OptionEntity>>any());
 	}
 
 	@Test
@@ -123,7 +123,9 @@ class CatalogQueryServiceCacheTest {
 		cacheProperties.setCatalogTtl(Duration.ofMinutes(5));
 		Product first = product("First", Instant.parse("2026-01-01T00:00:00Z"), ProductType.simple);
 		Product second = product("Second", Instant.parse("2026-01-01T00:00:00Z"), ProductType.simple);
-		when(productRepository.findAll(any(Specification.class))).thenReturn(List.of(first), List.of(second));
+		when(productRepository.findAll(ArgumentMatchers.<Specification<Product>>any()))
+				.thenReturn(List.of(first))
+				.thenReturn(List.of(second));
 
 		assertThat(((ProductResponse) service.list(null, "simple", null, 1, 10).items().getFirst()).getProductName())
 				.isEqualTo("First");
@@ -131,7 +133,7 @@ class CatalogQueryServiceCacheTest {
 		now.set(now.get().plus(Duration.ofMinutes(5)));
 		assertThat(((ProductResponse) service.list(null, "simple", null, 1, 10).items().getFirst()).getProductName())
 				.isEqualTo("Second");
-		verify(productRepository, times(2)).findAll(any(Specification.class));
+		verify(productRepository, times(2)).findAll(ArgumentMatchers.<Specification<Product>>any());
 	}
 
 	@Test
