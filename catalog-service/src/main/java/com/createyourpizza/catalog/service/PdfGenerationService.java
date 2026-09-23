@@ -87,16 +87,16 @@ public class PdfGenerationService {
 
 	private MenuPdfModel buildModel(int version) {
 		List<MenuPdfModel.SellableRow> sellable = productRepository.findByActiveTrue().stream()
-				.sorted(Comparator.comparing(Product::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder()))
-						.thenComparing(Product::getName, Comparator.nullsLast(String::compareTo)))
+				.sorted(Comparator.comparing((Product p) -> p.getCreatedAt(), Comparator.nullsLast(Comparator.naturalOrder()))
+						.thenComparing(p -> p.getName(), Comparator.nullsLast(Comparator.naturalOrder())))
 				.map(product -> new MenuPdfModel.SellableRow(
 						product.getName(),
 						product.getPrice(),
 						Boolean.TRUE.equals(product.getOptionsEnabled())))
 				.toList();
 		List<MenuPdfModel.OptionRow> pizzaSpec = optionEntityRepository.findAll().stream()
-				.sorted(Comparator.comparing(OptionEntity::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder()))
-						.thenComparing(OptionEntity::getName, Comparator.nullsLast(String::compareTo)))
+				.sorted(Comparator.comparing((OptionEntity o) -> o.getCreatedAt(), Comparator.nullsLast(Comparator.naturalOrder()))
+						.thenComparing(o -> o.getName(), Comparator.nullsLast(Comparator.naturalOrder())))
 				.map(option -> new MenuPdfModel.OptionRow(option.getName(), option.getPrice()))
 				.toList();
 		return new MenuPdfModel(MenuPdfModel.HEADER, version, sellable, pizzaSpec);

@@ -7,7 +7,6 @@ import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.createyourpizza.auth.domain.VerificationKey;
 import com.createyourpizza.auth.repository.VerificationKeyRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -21,7 +20,7 @@ public class JwksController {
 	@GetMapping(path = "/auth/.well-known/jwks.json", produces = MediaType.APPLICATION_JSON_VALUE)
 	public Map<String, List<Map<String, Object>>> jwks() {
 		List<Map<String, Object>> keys = verificationKeyRepository.findByActiveTrue().stream()
-				.map(VerificationKey::getPublicJwk)
+				.map(k -> k.getPublicJwk())
 				.toList();
 		return Map.of("keys", keys);
 	}
