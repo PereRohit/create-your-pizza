@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Duration;
@@ -54,7 +53,7 @@ class CatalogWriteDoesNotInvalidateCacheTest {
 	@Test
 	void writeServiceHasNoCachePortAndDoesNotDeleteCatalogKeys() {
 		assertThat(Arrays.stream(CatalogWriteService.class.getDeclaredFields())
-				.map(Field::getType)
+				.map(f -> f.getType())
 				.noneMatch(CatalogCacheStore.class::equals)).isTrue();
 
 		InMemoryCatalogCacheStore cache = new InMemoryCatalogCacheStore(Clock.systemUTC());

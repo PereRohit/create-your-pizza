@@ -84,13 +84,13 @@ public class CatalogQueryService {
 			}
 		}
 
-		rows.sort(Comparator.comparing(CatalogRow::createdAt, Comparator.nullsLast(Comparator.naturalOrder()))
-				.thenComparing(CatalogRow::id));
+		rows.sort(Comparator.comparing((CatalogRow r) -> r.createdAt(), Comparator.nullsLast(Comparator.naturalOrder()))
+				.thenComparing(r -> r.id()));
 
 		long total = rows.size();
 		int from = Math.min((currentPage - 1) * pageSize, rows.size());
 		int to = Math.min(from + pageSize, rows.size());
-		List<Object> items = rows.subList(from, to).stream().map(CatalogRow::item).toList();
+		List<Object> items = rows.subList(from, to).stream().map(r -> r.item()).toList();
 		int next = to < total ? currentPage + 1 : -1;
 		CatalogListPage result = new CatalogListPage(items, new Pagination(currentPage, next, total));
 		writeCached(cacheKey, result);

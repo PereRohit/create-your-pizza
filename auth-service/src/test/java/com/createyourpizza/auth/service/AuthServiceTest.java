@@ -21,6 +21,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatchers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -320,12 +321,12 @@ class AuthServiceTest {
 	@Test
 	void listUsersDefaultsPageSizeAndNextWhenNoMorePages() {
 		Page<User> page = new PageImpl<>(List.of(), PageRequest.of(0, 10), 0);
-		when(userRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
+		when(userRepository.findAll(ArgumentMatchers.<Specification<User>>any(), any(Pageable.class))).thenReturn(page);
 
 		AuthService.UserListPage result = authService.listUsers(null, null, null, null);
 
 		ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
-		verify(userRepository).findAll(any(Specification.class), pageableCaptor.capture());
+		verify(userRepository).findAll(ArgumentMatchers.<Specification<User>>any(), pageableCaptor.capture());
 		assertThat(pageableCaptor.getValue().getPageSize()).isEqualTo(10);
 		assertThat(pageableCaptor.getValue().getPageNumber()).isZero();
 		assertThat(result.pagination().current()).isEqualTo(1);
@@ -336,12 +337,12 @@ class AuthServiceTest {
 	@Test
 	void listUsersClampsPageSizeToMax100() {
 		Page<User> page = new PageImpl<>(List.of(), PageRequest.of(0, 100), 0);
-		when(userRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
+		when(userRepository.findAll(ArgumentMatchers.<Specification<User>>any(), any(Pageable.class))).thenReturn(page);
 
 		authService.listUsers(null, null, 1, 500);
 
 		ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
-		verify(userRepository).findAll(any(Specification.class), pageableCaptor.capture());
+		verify(userRepository).findAll(ArgumentMatchers.<Specification<User>>any(), pageableCaptor.capture());
 		assertThat(pageableCaptor.getValue().getPageSize()).isEqualTo(100);
 	}
 
@@ -349,7 +350,7 @@ class AuthServiceTest {
 	void listUsersSetsNextPageWhenMoreResultsExist() {
 		User user = trustedUser(UserStatus.ACTIVE);
 		Page<User> page = new PageImpl<>(List.of(user), PageRequest.of(0, 10), 25);
-		when(userRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
+		when(userRepository.findAll(ArgumentMatchers.<Specification<User>>any(), any(Pageable.class))).thenReturn(page);
 
 		AuthService.UserListPage result = authService.listUsers(null, null, 1, 10);
 
