@@ -9,9 +9,9 @@ Defect register. A bug lands here when it is found **after** the story that owns
 | ID | Title | Found | Severity | Ticket | Branch | Status | Resolved |
 |----|-------|-------|----------|--------|--------|--------|----------|
 | [BUG-01](#bug-01--catalog-redis-beans-never-wired) | Catalog Redis beans never wired | Stage 6 Verify · 2026-09-22 | **Blocking** | [DONE-16-fix-redis-wiring.md](stories/DONE-16-fix-redis-wiring.md) | `fix/16-redis-bean-wiring` | **closed** | 2026-09-22 |
-| [BUG-02](#bug-02--static-openapi-omits-503-and-all-error-responses) | Static OpenAPI omits 503 and all error responses | Stage 6 Verify regression · 2026-09-22 | Docs contract; **no runtime impact** | [17-openapi-error-responses.md](stories/17-openapi-error-responses.md) | `fix/17-openapi-error-responses` | **open** — analysed, not started | — |
+| [BUG-02](#bug-02--static-openapi-omits-503-and-all-error-responses) | Static OpenAPI omits 503 and all error responses | Stage 6 Verify regression · 2026-09-22 | Docs contract; **no runtime impact** | [DONE-17-openapi-error-responses.md](stories/DONE-17-openapi-error-responses.md) | `fix/17-openapi-error-responses` | **closed** | 2026-09-23 |
 
-This index mirrors the defect table in [verify.md](verify.md) §8 while that stage is open. Both carry branch and resolution date; neither drops a closed row.
+This index mirrors the defect table in [verify.md](verify.md) §8. Both carry branch and resolution date; neither drops a closed row. Verify was approved on 2026-09-23 with **no open rows** in either.
 
 ## How a bug is closed
 
@@ -90,16 +90,16 @@ Scope agreed with the owner for the fix ticket:
 
 ## BUG-02 — Static OpenAPI omits 503 and all error responses
 
-**Analysed and logged. No fix attempted** — ticket 17 is handed over unstarted.
+**Closed 2026-09-23** on `fix/17-openapi-error-responses`, after the candid review loop returned **Findings: none** on its third cycle and the full regression passed — both suites plus the entire Stage 6 live residual pack on a fresh stack. Closing evidence at the end of this entry.
 
 | | |
 |---|---|
 | **Found** | Stage 6 Verify full-regression run for BUG-01, 2026-09-22 |
-| **Severity** | Breaches a locked delivery requirement, but **no runtime impact** — the services behave correctly, only the published contract is incomplete. Blocking-vs-residual is the owner's call at the gate. |
-| **Ticket** | [17-openapi-error-responses.md](stories/17-openapi-error-responses.md) — ready, **not started** |
-| **Branch** | `fix/17-openapi-error-responses` (not created) |
-| **Status** | **open** |
-| **Regressed story** | [DONE-15](stories/DONE-15-openapi-agents.md) — an acceptance criterion is ticked but not satisfied |
+| **Severity** | Breached a locked delivery requirement, but **no runtime impact** — the services behaved correctly, only the published contract was incomplete. Fixed rather than carried as a residual. |
+| **Ticket** | [DONE-17-openapi-error-responses.md](stories/DONE-17-openapi-error-responses.md) |
+| **Branch** | `fix/17-openapi-error-responses` |
+| **Status** | **closed 2026-09-23** — candid review clean on cycle 3, full regression passed (closing evidence below; per-cycle detail on the ticket) |
+| **Regressed story** | [DONE-15](stories/DONE-15-openapi-agents.md) — an acceptance criterion was ticked but not satisfied; now satisfied and machine-checked |
 | **Spec / Design clauses** | Design §9 (static YAML/JSON is the import contract and must cover **503** and **PDF binary**); Spec FR-21, NFR-4, NFR-12 |
 
 **Fault:** the committed integrator contract under `docs/openapi/` documents **only** HTTP 200. Across both services, every one of the 20 operations declares a single `200` response — there is no `503`, `401`, `403`, or `404` anywhere. Separately, `GET /api/menu.pdf` declares its 200 content as `*/*` rather than `application/pdf`, so the raw-binary nature of the response is not expressed.
@@ -120,11 +120,33 @@ POST   /api/products   responses=['200'] content=['200:*/*'] params=[]
 
 **Why it was missed:** [DONE-15](stories/DONE-15-openapi-agents.md) ticks "Document envelope, pagination, 503, PDF binary + `version` query, auth approve/revoke, JWKS (in static specs)" as an acceptance criterion, but that story is marked `N/A` for tests — nothing machine-checked the generated files against the clause, and the exporter emits SpringDoc's defaults (bare `200`, `*/*`) unless controllers carry explicit response annotations. The earlier Verify draft then recorded "503 busy documented on catalog — **PASS**" from a spot check that matched the string `503` somewhere in the file rather than asserting it as a documented response on an operation. The BUG-01 regression re-ran that check as a real assertion and it failed.
 
-**Recommended fix (not applied — for whoever picks up ticket 17):**
+**Recommended fix** — written at RCA time; ticket 17 carries all four:
 
 1. Annotate the controllers (or a shared `@ControllerAdvice`/OpenAPI customiser) so the exporter emits the error responses each operation can actually return: `503` + `Retry-After` on catalog writes, plus `401`/`403`/`404` where they apply, all referencing the existing envelope schema with `data`/`pagination` omitted for 503.
 2. Declare `GET /api/menu.pdf` 200 content as `application/pdf` with `format: binary`.
 3. Regenerate with `./scripts/generate-openapi.sh` (Docker) and commit `docs/openapi/*`.
 4. Add a **machine check** so this cannot silently regress — a test asserting the exported spec documents 503 on catalog writes and `application/pdf` on the menu endpoint. This is the missing guard that let a ticked AC be false.
 
+**Scope extended by the owner — 2026-09-23.** Implementing ticket 17 surfaced two further inaccuracies in the same published files, with the same root cause as the fault above: SpringDoc's defaults were never overridden, so the contract states things the services do not do. The owner authorised repairing both on the ticket-17 branch rather than raising a separate defect, so they are closed against this entry:
+
+1. `POST /auth/register`, `POST /auth/admins`, `POST /api/products`, and `POST /api/options` documented success as **200** while the controllers answer **201**.
+2. Every JSON operation documented its response body as `*/*`, because no controller declares `produces`; they now read `application/json`.
+
+Both breach the same Spec **NFR-4** clause already cited above — the OpenAPI must stay consistent with the implemented endpoints.
+
 Ticket 17 is handled as a normal ticket (own `fix/` branch, ACs, tasks, tests, candid review loop) **plus** the [bug closure criteria](#how-a-bug-is-closed) above.
+
+**Fix as delivered (2026-09-23).** SpringDoc is test-scoped, so `io.swagger` annotations cannot go on the controllers without putting it on the runtime classpath and breaking the static-files-only rule. The contract is therefore declared as one `OpenApiCustomizer` per service beside the existing export configuration — `CatalogErrorResponsesCustomizer` and `AuthErrorResponsesCustomizer` — each contributing the shared error responses as reusable `components.responses` plus the binary `application/pdf` body on the menu endpoint. Twenty-one tests were added to auth (62 → 83) and 23 to catalog (115 → 138).
+
+One trap is worth recording, because the first regeneration on the branch shipped broken and the first version of the new guard did not notice. Swagger's `removeBrokenReferenceDefinitions` keeps only the component schemas something references **at the moment it runs**, and SpringDoc runs it **before** the customisers. An `ApiEnvelope` declared on the `OpenAPI` bean is pruned, and the customiser's references then dangle — catalog silently *lost* a schema it had at `HEAD`, and auth, which never had one, gained five dangling refs. The envelope is now registered inside each customiser, next to its only referrers. `Pagination` deliberately stays on the bean: SpringDoc's generated `ApiEnvelope*` schemas reference it, so it survives the prune with its hand-written descriptions intact.
+
+**Closing evidence** — both suites plus the entire Stage 6 residual pack, re-run end to end on a fresh stack (`down -v --remove-orphans`, `up -d --build`) with `APP_JWT_TTL=1m`, `APP_PDF_INTERVAL=1m`, `APP_CACHE_CATALOG_TTL=30s`. Ready in 13s; first PDF ~74s.
+
+| Requirement | Result |
+|-------------|--------|
+| Every service's mocked suite | auth **83** / 1 skipped, catalog **138** / 1 skipped, both BUILD SUCCESS |
+| Entire live residual pack, fresh stack | **120 checks, 0 failures** |
+| **The evidence that first exposed the defect** | The §3.4 check, re-run as a real assertion: **503 documented on all six catalog writes**, `ServiceBusy` declaring `Retry-After`, the 503 example omitting `data`/`pagination` per NFR-12, and `GET /api/menu.pdf` published as binary `application/pdf` |
+| Contract resolves | 58 `$ref`s in auth and 61 in catalog, **0 dangling**, in both the JSON and the YAML |
+| Live behaviour matches the document | Injected PDF lock → **503** + `Retry-After: 60`, envelope without `data`/`pagination`, no row written; menu served as raw `%PDF-` bytes; no live `/v3/api-docs` or Swagger UI on either service |
+| No regression | Every row green at BUG-01 closure passed again, including the FR-16c job skip across a held write lock (version frozen at v1, `dirty` preserved, generate on release → v2) |

@@ -11,9 +11,9 @@
 | [spec.md](spec.md) | Stage 2 Spec / PRD — **APPROVED** (aligned 2026-09-18) |
 | [design.md](design.md) | Stage 3 Design / TRD — **APPROVED** 2026-09-18 |
 | [build-plan.md](build-plan.md) | Stage 4 — **APPROVED** 2026-09-18 |
-| [verify.md](verify.md) | Stage 6 — **DRAFT** 2026-09-22; evidence only, defects link out to `bugs.md` |
-| [bugs.md](bugs.md) | **Defect register** — RCA per bug, link to its ticket, closure criteria (full regression). BUG-01 closed, BUG-02 open |
-| [stories/README.md](stories/README.md) | Build-stage user stories **01–15**, plus bug tickets **16** (done) and **17** (open) |
+| [verify.md](verify.md) | Stage 6 — **APPROVED** 2026-09-23; evidence only, defects link out to `bugs.md` |
+| [bugs.md](bugs.md) | **Defect register** — RCA per bug, link to its ticket, closure criteria (full regression). BUG-01 and BUG-02 both closed; no open rows |
+| [stories/README.md](stories/README.md) | Build-stage user stories **01–15**, plus bug tickets **16** and **17** — all done |
 | [openapi/](openapi/) | **Static** OpenAPI YAML/JSON; regenerate via [`scripts/generate-openapi.sh`](../scripts/generate-openapi.sh) (Docker-only) |
 
 **Git:** do not commit unless the owner confirms.

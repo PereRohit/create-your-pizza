@@ -1,10 +1,10 @@
 # CreateYourPizza — Agentic SDLC handoff
 
-**Audience:** Next agent continuing HIFL — Build plan **APPROVED** (incl. §5.1 revise **APPROVED** 2026-09-21); Build **01–15** `DONE-` on **`main`**; **Verify DRAFT**.  
+**Audience:** Next agent continuing HIFL — **all six stages APPROVED**. Build **01–15** plus bug tickets **16–17** are `DONE-`; [Verify](verify.md) **APPROVED 2026-09-23** with an empty defect table. **v1 is delivered and verified.**  
 **Owner:** PereRohit  
-**As of:** 2026-09-22 (Verify draft in [docs/verify.md](verify.md); **BUG-01 closed** after full regression; **BUG-02 open** — docs contract only; owner gate next)  
+**As of:** 2026-09-23 (Verify approved; BUG-01 and BUG-02 both closed after full regressions; one accepted residual, recorded in [verify.md](verify.md) §10)  
 **Repo root:** local `create-your-pizza`  
-**Git:** **`main`** (stories **01–15** merged, including PR #24 `feat/15-openapi-agents`). HIFL docs-only edits for Verify: stay on `main` until owner confirms commit.
+**Git:** branch **`fix/17-openapi-error-responses`**, cut from `main`; stories **01–15** and bug **16** already merged. Ticket-17 code + docs are committed on this branch and **not yet merged to `main`** — open the PR when the owner asks.
 
 **How to resume:** read [docs/hifl-playbook.md](hifl-playbook.md) → this file → open linked artifacts as needed. After every stage **Approve**: **compress** completed stages here, then refresh next-stage items — do **not** wipe and fully rewrite.
 
@@ -16,8 +16,8 @@
 | 2 Spec / PRD | [docs/spec.md](spec.md) | **APPROVED** (aligned 2026-09-18) |
 | 3 Design / TRD | [docs/design.md](design.md) | **APPROVED** 2026-09-18 |
 | 4 Build plan | [docs/build-plan.md](build-plan.md) | **APPROVED** 2026-09-18; **Revise APPROVED** 2026-09-21 (§5.1) |
-| 5 Build | Spring Boot + Compose in this repo | **DONE** — `DONE-01`–`DONE-15` on `main` |
-| 6 Verify | [verify.md](verify.md) + [bugs.md](bugs.md) | **DRAFT** — BUG-01 closed (full regression); BUG-02 logged + ticketed, fix deferred; awaiting owner gate |
+| 5 Build | Spring Boot + Compose in this repo | **DONE** — `DONE-01`–`DONE-15` on `main`; bug tickets `DONE-16`, `DONE-17` |
+| 6 Verify | [verify.md](verify.md) + [bugs.md](bugs.md) | **APPROVED** 2026-09-23 — BUG-01 and BUG-02 both closed by full regression; **0 open defects**; one accepted residual |
 
 Process: [docs/hifl-playbook.md](hifl-playbook.md) · Decisions: [docs/project-context.md](project-context.md) · Docs index: [docs/README.md](README.md)
 
@@ -58,6 +58,21 @@ Process: [docs/hifl-playbook.md](hifl-playbook.md) · Decisions: [docs/project-c
 - Candid review **loop cap = 3** review→fix cycles ([playbook](hifl-playbook.md)).
 - Detail: [docs/build-plan.md](build-plan.md) §5.1 · §6
 
+### 5 Build — DONE (stories 01–15 merged to `main`)
+
+- Built one story at a time along the [§6 graph](build-plan.md), each on its own `feat/<id>-<slug>` branch with a candid review loop before its `DONE-` rename. Index: [stories/README.md](stories/README.md).
+- Enablers **01** Compose and **02** owner Initializr first; then auth **03–06** (schema + bootstrap, JWKS/JWT, login/register/token, admin+users), then catalog **07–14** (schema + seed, JWT via JWKS, writes, queries, Redis cache, PDF job + locks, public PDF, test trigger), then **15** static OpenAPI + `AGENTS.md`.
+- §5.1 service-ready Compose smokes passed as the last task on **06** (auth) and **10** (catalog read path).
+- Last merge: PR #24 `feat/15-openapi-agents`.
+
+### 6 Verify — APPROVED 2026-09-23
+
+- [verify.md](verify.md) drafted from Spec §8 + Design §9 / Build-plan §8: mocked suites plus a live residual pack on a fresh Compose stack, run with `APP_JWT_TTL=1m` / `APP_PDF_INTERVAL=1m` / `APP_CACHE_CATALOG_TTL=30s` so time-dependent behaviour is observable.
+- Two defects found, both registered with full RCA in [bugs.md](bugs.md), each fixed on its own `fix/` branch and closed only after a **full** regression (both suites **and** the entire live pack), per [hard rule 10](hifl-playbook.md#defects-found-at-verify-bug-tickets).
+  - **[BUG-01](bugs.md#bug-01--catalog-redis-beans-never-wired)** (blocking) — catalog silently ran in-memory fallbacks for cache, latest-menu, and locks: `@ConditionalOnBean(StringRedisTemplate.class)` sat on application `@Configuration`, evaluated before `DataRedisAutoConfiguration` registers the template. Fixed via `ObjectProvider` per port. Ticket [DONE-16](stories/DONE-16-fix-redis-wiring.md), PR #25, closed 2026-09-22.
+  - **[BUG-02](bugs.md#bug-02--static-openapi-omits-503-and-all-error-responses)** (docs contract, no runtime impact) — the committed OpenAPI documented only HTTP 200. Fixed with one `OpenApiCustomizer` per service and a committed-file guard. Ticket [DONE-17](stories/DONE-17-openapi-error-responses.md), closed 2026-09-23.
+- Final state: auth **83** tests, catalog **138** (1 skipped each); live residual pack **120 checks, 0 failures**; defect table empty; one accepted residual (unreferenced `bearerAdminJwt` security scheme in the auth spec) recorded in [verify.md](verify.md) §10.
+
 ## Owner preferences (must follow)
 
 1. **Git commits:** Do **not** commit unless the owner **confirms**. After changes, **ask**.
@@ -74,49 +89,33 @@ Process: [docs/hifl-playbook.md](hifl-playbook.md) · Decisions: [docs/project-c
 
 ## Checklist for the next agent
 
-- [x] Build plan **APPROVED**; stories `01`–`15` under `docs/stories/`
-- [x] Implement **01** on `feat/01-compose-and-config` — [`DONE-01-compose-config.md`](stories/DONE-01-compose-config.md)
-- [x] Owner **02** Initializr on `feat/02-maven-initializr` — [`DONE-02-OWNER-maven-initializr.md`](stories/DONE-02-OWNER-maven-initializr.md)
-- [x] Implement **03** on `feat/03-auth-schema-bootstrap` — [`DONE-03-auth-schema-bootstrap.md`](stories/DONE-03-auth-schema-bootstrap.md)
-- [x] Implement **04** on `feat/04-auth-jwks-jwt` — [`DONE-04-auth-jwks-jwt.md`](stories/DONE-04-auth-jwks-jwt.md)
-- [x] Implement **05** on `feat/05-auth-login-register-token` — [`DONE-05-auth-login-register-token.md`](stories/DONE-05-auth-login-register-token.md)
-- [x] Implement **06** on `feat/06-auth-admin-users` — [`DONE-06-auth-admin-users.md`](stories/DONE-06-auth-admin-users.md) (§5.1 auth smoke **PASS**)
-- [x] Implement **07** on `feat/07-catalog-schema-seed` — [`DONE-07-catalog-schema-seed.md`](stories/DONE-07-catalog-schema-seed.md)
-- [x] Implement **08** on `feat/08-catalog-jwt-jwks` — [`DONE-08-catalog-jwt-jwks.md`](stories/DONE-08-catalog-jwt-jwks.md)
-- [x] Implement **09** on `feat/09-catalog-writes` — [`DONE-09-catalog-writes.md`](stories/DONE-09-catalog-writes.md)
-- [x] Implement **10** on `feat/10-catalog-queries` — [`DONE-10-catalog-queries.md`](stories/DONE-10-catalog-queries.md) (§5.1 catalog read-path smoke **PASS**; merged to `main`)
-- [x] Implement **11** on `feat/11-catalog-redis-cache` — [`DONE-11-catalog-redis-cache.md`](stories/DONE-11-catalog-redis-cache.md) (merged to `main`)
-- [x] Implement **12** on `feat/12-pdf-job-locks` — [`DONE-12-pdf-job-locks.md`](stories/DONE-12-pdf-job-locks.md) (merged to `main`)
-- [x] Implement **13** on `feat/13-public-pdf` — [`DONE-13-public-pdf.md`](stories/DONE-13-public-pdf.md) (merged to `main`)
-- [x] Implement **14** on `feat/14-test-pdf-trigger` — [`DONE-14-test-pdf-trigger.md`](stories/DONE-14-test-pdf-trigger.md) (merged to `main`)
-- [x] Implement **15** on `feat/15-openapi-agents` — [`DONE-15-openapi-agents.md`](stories/DONE-15-openapi-agents.md) (merged to `main`)
-- **Picked stories (Build):** none — all `DONE-`
-- [x] Draft [docs/verify.md](verify.md) from Spec §8 + Design §9 / Build-plan §8 residual pack (2026-09-22)
-- [x] Candid review loop on Verify draft — 1 pass, **Findings: none**
-- [x] RCA of the live Redis gap — [bugs.md BUG-01](bugs.md#bug-01--catalog-redis-beans-never-wired) (new defect register; `verify.md` links out to it)
-- [x] Playbook: [Defects found at Verify](hifl-playbook.md#defects-found-at-verify-bug-tickets) + hard rule **10** (bug ticket → candid review → full regression)
-- [x] Bug ticket **16** [`DONE-16-fix-redis-wiring.md`](stories/DONE-16-fix-redis-wiring.md) on `fix/16-redis-bean-wiring` — fix + review (Findings: none) + full regression → closed 2026-09-22
-- [ ] Bug ticket **17** [`17-openapi-error-responses.md`](stories/17-openapi-error-responses.md) on `fix/17-openapi-error-responses` — [BUG-02](bugs.md#bug-02--static-openapi-omits-503-and-all-error-responses), **not started**; needs Docker for `./scripts/generate-openapi.sh`
-- [ ] Owner **Approve** / **Revise** / **Park**
-- [ ] Ask before commit of Verify docs (`docs/verify.md`, this handoff, `docs/README.md`)
+All six HIFL stages are **APPROVED** and every ticket is `DONE-`. Nothing is in flight. What remains is housekeeping:
 
-## Steps (detail) — next stage focus: Verify gate
+- [ ] Merge `fix/17-openapi-error-responses` to `main` — the branch is committed but **not** merged. Ask the owner before opening the PR.
+- [ ] v1 is verified; there is no next stage. Any further work starts a **new** HIFL cycle at Stage 1 Intent, or arrives as a defect via [bugs.md](bugs.md).
 
-### A. Now
+## Steps (detail) — v1 complete
 
-1. Candid review on [docs/verify.md](verify.md) → owner **Approve** / **Revise** / **Park**.
-2. **[BUG-01](bugs.md#bug-01--catalog-redis-beans-never-wired) — CLOSED 2026-09-22.** Catalog used in-memory fallbacks for cache, latest-menu, and locks because `@ConditionalOnBean(StringRedisTemplate.class)` sat on application `@Configuration` (evaluated before `DataRedisAutoConfiguration` registers the template). Fixed with one `ObjectProvider` bean per port plus `@Fallback` for `Clock`/`MenuPdfRenderer`; 9 tests added; catalog suite now **115**. Full regression passed on a fresh stack — injected PDF lock → **503** + `Retry-After: 60`, and FR-16c job-skip proven **live** for the first time.
-3. **[BUG-02](bugs.md#bug-02--static-openapi-omits-503-and-all-error-responses) — OPEN, analysed, fix deferred by owner.** Found by that regression. Committed `docs/openapi/*` documents only HTTP 200 across all 20 operations: no 503/401/403/404, and `/api/menu.pdf` is `*/*` not `application/pdf`. Breaches Design §9 (Hard: contract must cover 503 + PDF binary) and Spec FR-21 / NFR-4 / NFR-12, and falsifies a ticked AC on [DONE-15](stories/DONE-15-openapi-agents.md). **Docs-only, no runtime impact.** RCA is complete in the register; ticket **17** is handed over **unstarted** — pick it up as a normal ticket (own `fix/` branch, ACs, candid review) plus the bug-closure full regression. Needs Docker to regenerate. Note the earlier DRAFT's "503 documented — PASS" was a substring spot check, now corrected in `verify.md` §3.4.
-4. Live PDF **503**, JWT expiry, Redis cache keys + TTL, and Redis menu backfill are all demonstrated with `APP_JWT_TTL=1m` / `APP_PDF_INTERVAL=1m` / `APP_CACHE_CATALOG_TTL=30s`.
-5. **Ask** before git commit. Working tree currently mixes the ticket-16 code fix (branch `fix/16-redis-bean-wiring`) with HIFL docs — split by path when committing.
+### A. Before anything else
 
-### B. After Verify Approve
+1. **Merge the ticket-17 branch.** It carries the BUG-02 fix, the regenerated `docs/openapi/*`, and the Verify-approval doc updates. Until it lands, `main` still publishes the incomplete contract.
+2. **Ask before any commit or push** (owner preference 1). It applies to docs-only edits too.
 
-1. Compress Build into past stages in this handoff; mark Verify **APPROVED**.
+### B. Traps worth knowing before touching the OpenAPI export
 
-### C. Residual
+1. Swagger's `removeBrokenReferenceDefinitions` prunes unreferenced component schemas **before** `OpenApiCustomizer`s run, so a schema registered on the `OpenAPI` bean but referenced only from a customiser ends up dangling. `ApiEnvelope` therefore lives inside each customiser; `Pagination` stays on the bean because SpringDoc's generated schemas reference it. The first regeneration on the ticket-17 branch shipped 10 dangling refs exactly this way, and the first version of the new guard did not catch it.
+2. `StaticOpenApiContractTest` in each service reads the **committed** `docs/openapi/*` files, not the exporter's in-memory output. If you change an endpoint and forget `./scripts/generate-openapi.sh`, the build fails — that is deliberate.
+3. SpringDoc is **test-scoped**. Do not reach for `io.swagger` annotations on controllers; that would put it on the runtime classpath and break the static-files-only rule.
 
-1. Owner may still want README HIFL summary refreshed (cosmetic; not a story).
+### C. Running the live residual pack again
+
+1. Use `APP_JWT_TTL=1m` / `APP_PDF_INTERVAL=1m` / `APP_CACHE_CATALOG_TTL=30s` so time-dependent behaviour is observable within a run.
+2. Under a 1-minute TTL, mint a **fresh JWT per authenticated call** — a token reused across a multi-minute run silently starts returning 401 and the failure surfaces as a confusing assertion elsewhere.
+3. Spring's default `JwtTimestampValidator` allows **60s** clock skew, so a token stays accepted past `exp`; wait beyond that before asserting expiry.
+
+### D. Accepted residual (not scheduled)
+
+1. `auth-service.{yaml,json}` declares a `bearerAdminJwt` security scheme that no operation references, so importers get no Authorize affordance on admin routes. Accepted by the owner at the Verify gate; see [verify.md](verify.md) §10.
 
 ## Locked product highlights (do not rediscover)
 

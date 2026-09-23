@@ -36,9 +36,15 @@ paths:
         "200":
           description: OK
           content:
-            '*/*':
+            application/json:
               schema:
                 $ref: "#/components/schemas/ApiEnvelopeProductResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
     put:
       tags:
       - product-write-controller
@@ -60,9 +66,19 @@ paths:
         "200":
           description: OK
           content:
-            '*/*':
+            application/json:
               schema:
                 $ref: "#/components/schemas/ApiEnvelopeProductResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "503":
+          $ref: "#/components/responses/ServiceBusy"
     delete:
       tags:
       - product-write-controller
@@ -78,9 +94,17 @@ paths:
         "200":
           description: OK
           content:
-            '*/*':
+            application/json:
               schema:
                 $ref: "#/components/schemas/ApiEnvelopeVoid"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "503":
+          $ref: "#/components/responses/ServiceBusy"
   /api/options/{id}:
     get:
       tags:
@@ -97,9 +121,15 @@ paths:
         "200":
           description: OK
           content:
-            '*/*':
+            application/json:
               schema:
                 $ref: "#/components/schemas/ApiEnvelopeOptionResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
     put:
       tags:
       - option-write-controller
@@ -121,9 +151,19 @@ paths:
         "200":
           description: OK
           content:
-            '*/*':
+            application/json:
               schema:
                 $ref: "#/components/schemas/ApiEnvelopeOptionResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "503":
+          $ref: "#/components/responses/ServiceBusy"
     delete:
       tags:
       - option-write-controller
@@ -139,9 +179,17 @@ paths:
         "200":
           description: OK
           content:
-            '*/*':
+            application/json:
               schema:
                 $ref: "#/components/schemas/ApiEnvelopeVoid"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "503":
+          $ref: "#/components/responses/ServiceBusy"
   /api/products:
     get:
       tags:
@@ -179,9 +227,15 @@ paths:
         "200":
           description: OK
           content:
-            '*/*':
+            application/json:
               schema:
                 $ref: "#/components/schemas/ApiEnvelopeListObject"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
     post:
       tags:
       - product-write-controller
@@ -193,12 +247,20 @@ paths:
               $ref: "#/components/schemas/ProductWriteRequest"
         required: true
       responses:
-        "200":
-          description: OK
+        "201":
+          description: Created
           content:
-            '*/*':
+            application/json:
               schema:
                 $ref: "#/components/schemas/ApiEnvelopeProductResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "503":
+          $ref: "#/components/responses/ServiceBusy"
   /api/options:
     post:
       tags:
@@ -211,12 +273,20 @@ paths:
               $ref: "#/components/schemas/OptionWriteRequest"
         required: true
       responses:
-        "200":
-          description: OK
+        "201":
+          description: Created
           content:
-            '*/*':
+            application/json:
               schema:
                 $ref: "#/components/schemas/ApiEnvelopeOptionResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "503":
+          $ref: "#/components/responses/ServiceBusy"
   /api/menu.pdf:
     get:
       tags:
@@ -231,34 +301,17 @@ paths:
           format: int32
       responses:
         "200":
-          description: OK
+          description: "Menu PDF bytes — latest version, or the version named by the\
+            \ version query parameter"
           content:
-            '*/*':
+            application/pdf:
               schema:
                 type: string
-                format: byte
+                format: binary
+        "404":
+          $ref: "#/components/responses/NotFound"
 components:
   schemas:
-    ApiEnvelope:
-      type: object
-      description: Standard JSON response envelope
-      properties:
-        status:
-          type: integer
-          format: int32
-          description: HTTP status code echoed in body
-        message:
-          type: string
-          description: Human-readable message; success → "success"
-        error:
-          type: string
-          description: Error detail; empty string on success
-        data:
-          type: object
-          description: Payload; null on pure errors
-        pagination:
-          $ref: "#/components/schemas/Pagination"
-          description: Present only on list JSON responses
     Pagination:
       type: object
       description: List pagination metadata
@@ -436,9 +489,63 @@ components:
         data: {}
         pagination:
           $ref: "#/components/schemas/Pagination"
+    ApiEnvelope:
+      type: object
+      description: Standard JSON response envelope
+      properties:
+        status:
+          type: integer
+          format: int32
+          description: HTTP status code echoed in body
+        message:
+          type: string
+          description: Human-readable message; success → "success"
+        error:
+          type: string
+          description: Error detail; empty string on success
+        data:
+          type: object
+          description: Payload; null on pure errors
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+          description: Present only on list JSON responses
   responses:
+    BadRequest:
+      description: "Request body failed validation, or a catalog rule rejected it"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiEnvelope"
+          example: "{\"status\":400,\"message\":\"Validation failed\",\"error\":\"\
+            Validation failed\"}"
+    Unauthorized:
+      description: "Missing, malformed, or expired JWT"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiEnvelope"
+          example: "{\"status\":401,\"message\":\"Unauthorized\",\"error\":\"Unauthorized\"\
+            }"
+    Forbidden:
+      description: "Authenticated but not permitted — reads need scope catalog:read,\
+        \ writes need catalog:write and role ADMIN"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiEnvelope"
+          example: "{\"status\":403,\"message\":\"Forbidden\",\"error\":\"Forbidden\"\
+            }"
+    NotFound:
+      description: "No such product, option, or menu version"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiEnvelope"
+          example: "{\"status\":404,\"message\":\"Product not found\",\"error\":\"\
+            Product not found\"}"
     ServiceBusy:
-      description: PDF generation lock held — try again after Retry-After seconds
+      description: PDF generation lock held — retry after Retry-After seconds. The
+        envelope omits data and pagination.
       headers:
         Retry-After:
           description: Seconds to wait before retry (always 60)
@@ -450,8 +557,8 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/ApiEnvelope"
-          example: |
-            {"status":503,"message":"please try after sometime","error":"system busy"}
+          example: "{\"status\":503,\"message\":\"please try after sometime\",\"error\"\
+            :\"system busy\"}"
   securitySchemes:
     bearerJwt:
       type: http

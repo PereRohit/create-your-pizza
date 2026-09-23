@@ -1,6 +1,6 @@
 # Verify — CreateYourPizza
 
-**Status:** DRAFT — 2026-09-22. Awaiting owner HIFL gate (**Approve** / **Revise** / **Park**). Defect table in **§8**: **BUG-01 closed**, **BUG-02 open** (docs contract, no runtime impact).
+**Status:** **APPROVED** 2026-09-23 by the owner. Defect table in **§8** is **clear**: **BUG-01 closed** 2026-09-22, **BUG-02 closed** 2026-09-23. No open rows.
 
 **Upstream:** [Intent](intent.md) (**APPROVED**) · [Spec / PRD](spec.md) (**APPROVED**) · [Design / TRD](design.md) (**APPROVED**) · [Build plan](build-plan.md) (**APPROVED**, §5.1 Revise **APPROVED**) · Build stories **01–15** `DONE-` on **`main`**
 
@@ -23,6 +23,7 @@
 | Live config (TTL follow-up) | Compose override only (not committed): `APP_JWT_TTL=1m`, `APP_PDF_INTERVAL=1m`, `APP_CACHE_CATALOG_TTL=30s`. Fresh `down -v` then `up`. First PDF ~**58s**. JWT `expiresIn=60`. |
 | Diagnostic run (RCA, BUG-01) | `catalog-service` recreated with `DEBUG=true` to capture Spring Boot's condition evaluation report; reverted afterwards. Override only, not committed. |
 | **Full regression run (BUG-01 closure, 2026-09-22)** | Branch `fix/16-redis-bean-wiring`, merged to `main` as **PR #25** (`b34614d`). Both suites re-run (auth **62**, catalog **115**, 1 skipped each, BUILD SUCCESS) **and** the entire residual pack re-run on a fresh stack: `docker compose down -v --remove-orphans` then `up -d --build` with the TTL overrides. Ready in **9s**; first PDF at ~**58s**. |
+| **Full regression run (BUG-02 closure, 2026-09-23)** | Branch `fix/17-openapi-error-responses`. Both suites re-run (auth **83**, catalog **138**, 1 skipped each, BUILD SUCCESS) **and** the entire residual pack (§3.1–§3.6) re-run on a fresh stack with the same TTL overrides: **120 checks, 0 failures**. Ready in **13s**; first PDF at ~**74s**. The pack mints a fresh admin JWT per authenticated call — under `APP_JWT_TTL=1m` a reused token starts returning 401 mid-run — and waits past the **60s** `JwtTimestampValidator` clock skew before asserting expiry. |
 
 Compose services up: `auth-db`, `catalog-db`, `redis`, `auth-service`, `catalog-service`.
 
@@ -98,8 +99,10 @@ Hot-path and edge checks against the running stack. Unless noted, calls used `cu
 | Check | Result |
 |-------|--------|
 | Committed `docs/openapi/{auth,catalog}-service.{yaml,json}` exist; JSON parses; locked paths present (login/register/token/users/approve/revoke/JWKS; products/options/menu.pdf); envelope + `Pagination` schemas present; `?version=` documented | **PASS** |
-| **503 busy documented on catalog writes** | **FAIL** — every one of the 20 operations declares only `200`; no `503`/`401`/`403`/`404` anywhere. Raised as [BUG-02](bugs.md#bug-02--static-openapi-omits-503-and-all-error-responses). The earlier DRAFT recorded PASS here from a substring spot check; re-running it as a real assertion exposed the gap |
-| `GET /api/menu.pdf` 200 content type in the spec | **FAIL** — declared `*/*`, not `application/pdf` binary (Design §9 requires PDF binary in the contract) — part of BUG-02 |
+| **503 busy documented on catalog writes** | **PASS** (re-verified 2026-09-23 after [BUG-02](bugs.md#bug-02--static-openapi-omits-503-and-all-error-responses) closed) — all **six** catalog writes declare `503` referencing the `ServiceBusy` component, which carries the `Retry-After` header and an envelope example omitting `data`/`pagination` (NFR-12). Asserted, not substring-matched. *Was FAIL on 2026-09-22: every operation declared only `200`* |
+| `GET /api/menu.pdf` 200 content type in the spec | **PASS** (2026-09-23) — declared as `application/pdf` with binary format, `version` query parameter retained. *Was FAIL: `*/*`* |
+| Auth failures documented per operation | **PASS** (2026-09-23) — `401`/`403`/`404` where they apply, plus `409` on `POST /auth/admins`; success codes corrected to `201` on the four creating `POST`s |
+| Every `$ref` in the published files resolves | **PASS** (2026-09-23) — **58** refs in auth, **61** in catalog, **0 dangling**, in both the JSON and the YAML. Guarded by `StaticOpenApiContractTest` in each service, which reads the committed files |
 | Live `GET /v3/api-docs` and Swagger UI URLs on 8080 and 8081 | **404** **PASS** (static files only) |
 | `AGENTS.md` at repo root (Compose, bootstrap logs, static OpenAPI, JWKS) | **PASS** |
 
@@ -159,7 +162,7 @@ Mocked tests also **PASS** for 503, job skip-not-queue, Redis-first menu, and ca
 | **FR-7–11 / 7a / 11a–11b** Queries | Admin and trusted `catalog:read`; veg/type/maxPrice; default 10; pizza-spec rows; envelope + pagination | Live **PASS** | **Met** |
 | **FR-13–16 / 16a–16g** PDF | Raw binary; vN; name+price; options available; pizza-spec own space; history `?version=`; Redis latest; skip/503 locks; test trigger profile-gated | Content, versioning, public GET, live **503** **PASS**. Redis latest key **present** + backfill on DB fallback; injected-lock **503**; job skip-if-write proven **live**. Test trigger absent on default profile is **by Design** | **Met** |
 | **FR-17–20 / 17a–17b / 18a** Auth | Bootstrap; login; pending+approve; paginated users; cannot DELETE self; `/auth/token`; local JWKS; no `/validate` | Live **PASS**; JWT expiry **PASS** at 1m override | **Met** |
-| **FR-21–25** Quality & ops | Static OpenAPI importable; tests; AGENTS.md; Compose both Postgres + Redis + apps; sample data | `mvn test` + Compose + sample data + `AGENTS.md` **PASS**; Redis now genuinely used. Static OpenAPI imports but omits **503** and all error responses | **Partial** — [BUG-02](bugs.md#bug-02--static-openapi-omits-503-and-all-error-responses) (contract completeness, FR-21 / NFR-4 / NFR-12) |
+| **FR-21–25** Quality & ops | Static OpenAPI importable; tests; AGENTS.md; Compose both Postgres + Redis + apps; sample data | `mvn test` + Compose + sample data + `AGENTS.md` **PASS**; Redis genuinely used. Static OpenAPI now documents **503** + `Retry-After`, `401`/`403`/`404`/`409`, and binary `application/pdf`, with every `$ref` resolving and a committed-file guard in both suites | **Met** — [BUG-02](bugs.md#bug-02--static-openapi-omits-503-and-all-error-responses) closed 2026-09-23 |
 | **NFR-1 / FR-26** Catalog Redis TTL, Redis-first, no invalidation-on-write | Mocked cache tests **PASS**. Live: `create-your-pizza/catalog:*` keys present, TTL 29s vs 30s config, stale-on-write then refresh after TTL | **Met** |
 | **NFR-3 / FR-18** JWT TTL from config (default 30 min) | Config default present; live override `1m` issued `expiresIn=60` and catalog **401** after expiry | **Met** |
 | **NFR-6** Job interval from config; skip if write in progress; version only on generate | Interval **5m** and **1m** overrides both generated; version not bumped on write; live **503**; **skip-if-write-lock demonstrated live** by holding an injected write lock across a full interval (version frozen, `dirty` preserved), then generating on release | **Met** |
@@ -182,7 +185,7 @@ Mocked tests also **PASS** for 503, job skip-not-queue, Redis-first menu, and ca
 | Option per-row price on list and PDF | PASS | PASS |
 | Admin cannot DELETE self; `/auth/users` paginated | PASS | PASS |
 | Test trigger profile-gated; same skip/lock rules | PASS | Trigger **404** on default profile (by Design); skip via trigger not live |
-| Static OpenAPI; no Swagger UI; AGENTS.md | PASS (committed files) | Paths/schemas PASS, no live `/v3/api-docs` PASS; **503 + error responses FAIL** → [BUG-02](bugs.md#bug-02--static-openapi-omits-503-and-all-error-responses) |
+| Static OpenAPI; no Swagger UI; AGENTS.md | PASS (committed files, now machine-checked by `StaticOpenApiContractTest` in both suites) | **PASS** — paths/schemas, 503 + `Retry-After` on all six writes, binary `application/pdf`, 0 dangling `$ref`s, and `/v3/api-docs` + Swagger UI **404** on both services |
 | `docker compose up` five services; sample catalog; first job **v1** | n/a | PASS (defaults ~5 min; 1m override ~58s) |
 | No `system_status` | n/a | PASS |
 
@@ -208,7 +211,9 @@ Genuine mismatches between Spec/Design and the delivered artifacts. See the defe
 
 **Closed 2026-09-22 — BUG-01 (was gaps 1–3):** catalog-service not using Redis at runtime; PDF/write exclusion being process-local rather than distributed; FR-16c job-skip proven only in mocked tests. All three were one root cause, fixed on `fix/16-redis-bean-wiring` and re-verified live (§3.5). Redis cache keys, the latest-menu key with DB fallback and backfill, the injected-lock **503**, and a live job-skip across a held write lock are all now demonstrated.
 
-**Open — BUG-02: the published OpenAPI contract is incomplete.** Every one of the 20 operations in `docs/openapi/*` declares only HTTP `200` — no **503**, `401`, `403`, or `404` — and `GET /api/menu.pdf` declares `*/*` rather than `application/pdf` binary. Design §9 marks the static files **Hard (Build delivery)** and names 503 and PDF binary explicitly; Spec **FR-21 / NFR-4 / NFR-12** require the contract to match the implemented endpoints and lock the 503 shape. **No runtime impact** — the services genuinely return the 503 envelope with `Retry-After: 60` and genuinely serve raw PDF bytes; only the document integrators import is wrong. Ticketed as [17-openapi-error-responses.md](stories/17-openapi-error-responses.md).
+**Closed 2026-09-23 — BUG-02 (published OpenAPI contract incomplete).** The committed files documented only HTTP `200` across all 20 operations and typed the menu as `*/*`, breaching Design §9 and Spec FR-21 / NFR-4 / NFR-12. Fixed on `fix/17-openapi-error-responses`: the contract now carries 503 + `Retry-After` on every catalog write, `401`/`403`/`404`/`409` where they apply, accurate `201`s on the four creating `POST`s, and binary `application/pdf` on the menu — with a committed-file guard in each suite so a regeneration cannot silently drop them. Re-verified live: the documented 503 and raw-PDF behaviours match the running system. Ticket [DONE-17-openapi-error-responses.md](stories/DONE-17-openapi-error-responses.md).
+
+**No open gaps remain.** Both defects found in this stage are closed and re-verified on fresh stacks.
 
 Cache TTL behaviour (stale read on an identical query, refresh after TTL, no invalidation on write) matches Design §7 line 743 and is **correct** — and, since the fix, it is Redis-backed.
 
@@ -221,11 +226,11 @@ Root cause analysis lives in the [defect register](bugs.md), not in this evidenc
 | Bug | Title | Severity | RCA | Ticket | Branch | Status | Resolved |
 |-----|-------|----------|-----|--------|--------|--------|----------|
 | **BUG-01** | Catalog Redis beans never wired | **Blocking** | [BUG-01](bugs.md#bug-01--catalog-redis-beans-never-wired) | [DONE-16](stories/DONE-16-fix-redis-wiring.md) | `fix/16-redis-bean-wiring` | **closed** | **2026-09-22** |
-| **BUG-02** | Static OpenAPI omits 503 and all error responses | Docs contract; **no runtime impact** | [BUG-02](bugs.md#bug-02--static-openapi-omits-503-and-all-error-responses) | [17](stories/17-openapi-error-responses.md) | `fix/17-openapi-error-responses` | **open** — analysed, not started | — |
+| **BUG-02** | Static OpenAPI omits 503 and all error responses | Docs contract; **no runtime impact** | [BUG-02](bugs.md#bug-02--static-openapi-omits-503-and-all-error-responses) | [DONE-17](stories/DONE-17-openapi-error-responses.md) | `fix/17-openapi-error-responses` | **closed** | **2026-09-23** |
 
-**Open:** 1 (BUG-02, documentation contract — analysed and ticketed, fix deferred by owner). **Closed:** 1 (BUG-01). Severity of BUG-02 for gate purposes is the owner's call: it breaches a locked Design §9 delivery requirement but changes no runtime behaviour.
+**Open:** 0. **Closed:** 2 (BUG-01, BUG-02). The table has no open rows, so the stage is gateable under playbook hard rule 10.
 
-BUG-01 closed after the full regression below: real `create-your-pizza/catalog:*` keys appear after a list GET, `create-your-pizza/menu` is written and backfilled, and an externally injected `create-your-pizza/lock:pdf-generation` now produces **503** + `Retry-After: 60`. BUG-02 was **found by that regression** — re-running §3.4 as a real assertion instead of a substring match showed the committed contract documents only HTTP 200. See [How a bug is closed](bugs.md#how-a-bug-is-closed).
+BUG-01 closed after its full regression: real `create-your-pizza/catalog:*` keys appear after a list GET, `create-your-pizza/menu` is written and backfilled, and an externally injected `create-your-pizza/lock:pdf-generation` produces **503** + `Retry-After: 60`. BUG-02 was **found by that regression** — re-running §3.4 as a real assertion instead of a substring match showed the committed contract documented only HTTP 200 — and closed in turn by its own full regression on 2026-09-23 (**120 live checks, 0 failures**; auth **83**, catalog **138**). Its candid review loop ran two fix cycles before returning **Findings: none**; the first cycle caught the fix's own regression, where the error responses referenced an `ApiEnvelope` schema that SpringDoc had pruned. See [How a bug is closed](bugs.md#how-a-bug-is-closed).
 
 ---
 
@@ -243,12 +248,14 @@ BUG-01 closed after the full regression below: real `create-your-pizza/catalog:*
 
 ## 10. Gate
 
-Verify is **DRAFT** (updated 2026-09-22 after BUG-01 closure and its full regression).
+**APPROVED by the owner on 2026-09-23**, with the residual below accepted. Verify is closed; v1 is verified.
 
-**BUG-01 is closed.** The Redis wiring defect is fixed on `fix/16-redis-bean-wiring`, the candid review loop returned **Findings: none**, both suites are green (auth **62**, catalog **115**), and the entire residual pack was re-run on a fresh stack. The checks that previously failed now pass, including the externally injected lock producing **503** + `Retry-After: 60` and — for the first time live — the PDF job skipping while a write lock is held.
+**Both defects raised in this stage are closed, and the §8 defect table has no open rows.**
 
-**BUG-02 is open**, and it was found *by* that regression: the committed OpenAPI contract documents only HTTP 200, so Design §9's "503 + PDF binary" requirement and Spec FR-21 / NFR-4 / NFR-12 are unmet in the published artifact. It is documentation-only with **no runtime impact** — every 503 and raw-PDF behaviour it fails to describe was verified working on the live stack. It is fully analysed in the register and ticketed as [17-openapi-error-responses.md](stories/17-openapi-error-responses.md); **the owner has deferred the fix**, so that ticket is handed over unstarted and will be picked up as a normal ticket plus the bug-closure full regression.
+**BUG-01 (blocking).** The Redis wiring defect is fixed on `fix/16-redis-bean-wiring`, merged as PR #25. Its candid review returned **Findings: none** and the entire residual pack was re-run on a fresh stack. The checks that previously failed now pass, including the externally injected lock producing **503** + `Retry-After: 60` and — for the first time live — the PDF job skipping while a write lock is held.
 
-Per playbook hard rule 10, this stage stays open while the §8 defect table has an open row. The owner may instead Approve-with-residual, carrying BUG-02 as a known documentation gap.
+**BUG-02 (documentation contract).** Found *by* that regression and fixed on `fix/17-openapi-error-responses`. The published contract now documents 503 with `Retry-After` on all six catalog writes, the `401`/`403`/`404`/`409` each operation can return, accurate `201`s on the four creating `POST`s, and the menu as binary `application/pdf` — with **0 dangling `$ref`s** across all four files. Two things make this durable rather than a one-off edit: the responses are declared once per service as an `OpenApiCustomizer` rather than annotation-by-annotation, and `StaticOpenApiContractTest` in each suite reads the **committed** files, so a regeneration that drops any of it fails the build. That guard is the one whose absence let DONE-15 ship a ticked-but-false criterion. Closure regression: **120 live checks, 0 failures** on a fresh stack; auth **83**, catalog **138**, 1 skipped each.
 
-Please respond with **Approve**, **Revise: …**, or **Park**.
+Under playbook hard rule 10 the stage was gateable with no open rows, and the owner **approved** it.
+
+**Accepted residual (not a defect, not scheduled):** `auth-service.{yaml,json}` declares a `bearerAdminJwt` security scheme that no operation references, so importers get no Authorize affordance on admin routes. Catalog applies its scheme globally; auth has no `security` requirement at document or operation level. This is an absent declaration rather than a false one, no acceptance criterion covers it, and the owner accepted it at this gate. Pick it up if a future story touches the auth contract.
